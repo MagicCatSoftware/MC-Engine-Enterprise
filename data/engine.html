@@ -188,7 +188,7 @@ label{color:var(--txt2);font-size:11px;display:block;margin-bottom:3px}
       <button class="small" onclick="UI.importJSON()">Import JSON</button>
       <button class="small primary" onclick="UI.runPreview()">&#9654; Run Preview</button>
       <button class="small" onclick="UI.replicateSelf()">&#x2728; Replicate Self</button>
-      <button class="small" onclick="location.reload()" title="Reload the entire application" style="margin-left:8px;border-left:1px solid var(--bg3);padding-left:12px;border-radius:0 4px 4px 0">&#8635; Refresh App</button>
+      <button class="small" onclick="UI.resetAll()" title="Reset all machines to their initial state" style="margin-left:8px;border-left:1px solid var(--bg3);padding-left:12px;border-radius:0 4px 4px 0">&#8635; Refresh App</button>
     </div>
   </div>
   <div id="main-layout">
@@ -5068,6 +5068,19 @@ const UI = {
   },
 
   // ---- REPLICATE SELF ----
+  resetAll() {
+    // Re-render the canvas from stored machine state (text, CSS, attrs all go back to m.text values)
+    this.renderCanvas();
+    this.renderDOMTree();
+    this.renderInspector();
+    // Rebuild the live canvas iframe from scratch — resets all runtime state:
+    // counters back to 0, accordion panels closed, loop data cleared, DB restored to seed, etc.
+    this.renderLiveCanvas();
+    // Also reset the preview tab if it was the active one
+    if (MCE.canvasTab === 'preview') this.runPreview();
+    Logger.ok('All machines reset to initial state');
+  },
+
   replicateSelf() {
     const data = {
       version: MCE.version,
