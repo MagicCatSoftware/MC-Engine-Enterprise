@@ -1,0 +1,493 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "Views + URL Params Demo" },
+  "_nextId": 22,
+  "runtimeStyle": "ocean",
+  "rootOrder": ["M1"],
+
+  "events": {
+    "navHome":              { "name": "navHome",              "payload": "{}" },
+    "navProjects":          { "name": "navProjects",          "payload": "{}" },
+    "projectTitleSelected": { "name": "projectTitleSelected", "payload": "{ value }  — project title string" },
+    "projectDescSelected":  { "name": "projectDescSelected",  "payload": "{ value }  — project description string" },
+    "projectTechSelected":  { "name": "projectTechSelected",  "payload": "{ value }  — tech stack string" },
+    "projectParamsSelected":{ "name": "projectParamsSelected","payload": "{ value }  — raw URL query string for display" }
+  },
+
+  "pipes": {
+    "readProjects": {
+      "name": "readProjects",
+      "method": "GET",
+      "endpoint": "/api/showcase/projects",
+      "collection": "projects",
+      "delay": 200,
+      "schema": [],
+      "live": false
+    }
+  },
+
+  "views": {
+    "home": {
+      "name": "home",
+      "title": "Home",
+      "description": "Landing page. First view in the list — auto-activated on Live Preview load with no URL params.",
+      "params": []
+    },
+    "projects": {
+      "name": "projects",
+      "title": "Projects",
+      "description": "Project list. A wire on this section listens for view:projects → pipeOut, so the loop auto-loads when the view activates.",
+      "params": []
+    },
+    "detail": {
+      "name": "detail",
+      "title": "Project Detail",
+      "description": "Shows a selected project. URL becomes ?view=detail&id=X&title=...&tech=...&year=X when navigated to.",
+      "params": ["id", "title", "description", "tech", "year"]
+    }
+  },
+
+  "loops": {
+    "projectsLoop": {
+      "pipeName": "readProjects",
+      "targetId": "M11",
+      "template": "<div style=\"background:#13131f;border:1px solid #2e2e4e;border-radius:10px;padding:20px;cursor:pointer;flex:1;min-width:240px;max-width:340px\" onclick=\"ViewSystem.navigate('detail',{id:'{{id}}',title:'{{title}}',description:'{{description}}',tech:'{{tech}}',year:'{{year}}'});EventBus.emit('projectTitleSelected',{value:'{{title}}'});EventBus.emit('projectDescSelected',{value:'{{description}}'});EventBus.emit('projectTechSelected',{value:'{{tech}}'});EventBus.emit('projectParamsSelected',{value:'?view=detail&id={{id}}&title={{title}}&tech={{tech}}&year={{year}}'});\"><div style=\"font-size:10px;color:#a78bfa;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px\">{{tech}}</div><div style=\"color:#e2e8f0;font-size:17px;font-weight:700;margin-bottom:8px\">{{title}}</div><div style=\"color:#64748b;font-size:13px;line-height:1.6;margin-bottom:14px\">{{description}}</div><div style=\"font-size:11px;color:#475569\">{{year}} &nbsp;·&nbsp; Click to open detail &rarr;</div></div>"
+    }
+  },
+
+  "vars": {},
+
+  "logic": {},
+
+  "dbCollections": [
+    {
+      "name": "projects",
+      "seed": [
+        {
+          "id": "1",
+          "title": "Magic Cat Engine",
+          "description": "A visual no-code IDE for building interactive, database-driven profile pages using Pipes, Loops, and Views.",
+          "tech": "Node.js / MongoDB",
+          "year": "2026"
+        },
+        {
+          "id": "2",
+          "title": "Weather Dashboard",
+          "description": "Real-time weather data visualization with animated charts and a 7-day forecast, powered by a live API Pipe.",
+          "tech": "React / D3.js",
+          "year": "2025"
+        },
+        {
+          "id": "3",
+          "title": "Task Manager Pro",
+          "description": "Collaborative task manager with live sync, offline-first architecture, and automatic conflict resolution.",
+          "tech": "Vue.js / Socket.io",
+          "year": "2025"
+        }
+      ]
+    }
+  ],
+
+  "machines": {
+
+    "M1": {
+      "id": "M1",
+      "label": "app",
+      "tag": "section",
+      "text": "",
+      "parentId": "",
+      "children": ["M2", "M5", "M9", "M12"],
+      "css": {
+        "display": "flex",
+        "flexDirection": "column",
+        "minHeight": "100vh",
+        "fontFamily": "system-ui, -apple-system, sans-serif"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "navHome",     "targetId": "", "action": "navigate", "actionArgs": "home" },
+        { "eventName": "navProjects", "targetId": "", "action": "navigate", "actionArgs": "projects" }
+      ],
+      "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2",
+      "label": "nav_bar",
+      "tag": "nav",
+      "text": "",
+      "parentId": "M1",
+      "children": ["M3", "M4"],
+      "css": {
+        "display": "flex",
+        "alignItems": "center",
+        "gap": "8px",
+        "padding": "14px 40px",
+        "background": "#0d0d1a",
+        "borderBottom": "1px solid #1e1e3e"
+      },
+      "attrs": {},
+      "wires": [],
+      "viewBinding": null
+    },
+
+    "M3": {
+      "id": "M3",
+      "label": "nav_home_btn",
+      "tag": "button",
+      "text": "Home",
+      "parentId": "M2",
+      "children": [],
+      "css": {
+        "padding": "6px 16px",
+        "background": "transparent",
+        "color": "#a78bfa",
+        "border": "1px solid #3a3a5c",
+        "borderRadius": "4px",
+        "cursor": "pointer",
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "attrs": {},
+      "emitOnClick": "navHome",
+      "wires": [],
+      "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4",
+      "label": "nav_projects_btn",
+      "tag": "button",
+      "text": "Projects",
+      "parentId": "M2",
+      "children": [],
+      "css": {
+        "padding": "6px 16px",
+        "background": "transparent",
+        "color": "#a78bfa",
+        "border": "1px solid #3a3a5c",
+        "borderRadius": "4px",
+        "cursor": "pointer",
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "attrs": {},
+      "emitOnClick": "navProjects",
+      "wires": [],
+      "viewBinding": null
+    },
+
+    "M5": {
+      "id": "M5",
+      "label": "home_section",
+      "tag": "section",
+      "text": "",
+      "parentId": "M1",
+      "children": ["M6", "M7", "M8"],
+      "css": {
+        "padding": "72px 48px",
+        "maxWidth": "700px"
+      },
+      "attrs": {},
+      "wires": [],
+      "viewBinding": "home"
+    },
+
+    "M6": {
+      "id": "M6",
+      "label": "home_title",
+      "tag": "h1",
+      "text": "Views + URL Params",
+      "parentId": "M5",
+      "children": [],
+      "css": {
+        "color": "#e2e8f0",
+        "fontSize": "44px",
+        "fontWeight": "900",
+        "letterSpacing": "-2px",
+        "margin": "0 0 24px 0",
+        "lineHeight": "1.05"
+      },
+      "attrs": {},
+      "wires": [],
+      "viewBinding": null
+    },
+
+    "M7": {
+      "id": "M7",
+      "label": "home_body",
+      "tag": "p",
+      "text": "This demo has three Views: home, projects, and detail. The home view auto-activates because it is first in the views list. Clicking Projects fires navProjects → a navigate wire on the root machine calls ViewSystem.navigate('projects') → the view:projects event fires → a pipeOut wire auto-loads the project list. Clicking a card calls ViewSystem.navigate('detail', { id, title, ... }) directly, pushing ?view=detail&id=1&title=... to the browser URL and routing you to the detail view.",
+      "parentId": "M5",
+      "children": [],
+      "css": {
+        "color": "#64748b",
+        "fontSize": "15px",
+        "lineHeight": "1.85",
+        "margin": "0 0 36px 0",
+        "maxWidth": "580px"
+      },
+      "attrs": {},
+      "wires": [],
+      "viewBinding": null
+    },
+
+    "M8": {
+      "id": "M8",
+      "label": "home_cta",
+      "tag": "button",
+      "text": "Browse Projects →",
+      "parentId": "M5",
+      "children": [],
+      "css": {
+        "padding": "12px 28px",
+        "background": "#a78bfa",
+        "color": "#000000",
+        "fontWeight": "700",
+        "fontSize": "15px",
+        "border": "none",
+        "borderRadius": "6px",
+        "cursor": "pointer",
+        "display": "inline-block"
+      },
+      "attrs": {},
+      "emitOnClick": "navProjects",
+      "wires": [],
+      "viewBinding": null
+    },
+
+    "M9": {
+      "id": "M9",
+      "label": "projects_section",
+      "tag": "section",
+      "text": "",
+      "parentId": "M1",
+      "children": ["M10", "M11"],
+      "css": {
+        "padding": "56px 40px"
+      },
+      "attrs": {},
+      "wires": [
+        {
+          "eventName": "view:projects",
+          "targetId": "",
+          "action": "pipeOut",
+          "actionArgs": "readProjects"
+        }
+      ],
+      "viewBinding": "projects"
+    },
+
+    "M10": {
+      "id": "M10",
+      "label": "proj_heading",
+      "tag": "h2",
+      "text": "Projects",
+      "parentId": "M9",
+      "children": [],
+      "css": {
+        "color": "#e2e8f0",
+        "fontSize": "30px",
+        "fontWeight": "800",
+        "letterSpacing": "-0.5px",
+        "margin": "0 0 28px 0"
+      },
+      "attrs": {},
+      "wires": [],
+      "viewBinding": null
+    },
+
+    "M11": {
+      "id": "M11",
+      "label": "proj_grid",
+      "tag": "div",
+      "text": "",
+      "parentId": "M9",
+      "children": [],
+      "css": {
+        "display": "flex",
+        "flexWrap": "wrap",
+        "gap": "16px"
+      },
+      "attrs": {},
+      "wires": [],
+      "viewBinding": null
+    },
+
+    "M12": {
+      "id": "M12",
+      "label": "detail_section",
+      "tag": "section",
+      "text": "",
+      "parentId": "M1",
+      "children": ["M13", "M14", "M15", "M16", "M17", "M18", "M19"],
+      "css": {
+        "padding": "48px 40px",
+        "maxWidth": "780px"
+      },
+      "attrs": {},
+      "wires": [],
+      "viewBinding": "detail"
+    },
+
+    "M13": {
+      "id": "M13",
+      "label": "detail_back",
+      "tag": "button",
+      "text": "← Back to Projects",
+      "parentId": "M12",
+      "children": [],
+      "css": {
+        "padding": "6px 14px",
+        "background": "transparent",
+        "color": "#64748b",
+        "border": "1px solid #2e2e4e",
+        "borderRadius": "4px",
+        "cursor": "pointer",
+        "fontSize": "13px",
+        "marginBottom": "36px",
+        "display": "inline-block"
+      },
+      "attrs": {},
+      "emitOnClick": "navProjects",
+      "wires": [],
+      "viewBinding": null
+    },
+
+    "M14": {
+      "id": "M14",
+      "label": "detail_tech_badge",
+      "tag": "div",
+      "text": "—",
+      "parentId": "M12",
+      "children": [],
+      "css": {
+        "display": "inline-block",
+        "background": "#1e0f3e",
+        "color": "#a78bfa",
+        "fontSize": "11px",
+        "fontWeight": "700",
+        "textTransform": "uppercase",
+        "letterSpacing": "1px",
+        "padding": "4px 10px",
+        "borderRadius": "4px",
+        "marginBottom": "14px"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "projectTechSelected", "targetId": "", "action": "setText", "actionArgs": "{{THIS.VALUE}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M15": {
+      "id": "M15",
+      "label": "detail_title",
+      "tag": "h1",
+      "text": "Select a project",
+      "parentId": "M12",
+      "children": [],
+      "css": {
+        "color": "#e2e8f0",
+        "fontSize": "38px",
+        "fontWeight": "900",
+        "letterSpacing": "-1px",
+        "margin": "0 0 16px 0",
+        "lineHeight": "1.1"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "projectTitleSelected", "targetId": "", "action": "setText", "actionArgs": "{{THIS.VALUE}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M16": {
+      "id": "M16",
+      "label": "detail_desc",
+      "tag": "p",
+      "text": "Click a card in the Projects view to navigate here with URL params.",
+      "parentId": "M12",
+      "children": [],
+      "css": {
+        "color": "#94a3b8",
+        "fontSize": "16px",
+        "lineHeight": "1.8",
+        "margin": "0 0 44px 0",
+        "maxWidth": "600px"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "projectDescSelected", "targetId": "", "action": "setText", "actionArgs": "{{THIS.VALUE}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M17": {
+      "id": "M17",
+      "label": "params_label",
+      "tag": "div",
+      "text": "URL Parameters pushed by ViewSystem.navigate()",
+      "parentId": "M12",
+      "children": [],
+      "css": {
+        "fontSize": "10px",
+        "fontWeight": "700",
+        "color": "#475569",
+        "textTransform": "uppercase",
+        "letterSpacing": "1px",
+        "marginBottom": "10px"
+      },
+      "attrs": {},
+      "wires": [],
+      "viewBinding": null
+    },
+
+    "M18": {
+      "id": "M18",
+      "label": "params_code",
+      "tag": "pre",
+      "text": "— navigate to this view from a project card —",
+      "parentId": "M12",
+      "children": [],
+      "css": {
+        "background": "#0d0d1a",
+        "border": "1px solid #1e1e3e",
+        "borderRadius": "6px",
+        "padding": "16px 20px",
+        "color": "#a78bfa",
+        "fontSize": "13px",
+        "fontFamily": "monospace",
+        "lineHeight": "1.6",
+        "margin": "0 0 14px 0",
+        "whiteSpace": "pre-wrap",
+        "wordBreak": "break-all"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "projectParamsSelected", "targetId": "", "action": "setText", "actionArgs": "{{THIS.VALUE}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M19": {
+      "id": "M19",
+      "label": "params_hint",
+      "tag": "p",
+      "text": "Read these in Logic or onclick: ViewSystem.getParam('id') · ViewSystem.getParam('title') · ViewSystem.getParams() returns all",
+      "parentId": "M12",
+      "children": [],
+      "css": {
+        "fontSize": "12px",
+        "color": "#334155",
+        "fontFamily": "monospace",
+        "margin": "0",
+        "lineHeight": "1.8"
+      },
+      "attrs": {},
+      "wires": [],
+      "viewBinding": null
+    }
+
+  }
+}

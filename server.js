@@ -1,16 +1,19 @@
 require('dotenv').config();
 const express    = require('express');
 const multer     = require('multer');
+const path       = require('path');
+const fs         = require('fs');
 const cors       = require('cors');
 const session    = require('express-session');
-const MongoStore = require('connect-mongo');
+const { MongoStore } = require('connect-mongo');
 const passport   = require('passport');
 const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
 
 const db              = require('./db');
-const { connect: connectMongo } = require('./db/mongoose');
+const { connect: connectMongo, mongoose } = require('./db/mongoose');
 const User            = require('./models/User');
 const Project         = require('./models/Project');
+const VarStore        = require('./models/VarStore');
 const { handleWebhook } = require('./routes/stripe');
 
 const app    = express();
@@ -22,6 +25,10 @@ const BASE_URL  = process.env.BASE_URL || `http://localhost:${PORT}`;
 
 // ── Stripe webhook (raw body, BEFORE json middleware) ──────────────────────────
 app.post('/stripe/webhook', express.raw({ type: 'application/json' }), handleWebhook);
+
+// ── Public file storage (served before auth middleware) ───────────────────────
+fs.mkdirSync(path.join(__dirname, 'public', 'media'), { recursive: true });
+app.use(express.static(path.join(__dirname, 'public'), { maxAge: '7d' }));
 
 // ── Core middleware ────────────────────────────────────────────────────────────
 app.use(cors({ origin: true, credentials: true }));
@@ -52,6 +59,7 @@ passport.use(new GoogleStrategy(
           name:     profile.displayName,
           picture:  profile.photos?.[0]?.value,
         });
+        await Project.create({ userId: user._id, name: 'My Profile', data: null, isProfile: true });
       }
       done(null, user);
     } catch (e) {
@@ -81,11 +89,15 @@ function requireAdmin(req, res, next) {
 app.use('/auth',         require('./routes/auth'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/profile',  require('./routes/profile'));
+app.use('/api/db',       require('./routes/db'));
+app.use('/api/vars',     require('./routes/vars'));
+app.use('/api/files',    require('./routes/files'));
 app.use('/stripe',       require('./routes/stripe').router);
 
 app.get('/api/me', (req, res) => {
   if (!req.user) return res.json({ user: null });
   const u = req.user;
+  const { isAdmin } = require('./middleware/auth');
   res.json({
     user: {
       id:                 u._id,
@@ -94,8 +106,38 @@ app.get('/api/me', (req, res) => {
       picture:            u.picture,
       username:           u.username,
       subscriptionStatus: u.subscriptionStatus,
+      isAdmin:            isAdmin(u),
     },
   });
+});
+
+// ── Showcase pipe demo data (no auth — used by mce-pipe-demo.mce.json) ──────
+app.get('/api/showcase/portfolio', (req, res) => {
+  res.json([
+    { _id: '1', title: 'Magic Cat Engine',    description: 'Visual no-code IDE for building interactive, database-driven profile pages.', tech: 'Node.js · MongoDB · Express', year: '2026' },
+    { _id: '2', title: 'Weather Dashboard',   description: 'Real-time weather data visualization with animated charts and 7-day forecasts.', tech: 'React · D3.js · OpenWeather', year: '2025' },
+    { _id: '3', title: 'Task Manager Pro',    description: 'Collaborative task management with live sync and offline-first architecture.', tech: 'Vue.js · Socket.io · IndexedDB', year: '2025' },
+    { _id: '4', title: 'AI Portfolio Builder', description: 'GPT-powered portfolio page generator with custom theme support and export.', tech: 'Python · FastAPI · OpenAI', year: '2024' },
+  ]);
+});
+
+// ── Showcase contacts demo (live MongoDB — used by mce-db-write-demo.mce.json) ─
+app.get('/api/showcase/contacts', async (req, res) => {
+  try {
+    const col  = mongoose.connection.db.collection('showcase_contacts');
+    const docs = await col.find({}, { projection: { _id: 0, _ts: 0 } }).sort({ _ts: 1 }).toArray();
+    res.json(docs);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/showcase/contacts', async (req, res) => {
+  try {
+    const { name, email, category, date } = req.body;
+    if (!name) return res.status(400).json({ error: 'name required' });
+    const col = mongoose.connection.db.collection('showcase_contacts');
+    await col.insertOne({ name, email: email || '—', category: category || 'General', date: date || new Date().toLocaleDateString('en-US'), _ts: Date.now() });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── Engine management (admin) ─────────────────────────────────────────────────
@@ -193,6 +235,7 @@ function cloudPanelHTML() {
       <span style="color:#888;cursor:pointer" onclick="MCE_CLOUD.manageSubscription()">Manage subscription</span>
     </div>
     <div class="mcec-actions">
+      <button class="mcec-btn green" onclick="MCE_CLOUD.publish()" title="Publish to your public profile">&#128640; Publish</button>
       <button class="mcec-btn primary" onclick="MCE_CLOUD.save()">Save</button>
       <button class="mcec-btn" onclick="MCE_CLOUD.saveAs()">Save As…</button>
       <button class="mcec-btn" onclick="MCE_CLOUD.newProject()">New</button>
@@ -264,7 +307,7 @@ function cloudPanelHTML() {
     renderUserBar(_user);
 
     if (!_user) { showPanel('mcec-gate-login'); return; }
-    if (_user.subscriptionStatus !== 'active') { showPanel('mcec-gate-subscribe'); return; }
+    if (!_user.isAdmin && _user.subscriptionStatus !== 'active') { showPanel('mcec-gate-subscribe'); return; }
     if (!_user.username) { showPanel('mcec-gate-claim'); return; }
 
     renderProfileBar(_user);
@@ -356,11 +399,33 @@ function cloudPanelHTML() {
       } catch(e) { status('Error: ' + e.message, false); }
     },
 
-    async save() {
+    async publish() {
       var data = mceData();
       if (!data) return status('MCE not ready', false);
+      var name = (MCE && MCE.project && MCE.project.name) || 'My Profile';
+      status('Publishing…');
+      try {
+        var res = await apiFetch('/api/projects/publish', {
+          method: 'POST',
+          body: { name: name, data: data }
+        });
+        if (!res.ok) { var e = await res.json(); throw new Error(e.error || res.statusText); }
+        var j = await res.json();
+        if (j.url) {
+          status('Live at magiccatengine.com' + j.url, true);
+        } else {
+          status('Published!', true);
+        }
+      } catch(e) { status('Error: ' + e.message, false); }
+    },
+
+    async save(silent) {
+      var data = mceData();
+      if (!data) return silent ? null : status('MCE not ready', false);
       var name = (MCE.project && MCE.project.name) || 'Untitled';
-      status('Saving…');
+      var ind = document.getElementById('autosave-status');
+      if (!silent) status('Saving…');
+      if (ind) ind.textContent = 'saving…';
       try {
         var res = await apiFetch(_id ? '/api/projects/' + _id : '/api/projects', {
           method: _id ? 'PUT' : 'POST',
@@ -370,9 +435,12 @@ function cloudPanelHTML() {
         var j = await res.json();
         _id = j.id;
         syncName();
-        status('Saved: ' + name, true);
-        MCE_CLOUD.refresh();
-      } catch(e) { status('Error: ' + e.message, false); }
+        if (!silent) { status('Saved: ' + name, true); MCE_CLOUD.refresh(); }
+        if (ind) { ind.textContent = 'Saved'; setTimeout(function() { if (ind.textContent === 'Saved') ind.textContent = ''; }, 2500); }
+      } catch(e) {
+        if (!silent) status('Error: ' + e.message, false);
+        if (ind) ind.textContent = '⚠ save failed';
+      }
     },
 
     async saveAs() {
@@ -475,63 +543,495 @@ function cloudPanelHTML() {
   }
 
   setTimeout(function() { syncName(); }, 800);
+
+  // Save on page close/refresh (keepalive survives unload)
+  window.addEventListener('beforeunload', function() {
+    if (!_id || typeof MCE === 'undefined') return;
+    var data = mceData();
+    if (!data) return;
+    fetch('/api/projects/' + _id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      keepalive: true,
+      body: JSON.stringify({ name: (MCE.project && MCE.project.name) || 'Untitled', data: data })
+    });
+  });
+
+  // Auto-restore last saved project on page load
+  if (window.MCE_PROFILE && window.MCE_PROFILE.isOwner && window.MCE_PROFILE.data && window.MCE_PROFILE.projectId) {
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof UI !== 'undefined' && UI._loadJSON) {
+        UI._loadJSON(window.MCE_PROFILE.data);
+        _id = window.MCE_PROFILE.projectId;
+        syncName();
+        var ind = document.getElementById('autosave-status');
+        if (ind) { ind.textContent = 'Restored'; setTimeout(function() { if (ind.textContent === 'Restored') ind.textContent = ''; }, 2500); }
+      }
+    });
+  }
 })();
 </script>
 `;
 }
 
-// ── Engine route (/) ──────────────────────────────────────────────────────────
-app.get('/', (req, res) => {
-  const engine = db.getEngine();
-  if (!engine) {
-    return res.status(503).send(`
-      <html><body style="font:14px monospace;padding:40px;background:#111;color:#ef4444">
-        <h2>Engine not seeded</h2>
-        <p>Run: <code style="color:#22c55e">npm run seed</code> to load magiccatengine.html into the database.</p>
-      </body></html>
-    `);
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function htmlEsc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function injectBeforeBodyEnd(html, injection) {
+  const idx = html.lastIndexOf('</body>');
+  return idx === -1 ? html + injection : html.slice(0, idx) + injection + '\n</body>' + html.slice(idx + 7);
+}
+
+// ── Landing page ──────────────────────────────────────────────────────────────
+function landingPageHTML(user) {
+  const userData = user ? {
+    name: user.name || '',
+    picture: user.picture || '',
+    username: user.username || '',
+    subscriptionStatus: user.subscriptionStatus || '',
+  } : null;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magic Cat Engine — Build Your Profile Page</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#fff;color:#111;min-height:100vh;line-height:1.5}
+a{color:inherit;text-decoration:none}
+nav{display:flex;align-items:center;padding:14px 48px;border-bottom:2px solid #000;position:sticky;top:0;background:#fff;z-index:100}
+.nav-logo{height:52px;width:auto}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.nav-user{display:flex;align-items:center;gap:8px;font-size:13px;color:#333}
+.nav-user img{width:26px;height:26px;border-radius:50%;object-fit:cover;border:1px solid #000}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:0;font-size:14px;font-weight:700;cursor:pointer;border:2px solid #000;transition:all .12s;white-space:nowrap;letter-spacing:.01em}
+.btn-primary{background:#000;color:#fff}
+.btn-primary:hover{background:#333}
+.btn-outline{background:#fff;color:#000}
+.btn-outline:hover{background:#000;color:#fff}
+.btn-sm{padding:7px 16px;font-size:13px}
+.btn-ghost{background:transparent;color:#555;font-size:13px;padding:7px 12px;border:none;cursor:pointer}
+.btn-ghost:hover{color:#000}
+hero{display:block;text-align:center;padding:90px 24px 72px;border-bottom:2px solid #000}
+.hero-logo{height:180px;width:auto;margin-bottom:32px}
+hero h1{font-size:54px;font-weight:900;line-height:1.05;letter-spacing:-2px;margin-bottom:22px;color:#000}
+hero p{font-size:19px;color:#444;max-width:500px;margin:0 auto 36px;line-height:1.65}
+.url-demo{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:13px;background:#f5f5f5;border:2px solid #000;padding:6px 14px;color:#000;margin-bottom:36px}
+.url-demo span{color:#666}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:0;max-width:980px;margin:0 auto;padding:0 24px 0;border-bottom:2px solid #000}
+.card{background:#fff;border-right:2px solid #000;padding:32px 28px}
+.card:last-child{border-right:none}
+.card-icon{font-size:24px;margin-bottom:14px}
+.card h3{font-size:15px;font-weight:800;margin-bottom:7px;color:#000;text-transform:uppercase;letter-spacing:.05em}
+.card p{font-size:13px;color:#555;line-height:1.6}
+.pricing{text-align:center;padding:60px 24px 100px}
+.pricing h2{font-size:34px;font-weight:900;margin-bottom:10px;letter-spacing:-1px;color:#000}
+.pricing>.sub{color:#555;margin-bottom:40px;font-size:15px}
+.price-box{display:inline-flex;flex-direction:column;align-items:center;background:#fff;border:2px solid #000;padding:40px 52px;min-width:320px}
+.price-num{font-size:64px;font-weight:900;color:#000;letter-spacing:-3px}
+.price-per{font-size:16px;color:#555;margin-bottom:28px}
+.price-list{list-style:none;text-align:left;margin-bottom:32px;display:flex;flex-direction:column;gap:10px}
+.price-list li{font-size:14px;color:#222;display:flex;align-items:center;gap:8px}
+.price-list li::before{content:'✓';font-weight:900;color:#000;flex-shrink:0}
+.setup-panel{max-width:420px;margin:0 auto;background:#fff;border:2px solid #000;padding:28px;text-align:left;display:none;margin-top:28px}
+.setup-panel h3{font-size:16px;font-weight:800;margin-bottom:6px;color:#000}
+.setup-panel p{font-size:13px;color:#555;margin-bottom:18px}
+.claim-row{display:flex;gap:0}
+.claim-row input{flex:1;background:#fff;border:2px solid #000;border-right:none;padding:9px 12px;color:#000;font-size:13px;outline:none;font-family:monospace}
+.claim-row input:focus{background:#f9f9f9}
+.claim-hint{font-size:11px;margin-top:7px;min-height:16px}
+.claim-hint.ok{color:#166534}
+.claim-hint.err{color:#991b1b}
+footer{border-top:2px solid #000;padding:20px 48px;text-align:center;color:#888;font-size:13px}
+@media(max-width:700px){
+  nav{padding:12px 20px}
+  .nav-logo{height:40px}
+  hero h1{font-size:36px}
+  hero{padding:52px 20px 48px}
+  .hero-logo{height:120px}
+  .features{grid-template-columns:1fr}
+  .card{border-right:none;border-bottom:2px solid #000}
+  .card:last-child{border-bottom:none}
+  .price-box{padding:30px 28px;min-width:0;width:100%;max-width:380px}
+}
+</style>
+</head>
+<body>
+<nav>
+  <img src="https://magiccatsoftware.ca/MCENGINELOGO.png" alt="Magic Cat Engine" class="nav-logo">
+  <div class="nav-right" id="nav-right">
+    <span class="nav-user" id="nav-user-info" style="display:none">
+      <img id="nav-avatar" src="" alt="">
+      <span id="nav-name"></span>
+    </span>
+    <a id="nav-editor-btn" href="#" class="btn btn-primary btn-sm" style="display:none">Open Editor →</a>
+    <a id="nav-signin-btn" href="/auth/google" class="btn btn-outline btn-sm">Sign in with Google</a>
+    <button id="nav-signout-btn" class="btn-ghost" style="display:none" onclick="MCELanding.logout()">Sign out</button>
+  </div>
+</nav>
+
+<hero>
+  <img src="https://magiccatsoftware.ca/MCENGINELOGO.png" alt="Magic Cat Engine" class="hero-logo">
+  <h1>Build your profile<br>with a visual engine</h1>
+  <p>Magic Cat Engine is a no-code IDE for crafting interactive, database-driven profile pages.</p>
+  <div class="url-demo"><span>magiccatengine.com/</span>yourname</div><br>
+  <div id="hero-cta">
+    <a href="/auth/google" class="btn btn-primary">Sign in with Google — free to start</a>
+  </div>
+</hero>
+
+<div class="features">
+  <div class="card">
+    <div class="card-icon">🎛</div>
+    <h3>Visual DB-Driven IDE</h3>
+    <p>Drag, drop, and wire up databases, events, and logic. Build real interactive pages without writing code.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon">⚡</div>
+    <h3>Your own URL</h3>
+    <p>Claim <strong>magiccatengine.com/yourname</strong> and share your live profile with the world.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon">☁</div>
+    <h3>Cloud Projects</h3>
+    <p>Save unlimited projects, open on any device, and publish your profile page with a single click.</p>
+  </div>
+</div>
+
+<div class="pricing" id="pricing">
+  <h2>Simple pricing</h2>
+  <p class="sub">One plan. Everything included.</p>
+  <div class="price-box featured">
+    <div class="price-num">$5</div>
+    <div class="price-per">per month</div>
+    <ul class="price-list">
+      <li>Your own profile URL</li>
+      <li>Unlimited cloud projects</li>
+      <li>Full visual IDE access</li>
+      <li>Instant publishing</li>
+    </ul>
+    <div id="pricing-cta" style="width:100%">
+      <a href="/auth/google" class="btn btn-primary" style="width:100%;justify-content:center">Get started →</a>
+    </div>
+  </div>
+
+  <div class="setup-panel" id="setup-panel" style="margin-top:28px">
+    <h3 id="setup-title"></h3>
+    <p id="setup-desc"></p>
+    <div id="claim-form" style="display:none">
+      <div class="claim-row">
+        <input id="claim-input" type="text" placeholder="yourname" maxlength="30" oninput="MCELanding.checkSlug(this.value)">
+        <button class="btn btn-primary btn-sm" id="claim-btn" onclick="MCELanding.claim()" disabled>Claim</button>
+      </div>
+      <div class="claim-hint" id="claim-hint"></div>
+    </div>
+  </div>
+</div>
+
+<footer>&copy; 2026 Magic Cat Software</footer>
+
+<script>
+(function() {
+  var USER = ${JSON.stringify(userData)};
+  var _checkTimer = null;
+
+  function apiFetch(url, opts) {
+    opts = Object.assign({ credentials: 'include' }, opts || {});
+    if (opts.body && typeof opts.body === 'object') {
+      opts.body = JSON.stringify(opts.body);
+      opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+    }
+    return fetch(url, opts);
   }
-  const html = engine.html.replace('</body>', cloudPanelHTML() + '\n</body>');
+
+  function renderNav() {
+    if (!USER) return;
+    document.getElementById('nav-signin-btn').style.display = 'none';
+    document.getElementById('nav-signout-btn').style.display = '';
+    var info = document.getElementById('nav-user-info');
+    info.style.display = 'flex';
+    if (USER.picture) document.getElementById('nav-avatar').src = USER.picture;
+    document.getElementById('nav-name').textContent = USER.name || '';
+    var btn = document.getElementById('nav-editor-btn');
+    if (USER.username) {
+      btn.href = '/develop/' + encodeURIComponent(USER.username);
+      btn.textContent = 'Open Editor →';
+      btn.style.display = '';
+    } else {
+      btn.href = '#';
+      btn.textContent = 'Set up workspace →';
+      btn.style.display = '';
+      btn.addEventListener('click', function(e) { e.preventDefault(); MCELanding.showClaim(); });
+    }
+  }
+
+  function renderHeroCTA() {
+    var cta = document.getElementById('hero-cta');
+    if (!USER) return;
+    if (USER.username) {
+      cta.innerHTML = '<a href="/develop/' + encodeURIComponent(USER.username) + '" class="btn btn-primary">Open your editor →</a>' +
+        '<br><br><a href="/' + encodeURIComponent(USER.username) + '" class="btn btn-outline" style="margin-top:8px">View public profile →</a>';
+    } else {
+      cta.innerHTML = '<button class="btn btn-primary" onclick="MCELanding.showClaim()">Claim your username →</button>';
+    }
+  }
+
+  function renderPricingCTA() {
+    var cta = document.getElementById('pricing-cta');
+    if (!USER) return;
+    if (USER.username) {
+      cta.innerHTML = '<a href="/develop/' + encodeURIComponent(USER.username) + '" class="btn btn-primary" style="width:100%;justify-content:center">Open your editor →</a>';
+    } else {
+      cta.innerHTML = '<button class="btn btn-primary" style="width:100%;justify-content:center" onclick="MCELanding.showClaim()">Claim your username →</button>';
+    }
+  }
+
+  window.MCELanding = {
+    logout: async function() {
+      await apiFetch('/auth/logout', { method: 'POST' });
+      location.href = '/';
+    },
+
+    subscribe: async function() {
+      try {
+        var res = await apiFetch('/stripe/create-checkout', { method: 'POST' });
+        var j = await res.json();
+        if (j.url) location.href = j.url;
+        else alert('Error: ' + (j.error || 'unknown'));
+      } catch(e) { alert('Error: ' + e.message); }
+    },
+
+    showClaim: function() {
+      var panel = document.getElementById('setup-panel');
+      document.getElementById('setup-title').textContent = 'Choose your username';
+      document.getElementById('setup-desc').textContent = 'Your profile page will live at magiccatengine.com/yourname. You can start building right away.';
+      document.getElementById('claim-form').style.display = '';
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    },
+
+    checkSlug: function(val) {
+      var btn = document.getElementById('claim-btn');
+      var hint = document.getElementById('claim-hint');
+      btn.disabled = true;
+      hint.textContent = '';
+      hint.className = 'claim-hint';
+      clearTimeout(_checkTimer);
+      var slug = val.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      if (slug.length < 3) { hint.textContent = slug.length ? 'At least 3 characters' : ''; return; }
+      _checkTimer = setTimeout(async function() {
+        try {
+          var res = await apiFetch('/api/profile/check/' + encodeURIComponent(slug));
+          var j = await res.json();
+          if (j.available) {
+            hint.textContent = slug + ' is available';
+            hint.className = 'claim-hint ok';
+            btn.disabled = false;
+          } else {
+            hint.textContent = slug + ' is taken';
+            hint.className = 'claim-hint err';
+          }
+        } catch(e) {}
+      }, 380);
+    },
+
+    claim: async function() {
+      var val = document.getElementById('claim-input').value.trim().toLowerCase();
+      if (!val) return;
+      document.getElementById('claim-btn').disabled = true;
+      try {
+        var res = await apiFetch('/api/profile/claim', { method: 'POST', body: { username: val } });
+        var j = await res.json();
+        if (!res.ok) { alert(j.error || 'Failed'); return; }
+        location.href = '/develop/' + encodeURIComponent(j.username);
+      } catch(e) { alert('Error: ' + e.message); }
+    }
+  };
+
+  renderNav();
+  renderHeroCTA();
+  renderPricingCTA();
+
+  // Handle post-checkout redirect
+  var params = new URLSearchParams(location.search);
+  if (params.get('checkout') === 'success' && USER) {
+    history.replaceState({}, '', '/');
+    if (USER.username) {
+      location.href = '/develop/' + encodeURIComponent(USER.username);
+    } else {
+      MCELanding.showClaim();
+    }
+  }
+})();
+</script>
+</body>
+</html>`;
+}
+
+// ── Landing page route (/) ────────────────────────────────────────────────────
+app.get('/', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.send(html);
+  res.send(landingPageHTML(req.user || null));
+});
+
+// ── Editor route (/develop/:username) ────────────────────────────────────────
+app.get('/develop/:username', async (req, res, next) => {
+  try {
+    const slug = req.params.username.toLowerCase();
+
+    if (!req.user) {
+      return res.redirect('/auth/google?return=' + encodeURIComponent('/develop/' + slug));
+    }
+
+    if (!req.user.username || req.user.username !== slug) {
+      return res.status(403).send(`
+        <html><body style="font:14px monospace;padding:40px;background:#06060f;color:#ef4444">
+          <h2>Not your workspace</h2>
+          <p style="color:#64748b;margin-top:12px">You are signed in as <strong style="color:#e2e8f0">${htmlEsc(req.user.name || req.user.email || '')}</strong>.</p>
+          ${req.user.username
+            ? `<p style="margin-top:12px"><a href="/develop/${htmlEsc(req.user.username)}" style="color:#a78bfa">Go to your editor →</a></p>`
+            : `<p style="color:#64748b;margin-top:12px">You haven't claimed a username yet. <a href="/" style="color:#a78bfa">Get started →</a></p>`
+          }
+        </body></html>
+      `);
+    }
+
+    const engine = db.getEngine();
+    if (!engine) return res.status(503).send('Engine not seeded');
+
+    const lastProject = await Project.findOne({ userId: req.user._id }, '_id name data').sort({ updatedAt: -1 });
+
+    const inject = `<script>
+window.MCE_PROFILE = {
+  username:    ${JSON.stringify(req.user.username)},
+  name:        ${JSON.stringify(req.user.name || '')},
+  picture:     ${JSON.stringify(req.user.picture || '')},
+  isOwner:     true,
+  data:        ${JSON.stringify(lastProject ? lastProject.data : null)},
+  projectId:   ${JSON.stringify(lastProject ? String(lastProject._id) : null)},
+  projectName: ${JSON.stringify(lastProject ? lastProject.name : null)}
+};
+</script>`;
+
+    const withHead = engine.html.replace('</head>', inject + '\n</head>');
+    const html = injectBeforeBodyEnd(withHead, cloudPanelHTML());
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (e) { next(e); }
 });
 
 // ── Public profile pages /:username ──────────────────────────────────────────
 // Keep this LAST so it doesn't shadow any named route above.
-app.get('/:username', async (req, res) => {
-  const slug = req.params.username.toLowerCase();
+app.get('/:username', async (req, res, next) => {
+  try {
+    const slug = req.params.username.toLowerCase();
 
-  const owner = await User.findOne({ username: slug }, '_id name picture username');
-  if (!owner) return res.status(404).send(`
-    <html><body style="font:14px monospace;padding:40px;background:#111;color:#ef4444">
-      <h2>Profile not found</h2><p>No user has claimed the username <strong>${slug}</strong> yet.</p>
-      <a href="/" style="color:#a78bfa">&#8592; Back to Magic Cat Engine</a>
-    </body></html>
-  `);
+    const owner = await User.findOne({ username: slug }, '_id name picture username');
+    if (!owner) return res.status(404).send(`
+      <html><body style="font:14px monospace;padding:40px;background:#06060f;color:#ef4444">
+        <h2>Profile not found</h2>
+        <p style="margin-top:12px;color:#64748b">No user has claimed <strong style="color:#e2e8f0">/${htmlEsc(slug)}</strong> yet.</p>
+        <p style="margin-top:12px"><a href="/" style="color:#a78bfa">&#8592; magiccatengine.com</a></p>
+      </body></html>
+    `);
 
-  const profile = await Project.findOne({ userId: owner._id, isProfile: true }, 'data');
-  const engine  = db.getEngine();
-  if (!engine) return res.status(503).send('Engine not seeded');
+    const [profile, varStore] = await Promise.all([
+      Project.findOne({ userId: owner._id, isProfile: true }, 'data'),
+      VarStore.findOne({ userId: owner._id }),
+    ]);
+    const liveVars = varStore ? Object.fromEntries(varStore.vars) : {};
+    const engine  = db.getEngine();
+    if (!engine) return res.status(503).send('Engine not seeded');
 
-  const isOwner = req.user && req.user._id.toString() === owner._id.toString();
+    // No published content yet — show a placeholder
+    if (!profile || !profile.data) {
+      return res.send(`<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${htmlEsc(owner.name || owner.username)} — Magic Cat Engine</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;background:#06060f;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:40px}img{width:80px;height:80px;border-radius:50%;border:2px solid #a78bfa}h1{font-size:24px;font-weight:700}p{color:#64748b;font-size:15px}a{color:#a78bfa;text-decoration:none}a:hover{text-decoration:underline}</style>
+</head>
+<body>
+${owner.picture ? `<img src="${htmlEsc(owner.picture)}" alt="">` : ''}
+<h1>${htmlEsc(owner.name || owner.username)}</h1>
+<p>This profile page hasn't been published yet.</p>
+<a href="/">← magiccatengine.com</a>
+</body></html>`);
+    }
 
-  const inject = `
-<script>
+    // Hide all IDE chrome — only the preview iframe is visible
+    const chromeCss = `<style>
+#header,#left-panel,#right-panel,#log-panel,#canvas-toolbar,#canvas-view,#dom-view,.modal-overlay{display:none!important}
+#app,#main-layout,#center-panel,#canvas-views{height:100vh!important;width:100%!important;overflow:hidden}
+#preview-view{display:block!important;position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:99999}
+#preview-frame{width:100%!important;height:100%!important;border:none!important}
+</style>`;
+
+    const inject = `<script>
 window.MCE_PROFILE = {
   username: ${JSON.stringify(owner.username)},
-  name:     ${JSON.stringify(owner.name)},
+  name:     ${JSON.stringify(owner.name || '')},
   picture:  ${JSON.stringify(owner.picture || '')},
-  isOwner:  ${isOwner},
-  data:     ${JSON.stringify(profile ? profile.data : null)}
+  isOwner:  false,
+  data:     ${JSON.stringify(profile.data)}
 };
-</script>`;
+window.MCE_LIVE_VARS = ${JSON.stringify(liveVars)};
+window.MCE_PUBLIC_USERNAME = ${JSON.stringify(owner.username)};
+</script>${chromeCss}`;
 
-  const html = engine.html
-    .replace('</head>', inject + '\n</head>')
-    .replace('</body>', cloudPanelHTML() + '\n</body>');
+    // Auto-load project data and trigger the engine's built-in preview renderer
+    const autoRunJS = `<script>
+(function(){
+  var d = window.MCE_PROFILE && window.MCE_PROFILE.data;
+  if(!d) return;
+  // Normalize machine fields the engine assumes are always objects/arrays
+  if(d.machines){
+    Object.values(d.machines).forEach(function(m){
+      if(!m.attrs)    m.attrs    = {};
+      if(!m.css)      m.css      = {};
+      if(!m.children) m.children = [];
+      if(!m.wires)    m.wires    = [];
+    });
+  }
+  // DOMContentLoaded listeners fire in registration order.
+  // The engine's listener (registered earlier) runs UI.init()+loadStarterProject() first;
+  // our listener runs after and overwrites with profile data.
+  document.addEventListener('DOMContentLoaded', function(){
+    // Merge live DB var values into project data for public vars
+    if(window.MCE_LIVE_VARS && d.vars) {
+      Object.keys(d.vars).forEach(function(k) {
+        if(d.vars[k] && d.vars[k].public && MCE_LIVE_VARS[k] !== undefined) {
+          d.vars[k].value = MCE_LIVE_VARS[k];
+        }
+      });
+    }
+    // Patch switchCanvasTab to a no-op while we call runPreview(),
+    // preventing the runPreview→switchCanvasTab→runPreview mutual recursion.
+    var origSwitch = UI.switchCanvasTab.bind(UI);
+    UI.switchCanvasTab = function(){};
+    UI._loadJSON(d);
+    UI.runPreview();
+    UI.switchCanvasTab = origSwitch;
+  });
+})();
+<\/script>`;
 
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.send(html);
+    const withHead = engine.html.replace('</head>', inject + '\n</head>');
+    const html = injectBeforeBodyEnd(withHead, autoRunJS);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (e) { next(e); }
+});
+
+// ── Global error handler ─────────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error('[error]', err.message);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────

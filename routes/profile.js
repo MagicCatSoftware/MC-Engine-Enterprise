@@ -7,7 +7,7 @@ const { requireLogin, requireSubscription } = require('../middleware/auth');
 const RESERVED = new Set(['api', 'auth', 'stripe', 'admin', 'static', 'public', 'health']);
 const USERNAME_RE = /^[a-z0-9][a-z0-9_-]{2,29}$/;
 
-// Claim a username (requires active subscription)
+// Claim a username (requires active subscription, admins bypass)
 router.post('/claim', requireLogin, requireSubscription, async (req, res) => {
   const { username } = req.body;
   if (!username) return res.status(400).json({ error: 'username required' });

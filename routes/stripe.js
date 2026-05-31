@@ -9,37 +9,41 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 const PRICE_ID = process.env.STRIPE_PRICE_ID;
 
 // Create a Stripe Checkout session for the subscription
-router.post('/create-checkout', requireLogin, async (req, res) => {
-  const user = req.user;
-  let customerId = user.stripeCustomerId;
+router.post('/create-checkout', requireLogin, async (req, res, next) => {
+  try {
+    const user = req.user;
+    let customerId = user.stripeCustomerId;
 
-  if (!customerId) {
-    const customer = await stripe.customers.create({ email: user.email, name: user.name });
-    customerId = customer.id;
-    await User.findByIdAndUpdate(user._id, { stripeCustomerId: customerId });
-  }
+    if (!customerId) {
+      const customer = await stripe.customers.create({ email: user.email, name: user.name });
+      customerId = customer.id;
+      await User.findByIdAndUpdate(user._id, { stripeCustomerId: customerId });
+    }
 
-  const session = await stripe.checkout.sessions.create({
-    customer:             customerId,
-    payment_method_types: ['card'],
-    mode:                 'subscription',
-    line_items:           [{ price: PRICE_ID, quantity: 1 }],
-    success_url:          BASE_URL + '/stripe/success?session_id={CHECKOUT_SESSION_ID}',
-    cancel_url:           BASE_URL + '/?checkout=cancelled',
-  });
+    const session = await stripe.checkout.sessions.create({
+      customer:             customerId,
+      payment_method_types: ['card'],
+      mode:                 'subscription',
+      line_items:           [{ price: PRICE_ID, quantity: 1 }],
+      success_url:          BASE_URL + '/stripe/success?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url:           BASE_URL + '/?checkout=cancelled',
+    });
 
-  res.json({ url: session.url });
+    res.json({ url: session.url });
+  } catch (e) { next(e); }
 });
 
 // Open the Stripe customer portal (manage/cancel subscription)
-router.post('/portal', requireLogin, async (req, res) => {
-  const user = req.user;
-  if (!user.stripeCustomerId) return res.status(400).json({ error: 'No subscription found' });
-  const session = await stripe.billingPortal.sessions.create({
-    customer:   user.stripeCustomerId,
-    return_url: BASE_URL,
-  });
-  res.json({ url: session.url });
+router.post('/portal', requireLogin, async (req, res, next) => {
+  try {
+    const user = req.user;
+    if (!user.stripeCustomerId) return res.status(400).json({ error: 'No subscription found' });
+    const session = await stripe.billingPortal.sessions.create({
+      customer:   user.stripeCustomerId,
+      return_url: BASE_URL,
+    });
+    res.json({ url: session.url });
+  } catch (e) { next(e); }
 });
 
 // Redirect after successful checkout

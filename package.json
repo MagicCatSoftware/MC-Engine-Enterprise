@@ -4,6 +4,7 @@
   "description": "Magic Cat Engine — server backend",
   "main": "server.js",
   "scripts": {
+    "magiccatengine": "node server.js",
     "start": "node server.js",
     "dev": "node --watch server.js",
     "seed": "node scripts/seed-engine.js",

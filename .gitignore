@@ -1,7 +1,15 @@
 node_modules/
-data/
+data/**
+!data/engine.html
 logs/
 .env
 *.db
 *.db-shm
 *.db-wal
+# deploy/utility scripts (contain server credentials)
+deploy_*.py
+check_*.py
+cleanup_*.py
+patch_*.py
+run_*.py
+adom-profile.json
