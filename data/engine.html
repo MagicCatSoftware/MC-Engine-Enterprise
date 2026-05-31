@@ -1876,7 +1876,6 @@ const UI = {
         try{ window.parent.MachineSystem.select(el.dataset.mceId); }catch(x){}
         document.querySelectorAll('[data-mce-id]').forEach(function(x){ x.style.outline=''; });
         el.style.outline='2px solid #a78bfa';
-        e.stopPropagation();
         return;
       }
       el = el.parentElement;
@@ -5069,14 +5068,12 @@ const UI = {
 
   // ---- REPLICATE SELF ----
   resetAll() {
-    // Re-render the canvas from stored machine state (text, CSS, attrs all go back to m.text values)
     this.renderCanvas();
     this.renderDOMTree();
     this.renderInspector();
-    // Rebuild the live canvas iframe from scratch — resets all runtime state:
-    // counters back to 0, accordion panels closed, loop data cleared, DB restored to seed, etc.
-    this.renderLiveCanvas();
-    // Also reset the preview tab if it was the active one
+    // Blank the live frame first so the browser registers the change, then rebuild
+    const _lf = document.getElementById('live-canvas-frame');
+    if (_lf) { _lf.srcdoc = ''; this.renderLiveCanvas(); }
     if (MCE.canvasTab === 'preview') this.runPreview();
     Logger.ok('All machines reset to initial state');
   },
