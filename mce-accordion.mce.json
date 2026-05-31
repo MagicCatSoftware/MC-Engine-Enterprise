@@ -1,0 +1,154 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "Accordion — show / hide / toggle wires" },
+  "_nextId": 16,
+  "runtimeStyle": "ocean",
+  "rootOrder": ["M1"],
+
+  "events": {
+    "toggle1": { "name": "toggle1", "payload": "{}" },
+    "toggle2": { "name": "toggle2", "payload": "{}" },
+    "toggle3": { "name": "toggle3", "payload": "{}" }
+  },
+
+  "pipes": {},
+  "views": {},
+  "loops": {},
+  "vars": {},
+  "logic": {},
+  "dbCollections": [],
+
+  "machines": {
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2","M3","M4","M7","M11"],
+      "css": {
+        "display": "flex", "flexDirection": "column", "gap": "0",
+        "padding": "60px 40px", "maxWidth": "580px", "margin": "0 auto",
+        "fontFamily": "system-ui, sans-serif", "minHeight": "100vh"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2", "name": "title", "tag": "h1",
+      "text": "Accordion",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#e2e8f0", "fontSize": "30px", "fontWeight": "900", "margin": "0 0 8px 0", "letterSpacing": "-0.5px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M3": {
+      "id": "M3", "name": "hint", "tag": "p",
+      "text": "Each header button has emitOnClick wired to its own event. The body panel below it listens with a toggle wire. The button label updates via a separate setText wire on the same event.",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#64748b", "fontSize": "13px", "lineHeight": "1.75", "margin": "0 0 32px 0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4", "name": "item1", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M5","M6"],
+      "css": { "borderBottom": "1px solid #1e1e3e" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M5": {
+      "id": "M5", "name": "header1", "tag": "button",
+      "text": "What is MCEngine? ▼",
+      "parentId": "M4", "children": [],
+      "css": {
+        "width": "100%", "textAlign": "left", "padding": "18px 0",
+        "background": "transparent", "color": "#e2e8f0", "border": "none",
+        "fontSize": "15px", "fontWeight": "600", "cursor": "pointer", "fontFamily": "inherit"
+      },
+      "attrs": {},
+      "emitOnClick": "toggle1",
+      "wires": [
+        { "eventName": "toggle1", "targetId": "M6", "action": "toggle", "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M6": {
+      "id": "M6", "name": "body1", "tag": "div",
+      "text": "MCEngine is a visual IDE that lets you build interactive, data-driven pages without writing boilerplate. Wire machines together with events, connect live data via pipes, and export clean standalone HTML.",
+      "parentId": "M4", "children": [],
+      "css": {
+        "display": "none", "color": "#94a3b8", "fontSize": "14px",
+        "lineHeight": "1.75", "paddingBottom": "20px"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M7": {
+      "id": "M7", "name": "item2", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M8","M9"],
+      "css": { "borderBottom": "1px solid #1e1e3e" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M8": {
+      "id": "M8", "name": "header2", "tag": "button",
+      "text": "What are Wires? ▼",
+      "parentId": "M7", "children": [],
+      "css": {
+        "width": "100%", "textAlign": "left", "padding": "18px 0",
+        "background": "transparent", "color": "#e2e8f0", "border": "none",
+        "fontSize": "15px", "fontWeight": "600", "cursor": "pointer", "fontFamily": "inherit"
+      },
+      "attrs": {},
+      "emitOnClick": "toggle2",
+      "wires": [
+        { "eventName": "toggle2", "targetId": "M9", "action": "toggle", "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M9": {
+      "id": "M9", "name": "body2", "tag": "div",
+      "text": "Wires connect an event to an action on any machine. When an event fires, every wire listening for it runs its action — show, hide, setText, setHTML, navigate, emit, pipeOut, and more. One event can trigger unlimited wires.",
+      "parentId": "M7", "children": [],
+      "css": {
+        "display": "none", "color": "#94a3b8", "fontSize": "14px",
+        "lineHeight": "1.75", "paddingBottom": "20px"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M11": {
+      "id": "M11", "name": "item3", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M13","M14"],
+      "css": { "borderBottom": "1px solid #1e1e3e" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M13": {
+      "id": "M13", "name": "header3", "tag": "button",
+      "text": "What are Pipes? ▼",
+      "parentId": "M11", "children": [],
+      "css": {
+        "width": "100%", "textAlign": "left", "padding": "18px 0",
+        "background": "transparent", "color": "#e2e8f0", "border": "none",
+        "fontSize": "15px", "fontWeight": "600", "cursor": "pointer", "fontFamily": "inherit"
+      },
+      "attrs": {},
+      "emitOnClick": "toggle3",
+      "wires": [
+        { "eventName": "toggle3", "targetId": "M14", "action": "toggle", "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M14": {
+      "id": "M14", "name": "body3", "tag": "div",
+      "text": "Pipes are named GET or POST connections to your database or any external API. A GET pipe fetches data and feeds it into Loops (which render templates for each row) or Bindings (which set a single field on a machine). A POST pipe writes data.",
+      "parentId": "M11", "children": [],
+      "css": {
+        "display": "none", "color": "#94a3b8", "fontSize": "14px",
+        "lineHeight": "1.75", "paddingBottom": "20px"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    }
+  }
+}

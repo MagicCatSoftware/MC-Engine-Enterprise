@@ -239,7 +239,8 @@ label{color:var(--txt2);font-size:11px;display:block;margin-bottom:3px}
             <option>button</option><option>input</option><option>textarea</option>
             <option>select</option><option>p</option><option>h1</option>
             <option>h2</option><option>h3</option><option>span</option>
-            <option>a</option><option>img</option><option>ul</option>
+            <option>a</option><option>img</option><option>video</option>
+            <option>audio</option><option>ul</option>
             <option>li</option><option>table</option><option>form</option>
             <option>label</option>
           </select>
@@ -1625,7 +1626,10 @@ const MachineSystem = {
     const toc = m.transferOnClick;
     const transferAttr = (toc && toc.fromId && toc.eventName)
       ? ` onclick="(function(){var s=document.querySelector('[data-mce-id=${toc.fromId}]');if(!s){var w=document.getElementById('mw_${toc.fromId}');s=w?w.querySelector('[data-machine-inner]'):null;}var v=s?(s.tagName==='INPUT'||s.tagName==='TEXTAREA'?s.value:s.textContent)||'':'';EventBus.emit('${toc.eventName}',{value:v});})();"` : '';
-    const attrs = emitClickAttr + Object.entries(m.attrs || {}).map(([k,v]) => ` ${k}="${v}"`).join('') + emitAttr + transferAttr;
+    const _attrsObj = m.attrs || {};
+    // Auto-add controls for video/audio when they have a src, unless already set
+    const _autoControls = (forExport && ['video','audio'].includes(m.tag) && _attrsObj.src && !('controls' in _attrsObj)) ? ' controls' : '';
+    const attrs = emitClickAttr + Object.entries(_attrsObj).map(([k,v]) => ` ${k}="${v}"`).join('') + _autoControls + emitAttr + transferAttr;
     // View-bound machines start hidden in export; ViewSystem reveals the correct ones on load
     const baseCss = Object.entries(m.css || {}).map(([k,v]) => `${k}:${v}`).join(';');
     const cssStr = (forExport && m.viewBinding) ? ('display:none;' + baseCss.replace(/display:[^;]+;?/g,'')) : baseCss;
@@ -1635,6 +1639,11 @@ const MachineSystem = {
     const selfClosing = ['input','img','br','hr'].includes(m.tag);
     const childrenHTML = m.children.map(cid => this.buildHTML(cid, forExport)).join('');
     if (selfClosing) return `<${m.tag}${exportAttr}${viewAttr}${attrs}${styleAttr}>`;
+    // Table with pipe loop: export proper thead + empty tbody (loop fills it at runtime)
+    if (forExport && m.tag === 'table' && m.tableLoop && (m.tableLoop.columns||[]).length) {
+      const thHtml = m.tableLoop.columns.map(c => `<th>${c.label||c.field||''}</th>`).join('');
+      return `<table${exportAttr}${viewAttr}${attrs}${styleAttr}><thead><tr>${thHtml}</tr></thead><tbody></tbody></table>`;
+    }
     const rawText = m.text || '';
     let displayText = rawText;
     if (forExport && rawText.indexOf('{{') !== -1) {
@@ -3443,6 +3452,41 @@ const UI = {
         _mtext = _mtext.split('{{' + k + '}}').join(val);
       });
     }
+    // Table with pipe loop: render thead + empty tbody placeholder
+    if (m.tag === 'table' && m.tableLoop && (m.tableLoop.columns||[]).length) {
+      const tl = m.tableLoop;
+      const thHtml = tl.columns.map(c => `<th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--brd);color:var(--acc1);font-size:11px">${c.label||c.field||'?'}</th>`).join('');
+      const innerContent = `<table data-machine-inner style="${cssStr};width:100%;border-collapse:collapse">
+        <thead><tr>${thHtml}</tr></thead>
+        <tbody><tr><td colspan="${tl.columns.length}" style="color:var(--txt3);font-size:11px;padding:8px;text-align:center;font-style:italic">${tl.pipeName ? `bound to "${tl.pipeName}" — rows render in live preview` : 'no pipe selected'}</td></tr></tbody>
+      </table>`;
+      return `<div class="m-wrapper" id="mw_${id}" data-id="${id}">
+        <div class="m-label">${m.name} &lt;table&gt;</div>
+        ${innerContent}
+      </div>`;
+    }
+    // Media elements: resolve src and render with preview
+    if (['img','video','audio'].includes(m.tag) && m.attrs && m.attrs.src) {
+      let _src = m.attrs.src;
+      if (_src.indexOf('{{') !== -1) {
+        Object.entries(MCE.vars || {}).forEach(([k, v]) => {
+          const val = (v && typeof v === 'object') ? String(v.value || '') : String(v || '');
+          _src = _src.split('{{' + k + '}}').join(val);
+        });
+      }
+      let _innerContent;
+      if (m.tag === 'img') {
+        _innerContent = `<img data-machine-inner src="${_src}" style="${cssStr};max-width:100%;display:block">`;
+      } else if (m.tag === 'video') {
+        _innerContent = `<video data-machine-inner src="${_src}" controls style="${cssStr};max-width:100%"></video>`;
+      } else {
+        _innerContent = `<audio data-machine-inner src="${_src}" controls style="${cssStr}"></audio>`;
+      }
+      return `<div class="m-wrapper" id="mw_${id}" data-id="${id}">
+        <div class="m-label">${m.name} &lt;${m.tag}&gt;</div>
+        ${_innerContent}
+      </div>`;
+    }
     const innerContent = selfClosing
       ? `<${m.tag} data-machine-inner style="${cssStr}">`
       : `<${m.tag} data-machine-inner style="${cssStr}">${_mtext}${children}</${m.tag}>`;
@@ -3496,11 +3540,32 @@ const UI = {
         <input value="${m.name}" onchange="MachineSystem.update('${m.id}','name',this.value);UI.renderDOMTree();UI.renderInspector()">
       </div>
       <div class="field"><label>Tag</label>
-        <select onchange="MachineSystem.update('${m.id}','tag',this.value);UI.renderCanvas()">
-          ${['div','section','article','header','footer','nav','button','input','textarea','select','p','h1','h2','h3','span','a','img','ul','li','table','form','label'].map(t => `<option ${m.tag===t?'selected':''}>${t}</option>`).join('')}
+        <select onchange="MachineSystem.update('${m.id}','tag',this.value);UI.renderCanvas();UI.renderInspector()">
+          ${['div','section','article','header','footer','nav','button','input','textarea','select','p','h1','h2','h3','span','a','img','video','audio','ul','li','table','form','label'].map(t => `<option ${m.tag===t?'selected':''}>${t}</option>`).join('')}
         </select>
       </div>
     </div>
+    ${['img','video','audio'].includes(m.tag) ? (() => {
+      const _mtype = m.tag === 'img' ? 'image' : m.tag;
+      const _msrc = (m.attrs && m.attrs.src) || '';
+      const _mvar = _msrc.match(/^\{\{([^}]+)\}\}$/);
+      const _varOpts = Object.keys(MCE.vars||{}).map(k => `<option value="{{${k}}}" ${_msrc===`{{${k}}}`?'selected':''}>${k}</option>`).join('');
+      return `
+    <div class="inspector-section">
+      <h4>Media Source <span style="color:var(--txt3);font-weight:normal;font-size:10px">${m.tag}</span></h4>
+      ${_msrc ? `<div style="font-size:10px;color:var(--txt2);word-break:break-all;margin-bottom:6px;padding:4px 6px;background:var(--bg3);border-radius:3px">${_msrc}</div>` : '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">No source set</div>'}
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
+        <button class="small primary" onclick="UI._openMediaPicker('${m.id}','${_mtype}')">Browse / Upload</button>
+        ${_msrc ? `<button class="small danger" onclick="MachineSystem.setAttr('${m.id}','src','');UI.renderCanvas();UI.renderInspector()">Clear</button>` : ''}
+      </div>
+      <div class="field"><label style="font-size:10px;color:var(--txt3)">or from var</label>
+        <select onchange="MachineSystem.setAttr('${m.id}','src',this.value);UI.renderCanvas();UI.renderInspector()">
+          <option value="">— pick a var —</option>
+          ${_varOpts}
+        </select>
+      </div>
+    </div>`;
+    })() : ''}
     <div class="inspector-section">
       <h4>Text Content</h4>
       <div class="field">
@@ -3528,7 +3593,26 @@ const UI = {
         <button class="small" onclick="MachineSystem.executeAction('${m.id}','fadeToBlack')">Fade to Black</button>
         <button class="small primary" onclick="MachineSystem.executeLogic('${m.id}',{})">Run Logic</button>
       </div>
-    </div>`;
+    </div>
+    ${m.tag === 'table' ? `
+    <div class="inspector-section">
+      <h4>Table Data <span style="color:var(--txt3);font-weight:normal;font-size:10px">pipe loop</span></h4>
+      <div class="field"><label>Source Pipe (GET)</label>
+        <select onchange="UI._tableSetPipe('${m.id}',this.value)">
+          <option value="">— none —</option>
+          ${Object.values(MCE.pipes).filter(p => p.method === 'GET').map(p => `<option value="${p.name}" ${(m.tableLoop&&m.tableLoop.pipeName===p.name)?'selected':''}>${p.name}</option>`).join('')}
+        </select>
+      </div>
+      <div style="color:var(--txt3);font-size:10px;margin-bottom:6px">Columns — define headers and which field to show in each cell</div>
+      ${(m.tableLoop&&m.tableLoop.columns||[]).map((col,i) => `
+        <div class="css-prop-row">
+          <input value="${col.label||''}" placeholder="Header" oninput="UI._tableUpdateCol('${m.id}',${i},'label',this.value)" style="flex:1">
+          <input value="${col.field||''}" placeholder="field" oninput="UI._tableUpdateCol('${m.id}',${i},'field',this.value)" style="flex:1">
+          <button class="small danger" onclick="UI._tableRemoveCol('${m.id}',${i})">&#x2715;</button>
+        </div>`).join('')}
+      <button class="small" style="margin-top:4px" onclick="UI._tableAddCol('${m.id}')">+ Column</button>
+    </div>` : ''}
+`;
   },
   _addAttr(id) {
     MachineSystem.setAttr(id, 'class', '');
@@ -3542,6 +3626,96 @@ const UI = {
     m.attrs[newKey] = val;
     UI.renderInspector();
     UI.renderCanvas();
+  },
+  _tableSetPipe(id, pipeName) {
+    const m = MCE.machines[id]; if (!m) return;
+    const tl = Object.assign({ columns: [] }, m.tableLoop || {}, { pipeName });
+    MachineSystem.update(id, 'tableLoop', tl);
+    UI.renderInspector();
+  },
+  _tableAddCol(id) {
+    const m = MCE.machines[id]; if (!m) return;
+    const tl = m.tableLoop || { pipeName: '', columns: [] };
+    MachineSystem.update(id, 'tableLoop', Object.assign({}, tl, { columns: [...(tl.columns||[]), { label: '', field: '' }] }));
+    UI.renderInspector();
+  },
+  _tableRemoveCol(id, idx) {
+    const m = MCE.machines[id]; if (!m) return;
+    const tl = m.tableLoop || { pipeName: '', columns: [] };
+    MachineSystem.update(id, 'tableLoop', Object.assign({}, tl, { columns: (tl.columns||[]).filter((_,i) => i !== idx) }));
+    UI.renderInspector();
+  },
+  _tableUpdateCol(id, idx, field, value) {
+    const m = MCE.machines[id]; if (!m) return;
+    UndoSystem.pushDebounced(600);
+    const tl = m.tableLoop || { pipeName: '', columns: [] };
+    const cols = (tl.columns||[]).map((c,i) => i === idx ? Object.assign({}, c, { [field]: value }) : c);
+    MCE.machines[id].tableLoop = Object.assign({}, tl, { columns: cols });
+    UI.renderCanvas();
+  },
+  _openMediaPicker(machineId, mediaType) {
+    const _acceptMap = { image: 'image/*', video: 'video/*', audio: 'audio/*' };
+    const accept = _acceptMap[mediaType] || '*/*';
+    // Open modal immediately — don't wait for fetch
+    this.openModal(`
+      <h3>Media Picker <span style="color:var(--txt3);font-weight:normal;font-size:11px">${mediaType}</span></h3>
+      <div id="mce-media-grid" style="display:flex;flex-wrap:wrap;gap:8px;min-height:60px;max-height:260px;overflow-y:auto;margin-bottom:12px">
+        <div style="color:var(--txt3);font-size:11px;align-self:center">Loading…</div>
+      </div>
+      <div style="border-top:1px solid var(--brd);padding-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <input type="file" accept="${accept}" multiple id="mce-media-file-input" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" onchange="UI._mediaUpload('${machineId}','${mediaType}',this)">
+        <button class="small primary" onclick="var _i=document.getElementById('mce-media-file-input');if(_i)_i.click()">+ Upload ${mediaType}</button>
+        <span id="mce-media-status" style="font-size:11px;color:var(--txt3)"></span>
+      </div>
+      <div class="modal-actions"><button onclick="UI.closeModal()">Cancel</button></div>
+    `);
+    // Populate grid asynchronously
+    fetch('/api/files', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        const files = Array.isArray(data) ? data : [];
+        const filtered = files.filter(f => f.type === mediaType);
+        const grid = document.getElementById('mce-media-grid');
+        if (!grid) return;
+        if (!filtered.length) { grid.innerHTML = `<div style="color:var(--txt3);font-size:11px">No ${mediaType} files yet — upload one below.</div>`; return; }
+        grid.innerHTML = filtered.map(f => {
+          const thumb = f.type === 'image'
+            ? `<img src="${f.url}" style="width:80px;height:60px;object-fit:cover;border-radius:3px;display:block;margin:0 auto 4px">`
+            : f.type === 'video'
+            ? `<div style="width:80px;height:60px;background:var(--bg3);border-radius:3px;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-size:24px">&#9654;</div>`
+            : `<div style="width:80px;height:60px;background:var(--bg3);border-radius:3px;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-size:24px">&#9835;</div>`;
+          const safeUrl = f.url.replace(/'/g, '%27');
+          return `<div onclick="UI._mediaPickSet('${machineId}','${safeUrl}')" style="cursor:pointer;padding:6px;border-radius:4px;border:1px solid var(--brd);text-align:center;width:100px" title="${f.name}" onmouseover="this.style.borderColor='var(--acc1)'" onmouseout="this.style.borderColor='var(--brd)'">${thumb}<div style="font-size:9px;color:var(--txt3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:88px">${f.name}</div></div>`;
+        }).join('');
+      })
+      .catch(() => { const g = document.getElementById('mce-media-grid'); if (g) g.innerHTML = '<div style="color:var(--warn);font-size:11px">Could not load files.</div>'; });
+  },
+  _mediaUpload(machineId, mediaType, input) {
+    const picked = input.files;
+    if (!picked || !picked.length) return;
+    const status = document.getElementById('mce-media-status');
+    if (status) status.textContent = 'Uploading…';
+    const fd = new FormData();
+    Array.from(picked).forEach(f => fd.append('files', f));
+    fetch('/api/files/upload', { method: 'POST', credentials: 'include', body: fd })
+      .then(r => r.json())
+      .then(resp => {
+        const uploaded = resp.uploaded || [];
+        if (uploaded.length === 1) {
+          this._mediaPickSet(machineId, uploaded[0].url);
+        } else if (uploaded.length > 1) {
+          this._openMediaPicker(machineId, mediaType);
+        } else {
+          if (status) status.textContent = resp.error || 'Upload failed — check file type.';
+        }
+      })
+      .catch(e => { if (status) status.textContent = 'Upload error: ' + e.message; });
+  },
+  _mediaPickSet(machineId, url) {
+    MachineSystem.setAttr(machineId, 'src', url);
+    document.getElementById('modal-overlay').classList.remove('open');
+    UI.renderCanvas();
+    UI.renderInspector();
   },
   _renderWireTab(el, m) {
     const allEvents = Object.keys(MCE.events);
@@ -4031,6 +4205,12 @@ const UI = {
     const defaultView = Object.keys(MCE.views)[0] || null;
     const dbSourceData = {};
     Object.entries(MCE.machines).forEach(([id, m]) => { if (m.dbSource && m.dbSource.collection) dbSourceData[id] = m.dbSource; });
+    const tableLoopsData = {};
+    Object.entries(MCE.machines).forEach(([id, m]) => {
+      if (m.tag === 'table' && m.tableLoop && m.tableLoop.pipeName && (m.tableLoop.columns||[]).length) {
+        tableLoopsData[id] = { pipeName: m.tableLoop.pipeName, columns: m.tableLoop.columns };
+      }
+    });
     const initNavEvents = {};
     const _rootId = MCE.rootOrder[0];
     if (_rootId && MCE.machines[_rootId]) {
@@ -4180,6 +4360,22 @@ const UI = {
   };
 
   var LOOPS = ${JSON.stringify(loopData)};
+  var TABLE_LOOPS = ${JSON.stringify(tableLoopsData)};
+  function _renderTableLoop(pipeName, data) {
+    Object.keys(TABLE_LOOPS).forEach(function(mid) {
+      if (TABLE_LOOPS[mid].pipeName !== pipeName) return;
+      var cfg = TABLE_LOOPS[mid];
+      var tbody = document.querySelector('[data-mce-id="' + mid + '"] tbody');
+      if (!tbody) return;
+      var rows = Array.isArray(data) ? data : (data ? [data] : []);
+      tbody.innerHTML = rows.length ? rows.map(function(row) {
+        return '<tr>' + cfg.columns.map(function(col) {
+          var v = row[col.field] !== undefined ? String(row[col.field]) : '';
+          return '<td>' + v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</td>';
+        }).join('') + '</tr>';
+      }).join('') : '<tr><td colspan="' + cfg.columns.length + '" style="text-align:center;color:#666;padding:12px">No data</td></tr>';
+    });
+  }
   var LoopSystem = {
     render: function(name, data) {
       var loop = LOOPS[name];
@@ -4406,6 +4602,7 @@ const UI = {
           .then(function(r) {
             return r.json().then(function(d) {
               LoopSystem.renderAll(name, d);
+              _renderTableLoop(name, d);
               applyBindings(name, d);
               return { status: r.status, data: d };
             });
@@ -4425,6 +4622,7 @@ const UI = {
       var p = Promise.resolve({ status: 200, data: data });
       p.then(function(r) {
         LoopSystem.renderAll(name, r.data);
+        _renderTableLoop(name, r.data);
         applyBindings(name, r.data);
       });
       return p;
@@ -4672,6 +4870,14 @@ const UI = {
     EventBus.emit('view:' + _initView, _initParams);
     EventBus.emit('view:changed', { view: _initView, params: _initParams });
   }
+  // Resolve {{var}} tokens in src attributes of media elements on load
+  document.querySelectorAll('img[src],video[src],audio[src],source[src]').forEach(function(el) {
+    var v = el.getAttribute('src');
+    if (v && v.indexOf('{{') !== -1) {
+      Object.keys(MCE_VARS).forEach(function(k) { v = v.split('{{' + k + '}}').join(String(MCE_VARS[k] || '')); });
+      el.setAttribute('src', v);
+    }
+  });
   // Auto-fetch all live GET pipes that have bindings so data populates on load
   var _autoFetched = {};
   Object.keys(BINDINGS).forEach(function(mid) {
@@ -4684,11 +4890,19 @@ const UI = {
       }
     });
   });
+  // Auto-fetch table loop pipes on load
+  Object.keys(TABLE_LOOPS).forEach(function(mid) {
+    var tl = TABLE_LOOPS[mid];
+    if (!tl.pipeName || _autoFetched[tl.pipeName]) return;
+    var _pp = PIPE_MAP[tl.pipeName];
+    if (_pp) { _autoFetched[tl.pipeName] = 1; PipeSystem.fetch(tl.pipeName); }
+  });
   // Expose applyBindings globally and listen for postMessage pipe data from parent editor
   window._mce_applyBindings = applyBindings;
   window.addEventListener('message', function(ev) {
     if (ev.data && ev.data.type === 'mce:pipeData') {
       try { applyBindings(ev.data.pipeName, ev.data.data, ev.data.bindings); } catch(x) {}
+      try { _renderTableLoop(ev.data.pipeName, ev.data.data); } catch(x) {}
     }
   });
 })();`;
