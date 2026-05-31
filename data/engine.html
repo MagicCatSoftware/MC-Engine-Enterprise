@@ -5068,14 +5068,38 @@ const UI = {
 
   // ---- REPLICATE SELF ----
   resetAll() {
+    UndoSystem.push();
+    // Wipe all project state — machines, vars, events, pipes, views, loops, logic
+    // DB._store is intentionally left intact
+    MCE.machines  = {};
+    MCE.rootOrder = [];
+    MCE.events    = {};
+    MCE.pipes     = {};
+    MCE.views     = {};
+    MCE.loops     = {};
+    MCE.vars      = {};
+    MCE.logic     = {};
+    MCE._nextId   = 1;
+    MCE.selectedId = null;
+    ViewSystem._active = null;
+    ViewSystem._params = {};
+    // Re-render all panels from the now-empty state
     this.renderCanvas();
     this.renderDOMTree();
     this.renderInspector();
-    // Blank the live frame first so the browser registers the change, then rebuild
+    this.renderLogicPanel();
+    this.renderCSSPanel();
+    this.renderEvents();
+    this.renderPipes();
+    this.renderViews();
+    this.renderLoops();
+    this.renderVars();
+    // Blank then rebuild the live frame
     const _lf = document.getElementById('live-canvas-frame');
     if (_lf) { _lf.srcdoc = ''; this.renderLiveCanvas(); }
-    if (MCE.canvasTab === 'preview') this.runPreview();
-    Logger.ok('All machines reset to initial state');
+    const _pf = document.getElementById('preview-frame');
+    if (_pf) _pf.srcdoc = '';
+    Logger.ok('App reset — machines, vars and wires cleared. Database preserved.');
   },
 
   replicateSelf() {
