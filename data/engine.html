@@ -1630,7 +1630,7 @@ const MachineSystem = {
     const _attrsObj = m.attrs || {};
     // Auto-add controls for video/audio when they have a src, unless already set
     const _autoControls = (forExport && ['video','audio'].includes(m.tag) && _attrsObj.src && !('controls' in _attrsObj)) ? ' controls' : '';
-    const attrs = emitClickAttr + Object.entries(_attrsObj).map(([k,v]) => ` ${k}="${v}"`).join('') + _autoControls + emitAttr + transferAttr;
+    const attrs = emitClickAttr + Object.entries(_attrsObj).map(([k,v]) => ` ${k}="${String(v).replace(/"/g,'&quot;')}"`).join('') + _autoControls + emitAttr + transferAttr;
     // View-bound machines start hidden in export; ViewSystem reveals the correct ones on load
     const baseCss = Object.entries(m.css || {}).map(([k,v]) => `${k}:${v}`).join(';');
     const cssStr = (forExport && m.viewBinding) ? ('display:none;' + baseCss.replace(/display:[^;]+;?/g,'')) : baseCss;
