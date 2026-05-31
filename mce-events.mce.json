@@ -41,7 +41,7 @@
 
     "M3": {
       "id": "M3", "name": "hint", "tag": "p",
-      "text": "Each mode button emits one event. That single event triggers multiple wires on different machines simultaneously — changing the card background, updating the label, and toggling visibility of the day/night indicator. This is the core of MCEngine: one event → many reactions.",
+      "text": "Each mode button emits one event. That single event triggers 4 wires on different machines simultaneously — updating the icon, the label, showing or hiding the sun badge, and logging which event fired. This is the core of MCEngine: one event → many reactions.",
       "parentId": "M1", "children": [],
       "css": { "color": "#64748b", "fontSize": "13px", "lineHeight": "1.75", "margin": "0" },
       "attrs": {}, "wires": [], "viewBinding": null
@@ -102,14 +102,10 @@
       "css": {
         "padding": "32px", "borderRadius": "12px", "background": "#1a1a1a",
         "border": "1px solid #2e2e2e", "display": "flex", "flexDirection": "column",
-        "gap": "10px", "transition": "background 0.4s, border-color 0.4s"
+        "gap": "10px"
       },
       "attrs": {},
-      "wires": [
-        { "eventName": "modeDay",   "targetId": "", "action": "setHTML", "actionArgs": "<div style=\"font-size:64px;text-align:center\">☀️</div>" },
-        { "eventName": "modeDusk",  "targetId": "", "action": "setHTML", "actionArgs": "<div style=\"font-size:64px;text-align:center\">🌆</div><div id=\"M13\" style=\"color:#f97316;font-size:18px;font-weight:700;text-align:center\">Golden Hour</div><div id=\"M14\" style=\"color:#94a3b8;font-size:13px;text-align:center\">The sky turns amber and pink</div>" },
-        { "eventName": "modeNight", "targetId": "", "action": "setHTML", "actionArgs": "<div style=\"font-size:64px;text-align:center\">🌙</div><div id=\"M13\" style=\"color:#a78bfa;font-size:18px;font-weight:700;text-align:center\">Night Mode</div><div id=\"M14\" style=\"color:#64748b;font-size:13px;text-align:center\">Stars are out</div>" }
-      ],
+      "wires": [],
       "viewBinding": null
     },
 
@@ -118,15 +114,27 @@
       "text": "🌤",
       "parentId": "M12", "children": [],
       "css": { "fontSize": "64px", "textAlign": "center" },
-      "attrs": {}, "wires": [], "viewBinding": null
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeDay",   "targetId": "", "action": "setText", "actionArgs": "☀️" },
+        { "eventName": "modeDusk",  "targetId": "", "action": "setText", "actionArgs": "🌆" },
+        { "eventName": "modeNight", "targetId": "", "action": "setText", "actionArgs": "🌙" }
+      ],
+      "viewBinding": null
     },
 
     "M14": {
       "id": "M14", "name": "scene_label", "tag": "div",
       "text": "Select a mode above",
       "parentId": "M12", "children": [],
-      "css": { "color": "#64748b", "fontSize": "13px", "textAlign": "center" },
-      "attrs": {}, "wires": [], "viewBinding": null
+      "css": { "color": "#64748b", "fontSize": "14px", "fontWeight": "700", "textAlign": "center" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeDay",   "targetId": "", "action": "setText", "actionArgs": "Bright Day" },
+        { "eventName": "modeDusk",  "targetId": "", "action": "setText", "actionArgs": "Golden Hour" },
+        { "eventName": "modeNight", "targetId": "", "action": "setText", "actionArgs": "Night Mode" }
+      ],
+      "viewBinding": null
     },
 
     "M15": {
@@ -154,9 +162,9 @@
       "css": { "color": "#334155", "fontSize": "11px", "fontFamily": "monospace", "margin": "0" },
       "attrs": {},
       "wires": [
-        { "eventName": "modeDay",   "targetId": "", "action": "setText", "actionArgs": "Last event: modeDay fired → 3 wires ran on scene_card + 1 on sun_indicator + this label" },
-        { "eventName": "modeDusk",  "targetId": "", "action": "setText", "actionArgs": "Last event: modeDusk fired → 3 wires ran on scene_card + 1 on sun_indicator + this label" },
-        { "eventName": "modeNight", "targetId": "", "action": "setText", "actionArgs": "Last event: modeNight fired → 3 wires ran on scene_card + 1 on sun_indicator + this label" }
+        { "eventName": "modeDay",   "targetId": "", "action": "setText", "actionArgs": "Last event: modeDay → scene_icon:setText + scene_label:setText + sun_indicator:show + this log" },
+        { "eventName": "modeDusk",  "targetId": "", "action": "setText", "actionArgs": "Last event: modeDusk → scene_icon:setText + scene_label:setText + sun_indicator:hide + this log" },
+        { "eventName": "modeNight", "targetId": "", "action": "setText", "actionArgs": "Last event: modeNight → scene_icon:setText + scene_label:setText + sun_indicator:hide + this log" }
       ],
       "viewBinding": null
     },
@@ -172,9 +180,9 @@
       },
       "attrs": {},
       "wires": [
-        { "eventName": "modeDay",   "targetId": "", "action": "setHTML", "actionArgs": "<b style=\"color:#a78bfa\">modeDay</b> → scene_card:setHTML, sun_indicator:show, status_log:setText<br><b style=\"color:#fbbf24\">3 targets</b> · 3 wires · 1 emitter" },
-        { "eventName": "modeDusk",  "targetId": "", "action": "setHTML", "actionArgs": "<b style=\"color:#a78bfa\">modeDusk</b> → scene_card:setHTML, sun_indicator:hide, status_log:setText<br><b style=\"color:#f97316\">3 targets</b> · 3 wires · 1 emitter" },
-        { "eventName": "modeNight", "targetId": "", "action": "setHTML", "actionArgs": "<b style=\"color:#a78bfa\">modeNight</b> → scene_card:setHTML, sun_indicator:hide, status_log:setText<br><b style=\"color:#6366f1\">3 targets</b> · 3 wires · 1 emitter" }
+        { "eventName": "modeDay",   "targetId": "", "action": "setHTML", "actionArgs": "<b style=\"color:#fbbf24\">modeDay</b> → scene_icon:setText · scene_label:setText · sun_indicator:show · status_log:setText<br><b style=\"color:#a78bfa\">4 targets</b> · 4 wires · 1 emitter (btn_day)" },
+        { "eventName": "modeDusk",  "targetId": "", "action": "setHTML", "actionArgs": "<b style=\"color:#f97316\">modeDusk</b> → scene_icon:setText · scene_label:setText · sun_indicator:hide · status_log:setText<br><b style=\"color:#a78bfa\">4 targets</b> · 4 wires · 1 emitter (btn_dusk)" },
+        { "eventName": "modeNight", "targetId": "", "action": "setHTML", "actionArgs": "<b style=\"color:#a78bfa\">modeNight</b> → scene_icon:setText · scene_label:setText · sun_indicator:hide · status_log:setText<br><b style=\"color:#6366f1\">4 targets</b> · 4 wires · 1 emitter (btn_night)" }
       ],
       "viewBinding": null
     }

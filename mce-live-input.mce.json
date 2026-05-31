@@ -38,7 +38,7 @@
 
     "M3": {
       "id": "M3", "name": "hint", "tag": "p",
-      "text": "The input has emitOnInput set to the \"typed\" event. Three machines each have a wire listening for \"typed\" — they react simultaneously on every keystroke using {{THIS.VALUE}}.",
+      "text": "The input has emitOnInput set to the \"typed\" event. Three machines each have a wire listening for \"typed\" — they react simultaneously on every keystroke. The UPPER and SLUG outputs use inputTransform to filter {{THIS.VALUE}} before it hits the DOM.",
       "parentId": "M1", "children": [],
       "css": { "color": "#64748b", "fontSize": "13px", "lineHeight": "1.75", "margin": "0" },
       "attrs": {}, "wires": [], "viewBinding": null
@@ -98,8 +98,9 @@
       "parentId": "M9", "children": [],
       "css": { "color": "#64748b", "fontSize": "13px", "fontFamily": "monospace", "margin": "0", "wordBreak": "break-all" },
       "attrs": {},
+      "inputTransform": { "filter": "UPPER", "arg": "" },
       "wires": [
-        { "eventName": "typed", "targetId": "", "action": "setText", "actionArgs": "{{THIS.VALUE | UPPER}}" }
+        { "eventName": "typed", "targetId": "", "action": "setText", "actionArgs": "{{THIS.VALUE}}" }
       ],
       "viewBinding": null
     },
@@ -110,8 +111,9 @@
       "parentId": "M9", "children": [],
       "css": { "color": "#334155", "fontSize": "11px", "fontFamily": "monospace", "margin": "0" },
       "attrs": {},
+      "inputTransform": { "filter": "SLUG", "arg": "" },
       "wires": [
-        { "eventName": "typed", "targetId": "", "action": "setText", "actionArgs": "{{THIS.VALUE | SLUG}}" }
+        { "eventName": "typed", "targetId": "", "action": "setText", "actionArgs": "{{THIS.VALUE}}" }
       ],
       "viewBinding": null
     }
