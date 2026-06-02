@@ -1,0 +1,355 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "MCEngine — Wire Fan-out Demo" },
+  "_nextId": 17,
+  "rootOrder": ["M1"],
+
+  "events": {
+    "modeA": { "name": "modeA", "payload": "{} — fires 11 wires simultaneously" },
+    "modeB": { "name": "modeB", "payload": "{} — fires 11 wires simultaneously" },
+    "modeC": { "name": "modeC", "payload": "{} — fires 11 wires simultaneously" },
+    "modeD": { "name": "modeD", "payload": "{} — fires 11 wires simultaneously" }
+  },
+
+  "pipes": {},
+  "views": {},
+  "vars": {},
+  "logic": {},
+  "loops": {},
+  "templates": {},
+  "dbCollections": [],
+
+  "machines": {
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2","M3","M4","M9","M10","M11","M16"],
+      "css": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "24px",
+        "padding": "40px 24px",
+        "maxWidth": "640px",
+        "width": "100%",
+        "margin": "0 auto",
+        "fontFamily": "system-ui, sans-serif",
+        "background": "#000",
+        "minHeight": "100vh",
+        "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2", "name": "title", "tag": "h1",
+      "text": "MCEngine — Wire Fan-out",
+      "parentId": "M1", "children": [],
+      "css": {
+        "color": "#fff",
+        "fontSize": "28px",
+        "fontWeight": "900",
+        "margin": "0",
+        "letterSpacing": "-0.5px",
+        "borderBottom": "1px solid #fff",
+        "paddingBottom": "16px"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M3": {
+      "id": "M3", "name": "subtitle", "tag": "p",
+      "text": "One event fires every matching wire simultaneously. Click any mode button — 11 wires update in the same tick: 4 buttons toggle on/off, 4 panels show/hide, status updates, event log updates.",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#aaa", "fontSize": "13px", "lineHeight": "1.7", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4", "name": "button_row", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M5","M6","M7","M8"],
+      "css": {
+        "display": "flex",
+        "gap": "8px",
+        "width": "100%",
+        "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M5": {
+      "id": "M5", "name": "btn_a", "tag": "button",
+      "text": "Mode A",
+      "parentId": "M4", "children": [],
+      "css": {
+        "flex": "1",
+        "padding": "12px 8px",
+        "background": "transparent",
+        "color": "#fff",
+        "border": "1px solid #fff",
+        "borderRadius": "6px",
+        "fontSize": "13px",
+        "fontWeight": "700",
+        "cursor": "pointer",
+        "fontFamily": "inherit",
+        "transition": "all 0.15s"
+      },
+      "attrs": { "class": "tab-active" },
+      "emitOnClick": "modeA",
+      "wires": [
+        { "eventName": "modeA", "targetId": "", "action": "addClass",    "actionArgs": "tab-active" },
+        { "eventName": "modeB", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "modeC", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "modeD", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" }
+      ],
+      "viewBinding": null
+    },
+
+    "M6": {
+      "id": "M6", "name": "btn_b", "tag": "button",
+      "text": "Mode B",
+      "parentId": "M4", "children": [],
+      "css": {
+        "flex": "1",
+        "padding": "12px 8px",
+        "background": "transparent",
+        "color": "#fff",
+        "border": "1px solid #fff",
+        "borderRadius": "6px",
+        "fontSize": "13px",
+        "fontWeight": "700",
+        "cursor": "pointer",
+        "fontFamily": "inherit",
+        "transition": "all 0.15s"
+      },
+      "attrs": {},
+      "emitOnClick": "modeB",
+      "wires": [
+        { "eventName": "modeA", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "modeB", "targetId": "", "action": "addClass",    "actionArgs": "tab-active" },
+        { "eventName": "modeC", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "modeD", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" }
+      ],
+      "viewBinding": null
+    },
+
+    "M7": {
+      "id": "M7", "name": "btn_c", "tag": "button",
+      "text": "Mode C",
+      "parentId": "M4", "children": [],
+      "css": {
+        "flex": "1",
+        "padding": "12px 8px",
+        "background": "transparent",
+        "color": "#fff",
+        "border": "1px solid #fff",
+        "borderRadius": "6px",
+        "fontSize": "13px",
+        "fontWeight": "700",
+        "cursor": "pointer",
+        "fontFamily": "inherit",
+        "transition": "all 0.15s"
+      },
+      "attrs": {},
+      "emitOnClick": "modeC",
+      "wires": [
+        { "eventName": "modeA", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "modeB", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "modeC", "targetId": "", "action": "addClass",    "actionArgs": "tab-active" },
+        { "eventName": "modeD", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" }
+      ],
+      "viewBinding": null
+    },
+
+    "M8": {
+      "id": "M8", "name": "btn_d", "tag": "button",
+      "text": "Standby",
+      "parentId": "M4", "children": [],
+      "css": {
+        "flex": "1",
+        "padding": "12px 8px",
+        "background": "transparent",
+        "color": "#fff",
+        "border": "1px solid #fff",
+        "borderRadius": "6px",
+        "fontSize": "13px",
+        "fontWeight": "700",
+        "cursor": "pointer",
+        "fontFamily": "inherit",
+        "transition": "all 0.15s"
+      },
+      "attrs": {},
+      "emitOnClick": "modeD",
+      "wires": [
+        { "eventName": "modeA", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "modeB", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "modeC", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "modeD", "targetId": "", "action": "addClass",    "actionArgs": "tab-active" }
+      ],
+      "viewBinding": null
+    },
+
+    "M9": {
+      "id": "M9", "name": "event_log", "tag": "div",
+      "text": "modeA fired — 11 wires updated simultaneously",
+      "parentId": "M1", "children": [],
+      "css": {
+        "color": "#fff",
+        "fontSize": "12px",
+        "fontFamily": "monospace",
+        "padding": "10px 14px",
+        "border": "1px solid #fff",
+        "borderRadius": "6px"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeA", "targetId": "", "action": "setText", "actionArgs": "modeA fired — 11 wires updated simultaneously" },
+        { "eventName": "modeB", "targetId": "", "action": "setText", "actionArgs": "modeB fired — 11 wires updated simultaneously" },
+        { "eventName": "modeC", "targetId": "", "action": "setText", "actionArgs": "modeC fired — 11 wires updated simultaneously" },
+        { "eventName": "modeD", "targetId": "", "action": "setText", "actionArgs": "modeD fired — 11 wires updated simultaneously" }
+      ],
+      "viewBinding": null
+    },
+
+    "M10": {
+      "id": "M10", "name": "status", "tag": "div",
+      "text": "Mode A — Systems Online",
+      "parentId": "M1", "children": [],
+      "css": {
+        "color": "#fff",
+        "fontSize": "20px",
+        "fontWeight": "900",
+        "padding": "20px",
+        "border": "1px solid #fff",
+        "borderRadius": "8px",
+        "textAlign": "center",
+        "letterSpacing": "-0.5px"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeA", "targetId": "", "action": "setText", "actionArgs": "Mode A — Systems Online" },
+        { "eventName": "modeB", "targetId": "", "action": "setText", "actionArgs": "Mode B — Manual Override" },
+        { "eventName": "modeC", "targetId": "", "action": "setText", "actionArgs": "Mode C — Running Diagnostics" },
+        { "eventName": "modeD", "targetId": "", "action": "setText", "actionArgs": "Standby — Low Power State" }
+      ],
+      "viewBinding": null
+    },
+
+    "M11": {
+      "id": "M11", "name": "panels", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M12","M13","M14","M15"],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "0px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M12": {
+      "id": "M12", "name": "panel_a", "tag": "div",
+      "text": "Mode A is active. All systems nominal. Sensors reading green across the board. Ready to operate at full capacity.",
+      "parentId": "M11", "children": [],
+      "css": {
+        "color": "#aaa",
+        "fontSize": "14px",
+        "lineHeight": "1.7",
+        "padding": "18px",
+        "border": "1px solid #333",
+        "borderRadius": "8px"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeA", "targetId": "", "action": "show", "actionArgs": "" },
+        { "eventName": "modeB", "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "modeC", "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "modeD", "targetId": "", "action": "hide", "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M13": {
+      "id": "M13", "name": "panel_b", "tag": "div",
+      "text": "Mode B is active. Manual override engaged. Direct control enabled. Automated systems paused pending confirmation.",
+      "parentId": "M11", "children": [],
+      "css": {
+        "display": "none",
+        "color": "#aaa",
+        "fontSize": "14px",
+        "lineHeight": "1.7",
+        "padding": "18px",
+        "border": "1px solid #333",
+        "borderRadius": "8px"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeA", "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "modeB", "targetId": "", "action": "show", "actionArgs": "" },
+        { "eventName": "modeC", "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "modeD", "targetId": "", "action": "hide", "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M14": {
+      "id": "M14", "name": "panel_c", "tag": "div",
+      "text": "Mode C is active. Diagnostic sequence initiated. Running self-check on all subsystems. Results will be available shortly.",
+      "parentId": "M11", "children": [],
+      "css": {
+        "display": "none",
+        "color": "#aaa",
+        "fontSize": "14px",
+        "lineHeight": "1.7",
+        "padding": "18px",
+        "border": "1px solid #333",
+        "borderRadius": "8px"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeA", "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "modeB", "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "modeC", "targetId": "", "action": "show", "actionArgs": "" },
+        { "eventName": "modeD", "targetId": "", "action": "hide", "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M15": {
+      "id": "M15", "name": "panel_d", "tag": "div",
+      "text": "Standby mode active. Non-essential systems offline. Power draw reduced to minimum. Wake on any mode event.",
+      "parentId": "M11", "children": [],
+      "css": {
+        "display": "none",
+        "color": "#aaa",
+        "fontSize": "14px",
+        "lineHeight": "1.7",
+        "padding": "18px",
+        "border": "1px solid #333",
+        "borderRadius": "8px"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeA", "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "modeB", "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "modeC", "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "modeD", "targetId": "", "action": "show", "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M16": {
+      "id": "M16", "name": "wire_count", "tag": "div",
+      "text": "4 buttons · 4 panels · 1 status · 1 log · 1 this = 11 wires",
+      "parentId": "M1", "children": [],
+      "css": {
+        "color": "#555",
+        "fontSize": "11px",
+        "fontFamily": "monospace",
+        "paddingTop": "16px",
+        "borderTop": "1px solid #fff"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeA", "targetId": "", "action": "setText", "actionArgs": "4 buttons · 4 panels · 1 status · 1 log · 1 this = 11 wires — last: modeA" },
+        { "eventName": "modeB", "targetId": "", "action": "setText", "actionArgs": "4 buttons · 4 panels · 1 status · 1 log · 1 this = 11 wires — last: modeB" },
+        { "eventName": "modeC", "targetId": "", "action": "setText", "actionArgs": "4 buttons · 4 panels · 1 status · 1 log · 1 this = 11 wires — last: modeC" },
+        { "eventName": "modeD", "targetId": "", "action": "setText", "actionArgs": "4 buttons · 4 panels · 1 status · 1 log · 1 this = 11 wires — last: modeD" }
+      ],
+      "viewBinding": null
+    }
+  }
+}

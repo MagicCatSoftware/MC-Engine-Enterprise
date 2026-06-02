@@ -13,9 +13,14 @@ router.get('/public/:username/:collection', async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username.toLowerCase() }, '_id');
     if (!user) return res.status(404).json({ error: 'User not found' });
-    const records = await DbRecord.find(
+    let records = await DbRecord.find(
       { userId: user._id, collection: req.params.collection },
     ).sort('createdAt');
+    const q = req.query.q;
+    if (q && q.trim()) {
+      const term = q.trim().toLowerCase();
+      records = records.filter(r => Object.values(r.data || {}).some(v => String(v).toLowerCase().includes(term)));
+    }
     res.json(records.map(fmt));
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
@@ -34,7 +39,12 @@ router.get('/', async (req, res) => {
 // List records in a collection
 router.get('/:collection', async (req, res) => {
   try {
-    const records = await DbRecord.find({ userId: req.user._id, collection: req.params.collection }).sort('createdAt');
+    let records = await DbRecord.find({ userId: req.user._id, collection: req.params.collection }).sort('createdAt');
+    const q = req.query.q;
+    if (q && q.trim()) {
+      const term = q.trim().toLowerCase();
+      records = records.filter(r => Object.values(r.data || {}).some(v => String(v).toLowerCase().includes(term)));
+    }
     res.json(records.map(fmt));
   } catch(e) { res.status(500).json({ error: e.message }); }
 });

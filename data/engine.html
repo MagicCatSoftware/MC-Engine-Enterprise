@@ -68,7 +68,7 @@ label{color:var(--txt2);font-size:11px;display:block;margin-bottom:3px}
 #canvas-view.active{display:flex}
 #dom-view{display:none;height:100%;overflow-y:auto;padding:12px;background:var(--bg0)}
 #dom-view.active{display:block}
-#preview-view{display:none;height:100%;overflow:auto;background:#fff}
+#preview-view{display:none;position:absolute;top:0;left:0;width:100%;height:100%;overflow-x:hidden;overflow-y:auto;background:#000}
 #preview-view.active{display:block}
 #canvas{flex:1;overflow:auto;background:var(--bg0);position:relative;padding:16px}
 #canvas-drop{min-height:100%;border:2px dashed var(--brd);border-radius:4px;position:relative;min-height:400px;transition:border-color .2s}
@@ -186,7 +186,7 @@ label{color:var(--txt2);font-size:11px;display:block;margin-bottom:3px}
       <button class="small" onclick="UI.exportJSON()">Export JSON</button>
       <button class="small" onclick="UI.exportHTML()">Export HTML</button>
       <button class="small" onclick="UI.importJSON()">Import JSON</button>
-      <button class="small primary" onclick="UI.runPreview()">&#9654; Run Preview</button>
+      <button class="small primary" onclick="UI.switchCanvasTab('preview')">&#9654; Run Preview</button>
       <button class="small" onclick="UI.replicateSelf()">&#x2728; Replicate Self</button>
       <button class="small" onclick="UI.resetAll()" title="Reset all machines to their initial state" style="margin-left:8px;border-left:1px solid var(--bg3);padding-left:12px;border-radius:0 4px 4px 0">&#8635; Refresh App</button>
     </div>
@@ -203,6 +203,7 @@ label{color:var(--txt2);font-size:11px;display:block;margin-bottom:3px}
         <button class="tab-btn" data-tab="loops" onclick="UI.switchLeftTab('loops')">Loops</button>
         <button class="tab-btn" data-tab="vars" onclick="UI.switchLeftTab('vars')">Vars</button>
         <button class="tab-btn" data-tab="files" onclick="UI.switchLeftTab('files')">Files</button>
+        <button class="tab-btn" data-tab="templates" onclick="UI.switchLeftTab('templates')">Tpl</button>
       </div>
       <div class="panel-content">
         <div class="tab-panel active" id="tab-db"><div id="db-panel-content"></div></div>
@@ -214,6 +215,7 @@ label{color:var(--txt2);font-size:11px;display:block;margin-bottom:3px}
         <div class="tab-panel" id="tab-loops"><div id="loops-panel-content"></div></div>
         <div class="tab-panel" id="tab-vars"><div id="vars-panel-content"></div></div>
         <div class="tab-panel" id="tab-files"><div id="files-panel-content"></div></div>
+        <div class="tab-panel" id="tab-templates"><div id="templates-panel-content"></div></div>
       </div>
     </div>
     <div id="center-panel">
@@ -261,7 +263,7 @@ label{color:var(--txt2);font-size:11px;display:block;margin-bottom:3px}
         <div id="live-view" style="flex:1;overflow:hidden;display:none;height:100%;position:relative">
           <iframe id="live-canvas-frame" style="border:none;display:block;transform-origin:top left" scrolling="no"></iframe>
         </div>
-        <div id="preview-view"><iframe id="preview-frame" style="width:100%;height:100%;border:none"></iframe></div>
+        <div id="preview-view"><iframe id="preview-frame" scrolling="no" style="width:100%;border:none;display:block"></iframe></div>
       </div>
     </div>
     <div id="right-panel">
@@ -303,6 +305,7 @@ const MCE = {
   pipes: {},
   views: {},
   loops: {},
+  templates: {},
   vars: {},
   css: {},
   logic: {},
@@ -318,7 +321,8 @@ const MCE = {
     const p = Object.keys(this.pipes);
     const v = Object.keys(this.views);
     const l = Object.keys(this.loops);
-    return new Set([...e, ...p, ...v, ...l]);
+    const t = Object.keys(this.templates || {});
+    return new Set([...e, ...p, ...v, ...l, ...t]);
   },
 };
 
@@ -806,6 +810,7 @@ const UndoSystem = {
       pipes:     JSON.parse(JSON.stringify(MCE.pipes)),
       views:     JSON.parse(JSON.stringify(MCE.views)),
       loops:     JSON.parse(JSON.stringify(MCE.loops)),
+      templates: JSON.parse(JSON.stringify(MCE.templates || {})),
       vars:      JSON.parse(JSON.stringify(MCE.vars)),
       logic:     JSON.parse(JSON.stringify(MCE.logic)),
       _nextId:   MCE._nextId,
@@ -877,6 +882,7 @@ const PipeSystem = {
       description: config.description || '',
       delay: config.delay !== undefined ? config.delay : 300,
       live: config.live || false,
+      queryTemplate: config.queryTemplate || '',
     };
     MockAPI.registerPipeEndpoints(MCE.pipes[name]);
     Logger.ok(`Pipe "${name}" → ${method} ${endpoint}`);
@@ -896,6 +902,10 @@ const PipeSystem = {
       return v !== undefined ? (typeof v === 'object' ? String(v.value || '') : String(v)) : '';
     }).replace(/\{\{payload:([^}]+)\}\}/g, (_, k) => {
       return payload && payload[k] !== undefined ? String(payload[k]) : '';
+    }).replace(/\{\{([^:}]+)\}\}/g, (_, k) => {
+      if (payload && payload[k] !== undefined) return String(payload[k]);
+      const vp = ViewSystem._params;
+      return vp && vp[k] !== undefined ? String(vp[k]) : '';
     });
   },
   execute(name, data, runtimePayload = {}) {
@@ -924,7 +934,11 @@ const PipeSystem = {
     if (!pipe) return Logger.error(`Pipe "${name}" not found`);
     if (pipe.method !== 'GET') return Logger.error(`Pipe "${name}" is not a GET pipe — use PipeSystem.execute()`);
     const ep = pipe.urlTemplate ? this._resolveTokens(pipe.urlTemplate, runtimePayload) : (pipe.endpoint || `/api/${pipe.collection || name}`);
-    Logger.info(`[API] GET ${ep}`);
+    if (pipe.queryTemplate) {
+      const resolved = this._resolveTokens(pipe.queryTemplate, runtimePayload).trim();
+      if (resolved) query = Object.assign({}, query, { q: resolved });
+    }
+    Logger.info(`[API] GET ${ep}${query.q !== undefined ? ' ?q=' + query.q : ''}`);
     const _api = pipe.live ? LiveAPI : MockAPI;
     return _api.request('GET', ep, {}, query).then(response => {
       if (response.status === 200) {
@@ -985,9 +999,9 @@ const PipeSystem = {
           case 'setValue': case 'value':       target.value     = effectiveArgs; break;
           case 'src':  target.src  = effectiveArgs; break;
           case 'href': target.href = effectiveArgs; break;
-          case 'show':   target.style.display = ''; break;
-          case 'hide':   target.style.display = 'none'; break;
-          case 'toggle': target.style.display = (target.style.display === 'none') ? '' : 'none'; break;
+          case 'show':   target.style.display = (target.dataset.mceDisplay !== undefined ? target.dataset.mceDisplay : ''); break;
+          case 'hide':   target.dataset.mceDisplay = target.style.display; target.style.display = 'none'; break;
+          case 'toggle': if (target.style.display === 'none') { target.style.display = (target.dataset.mceDisplay !== undefined ? target.dataset.mceDisplay : ''); } else { target.dataset.mceDisplay = target.style.display; target.style.display = 'none'; } break;
           case 'addClass':    if (_pbArgs) target.classList.add(_pbArgs); break;
           case 'removeClass': if (_pbArgs) target.classList.remove(_pbArgs); break;
           case 'emit':    if (_pbArgs) EventBus.emit(_pbArgs, { value: val }); break;
@@ -1127,6 +1141,10 @@ const LoopSystem = {
       pipeName: config.pipeName || '',
       template: config.template || '',
       targetId: config.targetId || null,
+      dataField: config.dataField || '',
+      clickEvent: config.clickEvent || '',
+      clickView: config.clickView || '',
+      clickValueField: config.clickValueField || '',
       description: config.description || '',
     };
     Logger.ok(`Loop "${name}" created (source: ${config.pipeName})`);
@@ -1142,11 +1160,24 @@ const LoopSystem = {
   render(name, data) {
     const loop = MCE.loops[name];
     if (!loop) return Logger.error(`Loop "${name}" not found`);
-    const records = Array.isArray(data) ? data : (data !== null && data !== undefined ? [data] : []);
+    let records;
+    if (loop.dataField) {
+      const src = Array.isArray(data) ? data : (data !== null && data !== undefined ? [data] : []);
+      records = src.flatMap(doc => {
+        const field = doc && typeof doc === 'object' ? doc[loop.dataField] : null;
+        return Array.isArray(field) ? field : (field !== null && field !== undefined ? [field] : []);
+      });
+    } else {
+      records = Array.isArray(data) ? data : (data !== null && data !== undefined ? [data] : []);
+    }
     const html = records.map((doc, idx) => {
       let t = loop.template;
       const vals = {};
-      Object.keys(doc).forEach(k => { vals[k] = doc[k] !== null && doc[k] !== undefined ? String(doc[k]) : ''; });
+      if (doc !== null && doc !== undefined && typeof doc === 'object') {
+        Object.keys(doc).forEach(k => { vals[k] = doc[k] !== null && doc[k] !== undefined ? String(doc[k]) : ''; });
+      } else {
+        vals['value'] = doc !== null && doc !== undefined ? String(doc) : '';
+      }
       vals['_index'] = String(idx + 1);
       vals['_total'] = String(records.length);
       t = t.replace(/\{\{([^}]+)\}\}/g, (_, inner) => {
@@ -1178,6 +1209,82 @@ const LoopSystem = {
       if (loop.pipeName === pipeName) this.render(loop.name, data);
     });
   },
+};
+
+// ============================================================
+// TEMPLATE SYSTEM — named HTML stacks for loops and pipes
+// ============================================================
+const TemplateSystem = {
+  _newNodeId(tpl) {
+    const nums = Object.keys(tpl.machines || {}).map(id => parseInt(id.replace('TN', ''), 10)).filter(n => !isNaN(n));
+    return 'TN' + ((nums.length ? Math.max(...nums) : 0) + 1);
+  },
+  create(name, config) {
+    if (MCE.templates[name]) { Logger.error(`Template "${name}" already exists`); return null; }
+    MCE.templates[name] = {
+      name, description: config.description || '', rootId: 'TN1',
+      machines: {
+        TN1: { id: 'TN1', tag: config.tag || 'div', text: '', css: { display:'flex', alignItems:'center', gap:'12px', padding:'12px 16px', border:'1px solid #222', borderRadius:'6px', marginBottom:'8px' }, attrs: {}, children: [] }
+      }
+    };
+    UndoSystem.push();
+    Logger.ok(`Template "${name}" created`);
+    UI.renderTemplates();
+    return MCE.templates[name];
+  },
+  delete(name) {
+    UndoSystem.push();
+    delete MCE.templates[name];
+    UI.renderTemplates();
+    Logger.warn(`Template "${name}" deleted`);
+  },
+  addNode(tplName, parentId, config) {
+    const tpl = MCE.templates[tplName];
+    if (!tpl) return null;
+    const nodeId = this._newNodeId(tpl);
+    tpl.machines[nodeId] = { id: nodeId, tag: config.tag || 'div', text: config.text || '', css: Object.assign({}, config.css || {}), attrs: Object.assign({}, config.attrs || {}), children: [] };
+    const parent = tpl.machines[parentId];
+    if (parent) parent.children.push(nodeId);
+    return nodeId;
+  },
+  removeNode(tplName, nodeId) {
+    const tpl = MCE.templates[tplName];
+    if (!tpl || nodeId === tpl.rootId) return;
+    Object.values(tpl.machines).forEach(m => { m.children = (m.children || []).filter(c => c !== nodeId); });
+    const remove = id => { const m = tpl.machines[id]; if (!m) return; (m.children || []).forEach(remove); delete tpl.machines[id]; };
+    remove(nodeId);
+  },
+  compile(tplName) {
+    const tpl = MCE.templates[tplName];
+    if (!tpl || !tpl.rootId) return '';
+    const c2k = s => s.replace(/([A-Z])/g, m => '-' + m.toLowerCase());
+    const SELF = new Set(['input','img','br','hr','meta','link','area','base','col','embed','param','source','track','wbr']);
+    const render = id => {
+      const m = tpl.machines[id]; if (!m) return '';
+      const cssStr = Object.entries(m.css || {}).filter(([,v]) => v !== '' && v !== undefined).map(([k,v]) => `${c2k(k)}:${v}`).join(';');
+      const attrParts = Object.entries(m.attrs || {}).filter(([,v]) => v !== undefined && v !== '').map(([k,v]) => `${k}="${v}"`);
+      const sA = cssStr ? ` style="${cssStr}"` : '';
+      const aA = attrParts.length ? ' ' + attrParts.join(' ') : '';
+      if (SELF.has(m.tag)) return `<${m.tag}${sA}${aA}>`;
+      return `<${m.tag}${sA}${aA}>${m.text || ''}${(m.children || []).map(render).join('')}</${m.tag}>`;
+    };
+    return render(tpl.rootId);
+  },
+  parseCSSText(text) {
+    const css = {};
+    (text || '').split('\n').forEach(line => {
+      line = line.trim(); if (!line) return;
+      const ci = line.indexOf(':'); if (ci === -1) return;
+      const rawKey = line.slice(0, ci).trim(); const val = line.slice(ci + 1).trim();
+      if (!rawKey || !val) return;
+      css[rawKey.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = val;
+    });
+    return css;
+  },
+  cssToText(css) {
+    const c2k = s => s.replace(/([A-Z])/g, m => '-' + m.toLowerCase());
+    return Object.entries(css || {}).filter(([,v]) => v !== '').map(([k,v]) => `${c2k(k)}: ${v}`).join('\n');
+  }
 };
 
 // ============================================================
@@ -1458,15 +1565,20 @@ const MachineSystem = {
           args = args.split('{{' + k + '}}').join(val);
         });
       }
+      if (args.indexOf('{{') !== -1) {
+        Object.entries(payload).forEach(([k, v]) => {
+          if (v !== null && v !== undefined && typeof v !== 'object') args = args.split('{{' + k + '}}').join(String(v));
+        });
+      }
     }
     const el = document.getElementById('mw_' + id);
     const inner = el ? el.querySelector('[data-machine-inner]') : null;
     const target = inner || el;
     if (!target) return;
     switch (action) {
-      case 'show': target.style.display = ''; break;
-      case 'hide': target.style.display = 'none'; break;
-      case 'toggle': target.style.display = target.style.display === 'none' ? '' : 'none'; break;
+      case 'show': target.style.display = (target.dataset.mceDisplay !== undefined ? target.dataset.mceDisplay : ''); break;
+      case 'hide': target.dataset.mceDisplay = target.style.display; target.style.display = 'none'; break;
+      case 'toggle': if (target.style.display === 'none') { target.style.display = (target.dataset.mceDisplay !== undefined ? target.dataset.mceDisplay : ''); } else { target.dataset.mceDisplay = target.style.display; target.style.display = 'none'; } break;
       case 'fadeIn': target.style.opacity = '0'; target.style.transition = 'opacity .4s'; setTimeout(() => target.style.opacity = '1', 10); break;
       case 'fadeOut': target.style.transition = 'opacity .4s'; target.style.opacity = '0'; break;
       case 'fadeToBlack': document.body.style.transition = 'background .5s'; document.body.style.background = '#000'; break;
@@ -1514,6 +1626,7 @@ const MachineSystem = {
         }).catch(e => Logger.error('[dbWrite] fetch failed: ' + e.message));
         break;
       }
+      case 'runLogic': MachineSystem.executeLogic((args && args.trim()) || id, payload); break;
       case 'loopRender': if (args) { const loop = MCE.loops[args]; if (loop && loop.pipeName) PipeSystem.fetch(loop.pipeName, payload); else if (loop) LoopSystem.render(args, []); } break;
       case 'renderPreview': this._renderPreviewAction(args); break;
       case 'appendValue': this._appendValueAction(args); break;
@@ -1632,7 +1745,8 @@ const MachineSystem = {
     const _autoControls = (forExport && ['video','audio'].includes(m.tag) && _attrsObj.src && !('controls' in _attrsObj)) ? ' controls' : '';
     const attrs = emitClickAttr + Object.entries(_attrsObj).map(([k,v]) => ` ${k}="${String(v).replace(/"/g,'&quot;')}"`).join('') + _autoControls + emitAttr + transferAttr;
     // View-bound machines start hidden in export; ViewSystem reveals the correct ones on load
-    const baseCss = Object.entries(m.css || {}).map(([k,v]) => `${k}:${v}`).join(';');
+    const _c2k = s => s.replace(/([A-Z])/g, c => '-' + c.toLowerCase());
+    const baseCss = Object.entries(m.css || {}).map(([k,v]) => `${_c2k(k)}:${v}`).join(';');
     const cssStr = (forExport && m.viewBinding) ? ('display:none;' + baseCss.replace(/display:[^;]+;?/g,'')) : baseCss;
     const styleAttr = cssStr ? ` style="${cssStr}"` : '';
     const exportAttr = forExport ? ` data-mce-id="${id}"` : '';
@@ -1757,6 +1871,7 @@ const UI = {
     this.renderPipes();
     this.renderViews();
     this.renderLoops();
+    this.renderTemplates();
     this.renderVars();
     this._syncVarsGlobal();
     this.renderInspector();
@@ -2251,6 +2366,7 @@ const UI = {
       </div>
       <div class="field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="pipe-live" onchange="UI._updatePipeEndpointHint()"> Live — hit real MongoDB via <code>/api/db/:collection</code></label></div>
       <div class="field"><label>Delay (ms)</label><input id="pipe-delay" type="number" value="300" min="0" max="5000" placeholder="300"></div>
+      <div class="field"><label>Search Query <small style="color:var(--txt3)">token resolved from event payload — sent as ?q= to filter results</small></label><input id="pipe-query-template" placeholder="{{value}}  or  {{searchTerm}}"></div>
       <div class="field"><label>Description</label><input id="pipe-desc" placeholder="What does this pipe do?"></div>
       <div class="field"><label>Schema Fields (for POST / PUT)</label>
         <div id="pipe-schema-rows"></div>
@@ -2363,6 +2479,7 @@ const UI = {
     const live = !!(document.getElementById('pipe-live')?.checked);
     const endpoint = document.getElementById('pipe-endpoint').value.trim() || (live ? `/api/db/${coll || name}` : `/api/${coll || name}`);
     const delay = parseInt(document.getElementById('pipe-delay').value) || 300;
+    const queryTemplate = (document.getElementById('pipe-query-template')?.value || '').trim();
     const desc = document.getElementById('pipe-desc').value.trim();
     if (!name) return Logger.error('Pipe name required');
     const schema = [];
@@ -2371,7 +2488,7 @@ const UI = {
       const type = row.querySelector('.schema-type').value;
       if (key) schema.push({ key, type });
     });
-    PipeSystem.create(name, { method, endpoint, collection: coll, delay, schema, description: desc, live });
+    PipeSystem.create(name, { method, endpoint, collection: coll, delay, schema, description: desc, live, queryTemplate });
     document.getElementById('pipe-name').value = '';
     document.getElementById('pipe-desc').value = '';
     document.getElementById('pipe-endpoint').value = '';
@@ -2500,7 +2617,7 @@ const UI = {
         <button class="small" onclick="window._ptmpAdd()">+ Field</button>
         <p style="color:var(--txt3);font-size:10px;margin-top:6px">Use machine/var pickers above, or type <code>{{machine:id}}</code> / <code>{{var:name}}</code> / <code>{{payload:value}}</code> in any value cell.</p>
       </div>` : ''}
-      <p style="color:var(--txt3);font-size:10px;background:var(--bg3);padding:6px;border-radius:3px;margin-bottom:10px">Tokens: <code>{{machine:machineId}}</code> · <code>{{var:name}}</code> · <code>{{payload:key}}</code><br>Trigger with the <b>pipeExec</b> wire action to pass event payload through.</p>
+      <p style="color:var(--txt3);font-size:10px;background:var(--bg3);padding:6px;border-radius:3px;margin-bottom:10px">Tokens: <code>{{key}}</code> (view param or event payload) · <code>{{machine:id}}</code> · <code>{{var:name}}</code> · <code>{{payload:key}}</code><br>Use <code>{{_id}}</code> to build single-doc URLs like <code>/api/db/photos/{{_id}}</code>. Trigger with <b>pipeOut</b> on a view event.</p>
       <div class="modal-actions" style="display:flex;gap:8px">
         <button onclick="UI.closeModal()">Cancel</button>
         <button onclick="MCE.pipes['${name}'].urlTemplate='';UI.closeModal();UI.renderPipes();Logger.info('URL template cleared')">Clear URL Tpl</button>
@@ -2627,6 +2744,10 @@ const UI = {
           ${allMachines.map(m => `<option value="${m.id}">${m.name} &lt;${m.tag}&gt;</option>`).join('')}
         </select>
       </div>
+      <div class="field"><label>Array Field <small style="color:var(--txt3)">(optional — if the pipe returns one doc with an array field, enter that field name here)</small></label><input id="loop-datafield" placeholder="e.g. photos, urls"></div>
+      <div class="field"><label>Click Event <small style="color:var(--txt3)">(optional — event emitted when an item is clicked; payload contains all doc fields)</small></label><input id="loop-clickevent" placeholder="e.g. selectPhoto"></div>
+      <div class="field"><label>Click → View <small style="color:var(--txt3)">(optional — view to navigate to on item click)</small></label><input id="loop-clickview" placeholder="e.g. detail"></div>
+      <div class="field"><label>Value Field <small style="color:var(--txt3)">(optional — which field becomes payload.value; defaults to first string field)</small></label><input id="loop-clickvaluefield" placeholder="e.g. PHOTO_URL, url"></div>
       <div class="field">
         <label>Template Builder</label>
         <div style="border:1px solid var(--brd);border-radius:3px;padding:8px;background:var(--bg2)">
@@ -2655,6 +2776,13 @@ const UI = {
         <label>Document Template (HTML + {{field}})</label>
         <textarea id="loop-template" rows="8" placeholder='&lt;div style="border:1px solid #fff;padding:12px;margin-bottom:8px"&gt;\n  &lt;strong&gt;{{name}}&lt;/strong&gt;\n  &lt;p&gt;{{message}}&lt;/p&gt;\n  &lt;small&gt;{{timestamp}} — #{{_index}} of {{_total}}&lt;/small&gt;\n&lt;/div&gt;' style="font-family:monospace;font-size:11px;width:100%"></textarea>
       </div>
+      ${Object.keys(MCE.templates || {}).length > 0 ? `
+      <div class="field"><label>Load from Template <small style="color:var(--txt3)">compiles a visual template into the HTML field above</small></label>
+        <div style="display:flex;gap:6px">
+          <select id="loop-from-tpl" style="flex:1"><option value="">— select template —</option>${Object.keys(MCE.templates || {}).map(n => `<option value="${n}">${n}</option>`).join('')}</select>
+          <button class="small" onclick="UI._loadTemplateToLoop('loop')">Load</button>
+        </div>
+      </div>` : ''}
       <div class="field"><label>Description</label><input id="loop-desc" placeholder="Optional"></div>
       <button class="primary" onclick="UI._createLoop()">Create Loop</button>
     </div>
@@ -2688,12 +2816,20 @@ const UI = {
     const name = document.getElementById('loop-name').value.trim();
     const pipeName = document.getElementById('loop-pipe').value;
     const targetId = document.getElementById('loop-target').value || null;
+    const dataField = document.getElementById('loop-datafield').value.trim();
+    const clickEvent = document.getElementById('loop-clickevent').value.trim();
+    const clickView = document.getElementById('loop-clickview').value.trim();
+    const clickValueField = document.getElementById('loop-clickvaluefield').value.trim();
     const template = document.getElementById('loop-template').value;
     const desc = document.getElementById('loop-desc').value.trim();
     if (!name) return Logger.error('Loop name required');
     if (!pipeName) return Logger.error('Loop source pipe required');
-    LoopSystem.create(name, { pipeName, targetId, template, description: desc });
+    LoopSystem.create(name, { pipeName, targetId, template, dataField, clickEvent, clickView, clickValueField, description: desc });
     document.getElementById('loop-name').value = '';
+    document.getElementById('loop-datafield').value = '';
+    document.getElementById('loop-clickevent').value = '';
+    document.getElementById('loop-clickview').value = '';
+    document.getElementById('loop-clickvaluefield').value = '';
     document.getElementById('loop-template').value = '';
     document.getElementById('loop-desc').value = '';
   },
@@ -2793,6 +2929,10 @@ const UI = {
           ${allMachines.map(m => `<option value="${m.id}" ${m.id === loop.targetId ? 'selected' : ''}>${m.name} &lt;${m.tag}&gt;</option>`).join('')}
         </select>
       </div>
+      <div class="field"><label>Array Field <small style="color:var(--txt3)">(optional — field name if pipe returns one doc with an array of items)</small></label><input id="edit-loop-datafield" placeholder="e.g. photos" value="${loop.dataField || ''}"></div>
+      <div class="field"><label>Click Event <small style="color:var(--txt3)">(optional — emitted on item click with full doc as payload)</small></label><input id="edit-loop-clickevent" placeholder="e.g. selectPhoto" value="${loop.clickEvent || ''}"></div>
+      <div class="field"><label>Click → View <small style="color:var(--txt3)">(optional — navigate to this view on item click)</small></label><input id="edit-loop-clickview" placeholder="e.g. detail" value="${loop.clickView || ''}"></div>
+      <div class="field"><label>Value Field <small style="color:var(--txt3)">(optional — field that becomes payload.value for wires)</small></label><input id="edit-loop-clickvaluefield" placeholder="e.g. PHOTO_URL" value="${loop.clickValueField || ''}"></div>
       <div class="field">
         <label>Template Builder</label>
         <div style="border:1px solid var(--brd);border-radius:3px;padding:8px;background:var(--bg2)">
@@ -2820,6 +2960,13 @@ const UI = {
       <div class="field"><label>Template HTML</label>
         <textarea id="edit-loop-template" rows="10" style="font-family:monospace;font-size:11px;width:100%">${loop.template.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
       </div>
+      ${Object.keys(MCE.templates || {}).length > 0 ? `
+      <div class="field"><label>Load from Template <small style="color:var(--txt3)">replaces the HTML above with a compiled visual template</small></label>
+        <div style="display:flex;gap:6px">
+          <select id="edit-loop-from-tpl" style="flex:1"><option value="">— select template —</option>${Object.keys(MCE.templates || {}).map(n => `<option value="${n}">${n}</option>`).join('')}</select>
+          <button class="small" onclick="UI._loadTemplateToLoop('edit-loop')">Load</button>
+        </div>
+      </div>` : ''}
       <div class="modal-actions" style="display:flex;gap:8px;margin-top:12px">
         <button onclick="UI.closeModal()">Cancel</button>
         <button class="primary" onclick="UI._saveEditLoop('${name}')">Save</button>
@@ -2831,10 +2978,179 @@ const UI = {
     if (!loop) return;
     loop.pipeName = document.getElementById('edit-loop-pipe').value;
     loop.targetId = document.getElementById('edit-loop-target').value || null;
+    loop.dataField = document.getElementById('edit-loop-datafield').value.trim();
+    loop.clickEvent = document.getElementById('edit-loop-clickevent').value.trim();
+    loop.clickView = document.getElementById('edit-loop-clickview').value.trim();
+    loop.clickValueField = document.getElementById('edit-loop-clickvaluefield').value.trim();
     loop.template = document.getElementById('edit-loop-template').value;
     this.closeModal({ target: document.getElementById('modal-overlay') });
     Logger.ok(`Loop "${name}" updated`);
     UI.renderLoops();
+  },
+
+  // ---- TEMPLATES PANEL ----
+  renderTemplates() {
+    const el = document.getElementById('templates-panel-content');
+    if (!el) return;
+    const templates = Object.values(MCE.templates || {});
+    const TAGS = ['div','article','li','section','tr','span','p','header','footer'];
+    el.innerHTML = `
+    <div class="panel-section">
+      <h4>Create Template</h4>
+      <p style="color:var(--txt3);font-size:11px;margin-bottom:8px">Build reusable HTML stacks visually — nodes, CSS, tokens. Compile directly into loop templates. No raw HTML writing required.</p>
+      <div class="field"><label>Name</label><input id="tpl-name" placeholder="personCard, productTile…"></div>
+      <div class="field"><label>Root Tag</label><select id="tpl-root-tag">${TAGS.map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>Description</label><input id="tpl-desc" placeholder="Optional"></div>
+      <button class="primary" onclick="UI._createTemplate()">Create Template</button>
+    </div>
+    <div class="panel-section">
+      <h4>Templates <span style="color:var(--txt3)">(${templates.length})</span></h4>
+      ${templates.length === 0 ? '<div style="color:var(--txt3);font-size:11px;text-align:center;padding:8px">No templates yet — create one above</div>' : ''}
+      ${templates.map(t => {
+        const nc = Object.keys(t.machines || {}).length;
+        return `<div class="list-item" style="flex-direction:column;align-items:flex-start;gap:4px;padding:8px">
+          <div style="display:flex;width:100%;align-items:center;gap:6px">
+            <span class="tag tag-view" style="font-size:9px">TPL</span>
+            <span class="list-item-name">${t.name}</span>
+            <div class="list-item-actions">
+              <button class="small" onclick="UI._editTemplate('${t.name}')">Edit</button>
+              <button class="small" onclick="UI._copyTemplateHTML('${t.name}')">Copy HTML</button>
+              <button class="small danger" onclick="TemplateSystem.delete('${t.name}')">&#x2715;</button>
+            </div>
+          </div>
+          ${t.description ? `<div style="font-size:10px;color:var(--txt3);font-style:italic">${t.description}</div>` : ''}
+          <div style="font-size:10px;color:var(--txt3)">${nc} node${nc !== 1 ? 's' : ''}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  },
+  _createTemplate() {
+    const name = (document.getElementById('tpl-name')?.value || '').trim();
+    const tag = document.getElementById('tpl-root-tag')?.value || 'div';
+    const desc = (document.getElementById('tpl-desc')?.value || '').trim();
+    if (!name) return Logger.error('Template name required');
+    const tpl = TemplateSystem.create(name, { tag, description: desc });
+    if (tpl) {
+      document.getElementById('tpl-name').value = '';
+      document.getElementById('tpl-desc').value = '';
+      UI._editTemplate(name);
+    }
+  },
+  _copyTemplateHTML(name) {
+    const html = TemplateSystem.compile(name);
+    if (navigator.clipboard) navigator.clipboard.writeText(html).then(() => Logger.ok(`Template "${name}" HTML copied to clipboard`));
+    else Logger.info('Compiled HTML: ' + html);
+  },
+  _editTemplate(name) {
+    window._tplModal = { name };
+    window._tplModalExpanded = null;
+    this._refreshTemplateModal();
+  },
+  _refreshTemplateModal() {
+    const { name } = window._tplModal || {};
+    const tpl = MCE.templates[name];
+    if (!tpl) return;
+    const TAGS = ['div','span','p','h1','h2','h3','h4','strong','em','a','img','input','button','ul','ol','li','section','article','header','footer','small','label','figure','blockquote'];
+    const renderNode = (id, depth) => {
+      const m = tpl.machines[id]; if (!m) return '';
+      const isRoot = id === tpl.rootId;
+      const isExp = window._tplModalExpanded === id;
+      const pad = depth * 20;
+      const tagOpts = TAGS.map(t => `<option${t === m.tag ? ' selected' : ''}>${t}</option>`).join('');
+      const cssText = TemplateSystem.cssToText(m.css).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const attrsText = Object.entries(m.attrs || {}).filter(([,v]) => v !== undefined && v !== '').map(([k,v]) => `${k}="${v}"`).join('\n').replace(/</g,'&lt;');
+      const textPreview = m.text ? (' — ' + m.text.slice(0, 28).replace(/</g,'&lt;') + (m.text.length > 28 ? '…' : '')) : '';
+      return `
+        <div style="margin:2px 0">
+          <div style="display:flex;align-items:center;gap:4px;padding:3px 0 3px ${pad}px;min-height:26px">
+            <span style="color:var(--txt3);font-size:9px;background:var(--bg0);padding:1px 5px;border-radius:2px;flex-shrink:0">&lt;${m.tag}&gt;</span>
+            <span style="color:var(--txt3);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${textPreview}</span>
+            <div style="display:flex;gap:3px;flex-shrink:0">
+              <button class="small" onclick="window._tplModalExpanded=(window._tplModalExpanded==='${id}'?null:'${id}');UI._refreshTemplateModal()" style="font-size:10px;padding:1px 7px">${isExp ? '▲' : '▼ edit'}</button>
+              <button class="small" onclick="UI._tplAddNode('${name}','${id}')" style="font-size:10px;padding:1px 6px">+child</button>
+              ${!isRoot ? `<button class="small danger" onclick="TemplateSystem.removeNode('${name}','${id}');UI._refreshTemplateModal()" style="font-size:10px;padding:1px 5px">&#x2715;</button>` : ''}
+            </div>
+          </div>
+          ${isExp ? `
+          <div style="margin-left:${pad + 16}px;padding:8px;background:var(--bg3);border-radius:4px;border:1px solid var(--brd);margin-bottom:6px">
+            <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+              <div style="flex:0 0 auto"><label>Tag</label><select id="tn-tag-${id}" style="font-size:11px">${tagOpts}</select></div>
+              <div style="flex:1;min-width:130px"><label>Text / token content</label><input id="tn-text-${id}" value="${(m.text || '').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="{{field}} or static text" style="width:100%"></div>
+            </div>
+            <div class="field"><label>CSS — one property per line, e.g. <code>display: flex</code> or <code>background: #111</code></label><textarea id="tn-css-${id}" rows="5" style="width:100%;font-family:monospace;font-size:10px;line-height:1.5">${cssText}</textarea></div>
+            <div class="field"><label>Attrs — e.g. <code>src="{{url}}"</code> &nbsp; <code>type="text"</code> &nbsp; <code>href="{{link}}"</code></label><textarea id="tn-attrs-${id}" rows="2" style="width:100%;font-family:monospace;font-size:10px">${attrsText}</textarea></div>
+            <button class="small primary" onclick="UI._saveTemplateNode('${name}','${id}')">Save Node</button>
+            <button class="small" onclick="window._tplModalExpanded=null;UI._refreshTemplateModal()" style="margin-left:4px">Close</button>
+          </div>` : ''}
+          ${(m.children || []).map(cid => renderNode(cid, depth + 1)).join('')}
+        </div>`;
+    };
+    const compiled = TemplateSystem.compile(name);
+    const loopOpts = Object.values(MCE.loops || {}).map(l => `<option value="${l.name}">${l.name}</option>`).join('');
+    this.openModal(`
+      <h3 style="margin-bottom:10px;font-size:14px">Template: ${name}</h3>
+      <div style="display:flex;gap:6px;margin-bottom:12px;align-items:flex-end">
+        <div class="field" style="flex:1;margin:0"><label>Description</label><input id="tpl-edit-desc" value="${(tpl.description || '').replace(/"/g,'&quot;')}" style="width:100%"></div>
+        <button class="small" onclick="MCE.templates['${name}'].description=document.getElementById('tpl-edit-desc').value;UndoSystem.push();Logger.ok('Description saved')">Save</button>
+      </div>
+      <div style="font-size:10px;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Node Tree</div>
+      <div style="border:1px solid var(--brd);border-radius:3px;padding:8px;background:var(--bg2);max-height:360px;overflow-y:auto;font-family:var(--font)">
+        ${renderNode(tpl.rootId, 0)}
+      </div>
+      <div style="margin-top:12px">
+        <div style="font-size:10px;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Compiled HTML</div>
+        <pre style="font-family:monospace;font-size:10px;white-space:pre-wrap;word-break:break-all;color:var(--txt3);background:var(--bg2);border:1px solid var(--brd);border-radius:3px;padding:8px;max-height:90px;overflow-y:auto;margin:0">${compiled.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center">
+          <button class="small" onclick="UI._copyTemplateHTML('${name}')">Copy HTML</button>
+          ${loopOpts ? `<select id="tpl-apply-loop-sel" style="flex:1;min-width:120px;font-size:11px"><option value="">— apply to loop —</option>${loopOpts}</select><button class="small primary" onclick="UI._applyTemplateToLoop('${name}',document.getElementById('tpl-apply-loop-sel').value)">Apply to Loop</button>` : ''}
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top:12px">
+        <button onclick="UI.closeModal();UI.renderTemplates()">Done</button>
+      </div>`);
+  },
+  _saveTemplateNode(tplName, nodeId) {
+    const tpl = MCE.templates[tplName];
+    if (!tpl || !tpl.machines[nodeId]) return;
+    const tag = document.getElementById(`tn-tag-${nodeId}`)?.value || 'div';
+    const text = document.getElementById(`tn-text-${nodeId}`)?.value || '';
+    const cssText = document.getElementById(`tn-css-${nodeId}`)?.value || '';
+    const attrsText = document.getElementById(`tn-attrs-${nodeId}`)?.value || '';
+    const css = TemplateSystem.parseCSSText(cssText);
+    const attrs = {};
+    (attrsText || '').split('\n').forEach(line => {
+      line = line.trim(); if (!line) return;
+      const m = line.match(/^([\w-]+)="([^"]*)"$/) || line.match(/^([\w-]+)=(.+)$/);
+      if (m) attrs[m[1]] = m[2];
+    });
+    Object.assign(tpl.machines[nodeId], { tag, text, css, attrs });
+    UndoSystem.push();
+    Logger.ok(`Node ${nodeId} saved`);
+    UI._refreshTemplateModal();
+  },
+  _tplAddNode(tplName, parentId) {
+    const nodeId = TemplateSystem.addNode(tplName, parentId, { tag: 'div', text: '', css: {}, attrs: {} });
+    if (nodeId) { window._tplModalExpanded = nodeId; UI._refreshTemplateModal(); }
+  },
+  _applyTemplateToLoop(tplName, loopName) {
+    if (!loopName) return Logger.warn('Select a loop first');
+    const loop = MCE.loops[loopName];
+    if (!loop) return;
+    loop.template = TemplateSystem.compile(tplName);
+    UndoSystem.push();
+    Logger.ok(`Template "${tplName}" applied to loop "${loopName}"`);
+    UI.renderLoops();
+  },
+  _loadTemplateToLoop(prefix) {
+    const selId = prefix === 'edit-loop' ? 'edit-loop-from-tpl' : 'loop-from-tpl';
+    const tplId = prefix === 'edit-loop' ? 'edit-loop-template' : 'loop-template';
+    const sel = document.getElementById(selId);
+    const tplArea = document.getElementById(tplId);
+    if (!sel || !tplArea || !sel.value) return Logger.warn('Select a template first');
+    const html = TemplateSystem.compile(sel.value);
+    if (!html) return Logger.error('Template compiled to empty HTML — add nodes in the Templates panel');
+    tplArea.value = html;
+    Logger.ok(`Template "${sel.value}" loaded into template field`);
   },
 
   // ---- VARS PANEL ----
@@ -3137,7 +3453,7 @@ const UI = {
     if (!blocks || !blocks.length) return '';
     const ea = s => (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const colorMap = { if: 'var(--info)', elseif: 'var(--warn)', else: 'var(--ok)', loop: '#a78bfa' };
-    const allActions = ['show','hide','toggle','fadeIn','fadeOut','fadeToBlack','addClass','removeClass','toggleClass','setText','setHTML','setValue','emit','navigate','pipeIn','pipeOut','pipeExec','log','dbPull','dbPush','dbWrite','loopRender'];
+    const allActions = ['show','hide','toggle','fadeIn','fadeOut','fadeToBlack','addClass','removeClass','toggleClass','setText','setHTML','setValue','emit','navigate','pipeIn','pipeOut','pipeExec','runLogic','log','dbPull','dbPush','dbWrite','loopRender'];
     const treeIds = MachineSystem.flatOrder();
     const buildTargetOpts = selId => `<option value="" ${!selId?'selected':''}>self</option>` + treeIds.map(tid => { const tm = MCE.machines[tid]; return tm ? `<option value="${tid}" ${selId===tid?'selected':''}>${tm.name} &lt;${tm.tag}&gt;</option>` : ''; }).join('');
     const addBtn = (label, onclick) => `<button class="small" style="font-size:9px;padding:1px 6px;opacity:0.75" onclick="${onclick}">${label}</button>`;
@@ -3413,10 +3729,12 @@ const UI = {
     if (MCE.canvasTab === 'live') this.renderLiveCanvas();
   },
   _canvasCSS(css) {
+    const _c2k = s => s.replace(/([A-Z])/g, c => '-' + c.toLowerCase());
     const STRIP = new Set(['will-change','transition','animation','animation-name','animation-duration']);
     const vp = MCE._canvasViewport;
     const out = {};
-    for (const [k, v] of Object.entries(css || {})) {
+    for (const [rawK, v] of Object.entries(css || {})) {
+      const k = _c2k(rawK);
       if (STRIP.has(k)) continue;
       if (k === 'position' && (v === 'fixed' || v === 'sticky')) {
         if (vp && v === 'fixed') out[k] = 'absolute';
@@ -3721,7 +4039,7 @@ const UI = {
     const allEvents = Object.keys(MCE.events);
     const allPipes = Object.keys(MCE.pipes);
     const allViews = Object.keys(MCE.views);
-    const actions = ['show','hide','toggle','fadeIn','fadeOut','fadeToBlack','addClass','removeClass','toggleClass','setText','setHTML','setValue','emit','navigate','pipeIn','pipeOut','pipeExec','log','dbPull','dbPush','dbWrite','loopRender'];
+    const actions = ['show','hide','toggle','fadeIn','fadeOut','fadeToBlack','addClass','removeClass','toggleClass','setText','setHTML','setValue','emit','navigate','pipeIn','pipeOut','pipeExec','runLogic','log','dbPull','dbPush','dbWrite','loopRender'];
     const varNames = Object.keys(MCE.vars);
     const textActions = new Set(['setText','setHTML','setValue']);
     const stepLabel = txt => `<span style="color:var(--txt3);font-size:10px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;flex-shrink:0;width:48px;text-align:right">${txt}</span>`;
@@ -4154,8 +4472,16 @@ const UI = {
     const css = this.buildExportCSS();
     const frame = document.getElementById('preview-frame');
     const script = this.buildExportScript();
-    frame.srcdoc = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${css}</style></head><body>${bodyHTML}<script>${script}<\/script></body></html>`;
-    this.switchCanvasTab('preview');
+    frame.style.height = '100%';
+    frame.onload = function() {
+      try {
+        const doc = frame.contentDocument;
+        const h = Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight);
+        const minH = (frame.parentElement && frame.parentElement.clientHeight) || 0;
+        frame.style.height = Math.max(h, minH) + 'px';
+      } catch(e) {}
+    };
+    frame.srcdoc = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}html{margin:0;overflow-x:hidden}body{margin:0;overflow-x:hidden}</style></head><body>${bodyHTML}<script>${script}<\/script></body></html>`;
     Logger.ok('Preview rendered');
     const _dynBindings = {};
     Object.entries(MCE.machines).forEach(([_mid, _mm]) => {
@@ -4218,7 +4544,7 @@ const UI = {
     }
     const pipeMap = {};
     Object.values(MCE.pipes).forEach(p => {
-      pipeMap[p.name] = { method: p.method, collection: p.collection, live: p.live || false, endpoint: p.endpoint || '', urlTemplate: p.urlTemplate || '', bodyTemplate: p.bodyTemplate || {} };
+      pipeMap[p.name] = { method: p.method, collection: p.collection, live: p.live || false, endpoint: p.endpoint || '', urlTemplate: p.urlTemplate || '', bodyTemplate: p.bodyTemplate || {}, queryTemplate: p.queryTemplate || '' };
     });
     const previewDB = {};
     Object.keys(DB._store).forEach(name => {
@@ -4380,11 +4706,34 @@ const UI = {
     render: function(name, data) {
       var loop = LOOPS[name];
       if (!loop || !loop.targetId) return;
-      var records = Array.isArray(data) ? data : (data ? [data] : []);
+      var records;
+      if (loop.dataField) {
+        var _src = Array.isArray(data) ? data : (data ? [data] : []);
+        records = _src.reduce(function(acc, doc) {
+          var field = doc && typeof doc === 'object' ? doc[loop.dataField] : null;
+          if (Array.isArray(field)) return acc.concat(field);
+          if (field !== null && field !== undefined) acc.push(field);
+          return acc;
+        }, []);
+      } else {
+        records = Array.isArray(data) ? data : (data ? [data] : []);
+      }
+      // Store records globally for click handlers
+      var _hasClick = loop.clickEvent || loop.clickView;
+      if (_hasClick) {
+        window._MCE_LOOP_DATA = window._MCE_LOOP_DATA || {};
+        window._MCE_LOOP_DATA[name] = records.map(function(doc) {
+          return typeof doc === 'object' && doc !== null ? doc : { value: String(doc || '') };
+        });
+      }
       var html = records.map(function(doc, idx) {
         var t = loop.template;
         var vals = {};
-        Object.keys(doc).forEach(function(k) { vals[k] = doc[k] !== null && doc[k] !== undefined ? String(doc[k]) : ''; });
+        if (doc !== null && doc !== undefined && typeof doc === 'object') {
+          Object.keys(doc).forEach(function(k) { vals[k] = doc[k] !== null && doc[k] !== undefined ? String(doc[k]) : ''; });
+        } else {
+          vals['value'] = doc !== null && doc !== undefined ? String(doc) : '';
+        }
         vals['_index'] = String(idx + 1);
         vals['_total'] = String(records.length);
         t = t.replace(/\{\{([^}]+)\}\}/g, function(_, inner) {
@@ -4400,10 +4749,40 @@ const UI = {
           var raw = Object.prototype.hasOwnProperty.call(vals, key) ? vals[key] : (MCE_VARS[key] !== undefined ? String(MCE_VARS[key]) : '');
           return filter ? FilterSystem.apply(raw, filter, arg) : raw;
         });
+        if (_hasClick) {
+          t = '<div class="mce-loop-item" style="cursor:pointer" data-loop-name="' + name + '" data-loop-idx="' + idx + '">' + t + '</div>';
+        }
         return t;
       }).join('');
       var target = document.querySelector('[data-mce-id="' + loop.targetId + '"]');
-      if (target) target.innerHTML = html;
+      if (target) {
+        target.innerHTML = html;
+        if (_hasClick && !target._mceLoopBound) {
+          target._mceLoopBound = true;
+          target.addEventListener('click', function(e) {
+            var item = e.target.closest('[data-loop-name]');
+            if (!item) return;
+            var lname = item.getAttribute('data-loop-name');
+            var lidx  = parseInt(item.getAttribute('data-loop-idx'), 10);
+            var _d    = (window._MCE_LOOP_DATA && window._MCE_LOOP_DATA[lname]) || [];
+            var _doc  = _d[lidx] || {};
+            window._MCE_SELECTION = _doc;
+            var _loop = LOOPS[lname];
+            if (!_loop) return;
+            if (_loop.clickEvent) {
+              var _vf = _loop.clickValueField || 'value';
+              var _v  = _doc[_vf] !== undefined ? String(_doc[_vf])
+                        : (Object.values(_doc).filter(function(x){ return typeof x === 'string'; })[0] || '');
+              EventBus.emit(_loop.clickEvent, Object.assign({ value: _v }, _doc));
+            }
+            if (_loop.clickView) {
+              var _navP = _doc._id !== undefined ? { _id: String(_doc._id) }
+                        : (_doc.value !== undefined ? { value: String(_doc.value) } : { _index: String(lidx) });
+              ViewSystem.navigate(_loop.clickView, _navP);
+            }
+          });
+        }
+      }
       EventBus.emit('loop:' + name + ':rendered', { loop: name, count: records.length });
     },
     renderAll: function(pipeName, data) {
@@ -4431,7 +4810,8 @@ const UI = {
       this._apply(viewName);
       try {
         var qs = new URLSearchParams(Object.assign({ view: viewName }, params || {}));
-        history.pushState({ view: viewName, params: this._params }, '', '?' + qs.toString());
+        var _hw = (window.parent && window.parent !== window) ? window.parent : window;
+        _hw.history.pushState({ view: viewName, params: this._params }, '', '?' + qs.toString());
       } catch(e) {}
       EventBus.emit('view:' + viewName, this._params);
       EventBus.emit('view:changed', { view: viewName, params: this._params });
@@ -4444,8 +4824,9 @@ const UI = {
   var INIT_NAV_EVENTS = ${JSON.stringify(initNavEvents)};
   // Apply initial view visibility immediately (DOM only — events fire after wire-up)
   var _initView = null, _initParams = {};
+  var _parentWin = (window.parent && window.parent !== window) ? window.parent : window;
   (function() {
-    var sp = new URLSearchParams(location.search);
+    var sp = new URLSearchParams(_parentWin.location.search);
     var vn = sp.get('view') || DEFAULT_VIEW;
     if (vn) {
       var p = {}; sp.forEach(function(v,k){ if (k!=='view') p[k]=v; });
@@ -4456,7 +4837,7 @@ const UI = {
       document.querySelectorAll('[data-view]').forEach(function(el){ el.style.display = ''; });
     }
   })();
-  window.addEventListener('popstate', function(e) {
+  _parentWin.addEventListener('popstate', function(e) {
     if (e.state && e.state.view) {
       ViewSystem._params = e.state.params || {};
       ViewSystem._apply(e.state.view);
@@ -4538,6 +4919,10 @@ const UI = {
       return v !== undefined ? String(v) : '';
     }).replace(/\{\{payload:([^}]+)\}\}/g, function(_, k) {
       return payload[k] !== undefined ? String(payload[k]) : '';
+    }).replace(/\{\{([^:}]+)\}\}/g, function(_, k) {
+      if (payload[k] !== undefined) return String(payload[k]);
+      var vp = window.ViewSystem && window.ViewSystem._params;
+      return vp && vp[k] !== undefined ? String(vp[k]) : '';
     });
   }
 
@@ -4591,6 +4976,11 @@ const UI = {
     },
     fetch: function(name, query, runtimePayload) {
       var pipe = PIPE_MAP[name];
+      query = query || {};
+      if (pipe && pipe.queryTemplate) {
+        var _qt = _iifeTok(pipe.queryTemplate, runtimePayload || {}).trim();
+        if (_qt) query = Object.assign({}, query, { q: _qt });
+      }
       if (pipe && pipe.live) {
         var ep = (pipe.urlTemplate ? _iifeTok(pipe.urlTemplate, runtimePayload || {}) : '') || pipe.endpoint || ('/api/db/' + (pipe.collection || name));
         if (_pubUser && ep.indexOf('/api/db/') === 0 && ep.indexOf('/public/') === -1) {
@@ -4786,11 +5176,18 @@ const UI = {
       if (args.indexOf('{{') !== -1) {
         Object.keys(MCE_VARS).forEach(function(k) { args = args.split('{{' + k + '}}').join(String(MCE_VARS[k])); });
       }
+      if (args.indexOf('{{') !== -1) {
+        Object.keys(payload).forEach(function(k) {
+          if (payload[k] !== null && payload[k] !== undefined && typeof payload[k] !== 'object') {
+            args = args.split('{{' + k + '}}').join(String(payload[k]));
+          }
+        });
+      }
     }
     switch(action) {
-      case 'show':        el.style.display = ''; break;
-      case 'hide':        el.style.display = 'none'; break;
-      case 'toggle':      el.style.display = (el.style.display === 'none') ? '' : 'none'; break;
+      case 'show':        el.style.display = (el.dataset.mceDisplay !== undefined ? el.dataset.mceDisplay : ''); break;
+      case 'hide':        el.dataset.mceDisplay = el.style.display; el.style.display = 'none'; break;
+      case 'toggle':      if (el.style.display === 'none') { el.style.display = (el.dataset.mceDisplay !== undefined ? el.dataset.mceDisplay : ''); } else { el.dataset.mceDisplay = el.style.display; el.style.display = 'none'; } break;
       case 'fadeIn':
         el.style.opacity = '0'; el.style.display = '';
         el.style.transition = 'opacity 0.4s';
@@ -4816,6 +5213,7 @@ const UI = {
           ViewSystem.navigate(_nv, _npa);
         }
         break;
+      case 'runLogic':    { var _rlId = (args && args.trim()) || el.getAttribute('data-mce-id'); if (_rlId) LogicSystem.run(_rlId, payload); break; }
       case 'loopRender':  if (args) { var _lr = LOOPS[args]; if (_lr && _lr.pipeName) PipeSystem.fetch(_lr.pipeName, payload); else if (_lr) LoopSystem.render(args, []); } break;
       case 'pipeIn':      if (args) PipeSystem.execute(args, payload, payload); break;
       case 'pipeOut':     if (args) PipeSystem.fetch(args, {}, payload); break;
@@ -4897,10 +5295,18 @@ const UI = {
     var _pp = PIPE_MAP[tl.pipeName];
     if (_pp) { _autoFetched[tl.pipeName] = 1; PipeSystem.fetch(tl.pipeName); }
   });
+  // Auto-fetch regular loop pipes on load
+  Object.keys(LOOPS).forEach(function(lname) {
+    var lp = LOOPS[lname];
+    if (!lp.pipeName || _autoFetched[lp.pipeName]) return;
+    var _pp = PIPE_MAP[lp.pipeName];
+    if (_pp) { _autoFetched[lp.pipeName] = 1; PipeSystem.fetch(lp.pipeName); }
+  });
   // Expose applyBindings globally and listen for postMessage pipe data from parent editor
   window._mce_applyBindings = applyBindings;
   window.addEventListener('message', function(ev) {
     if (ev.data && ev.data.type === 'mce:pipeData') {
+      try { LoopSystem.renderAll(ev.data.pipeName, ev.data.data); } catch(x) {}
       try { applyBindings(ev.data.pipeName, ev.data.data, ev.data.bindings); } catch(x) {}
       try { _renderTableLoop(ev.data.pipeName, ev.data.data); } catch(x) {}
     }
@@ -4949,6 +5355,7 @@ const UI = {
       vars: MCE.vars,
       logic: MCE.logic,
       runtimeStyle: MCE.runtimeStyle,
+      templates: MCE.templates || {},
       dbCollections,
       _nextId: MCE._nextId,
     };
@@ -4989,6 +5396,7 @@ const UI = {
     MCE.views = data.views || {};
     MCE.logic = data.logic || {};
     MCE.loops = data.loops || {};
+    MCE.templates = data.templates || {};
     MCE.runtimeStyle = data.runtimeStyle || 'clean';
     const _rawVars = data.vars || {};
     MCE.vars = Object.fromEntries(Object.entries(_rawVars).map(([k, v]) => {
@@ -5001,6 +5409,7 @@ const UI = {
     const _backfillBlocks = blocks => { if (!blocks) return; blocks.forEach(b => { if (!b.children) b.children = []; if (!b.actions) b.actions = []; if (b.type === 'loop') { if (b.collection === undefined) b.collection = ''; if (b.query === undefined) b.query = ''; if (!b.itemVar) b.itemVar = 'item'; } _backfillBlocks(b.children); }); };
     Object.values(MCE.logic || {}).forEach(l => { if (l && l.blocks) _backfillBlocks(l.blocks); });
     // Auto-create DB collections declared in the project (with optional seed data)
+    MCE.dbCollections = data.dbCollections || [];
     if (Array.isArray(data.dbCollections)) {
       data.dbCollections.forEach(c => {
         if (!DB._store[c.name]) {
@@ -5050,6 +5459,7 @@ const UI = {
     this.renderPipes();
     this.renderViews();
     this.renderLoops();
+    this.renderTemplates();
     this.renderVars();
     this._syncVarsGlobal();
     this.renderCanvas();
@@ -5077,6 +5487,7 @@ const UI = {
     MCE.pipes     = {};
     MCE.views     = {};
     MCE.loops     = {};
+    MCE.templates = {};
     MCE.vars      = {};
     MCE.logic     = {};
     MCE._nextId   = 1;
@@ -5093,6 +5504,7 @@ const UI = {
     this.renderPipes();
     this.renderViews();
     this.renderLoops();
+    this.renderTemplates();
     this.renderVars();
     // Blank then rebuild the live frame
     const _lf = document.getElementById('live-canvas-frame');
@@ -5238,6 +5650,7 @@ function loadStarterProject() {
   UI.renderPipes();
   UI.renderViews();
   UI.renderLoops();
+  UI.renderTemplates();
   UI.renderDB();
   UI.renderInspector();
   Logger.ok('Starter project loaded — explore the panels!');

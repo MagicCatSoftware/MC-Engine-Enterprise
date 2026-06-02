@@ -328,7 +328,19 @@ function cloudPanelHTML() {
       loops:         Object.assign({}, MCE.loops),
       vars:          Object.assign({}, MCE.vars),
       logic:         Object.assign({}, MCE.logic),
-      dbCollections: (MCE.dbCollections || []).slice(),
+      dbCollections: (function() {
+        if (typeof DB === 'undefined' || !DB._store) return (MCE.dbCollections || []).slice();
+        var stripMeta = function(d) { var r = Object.assign({}, d); delete r._id; delete r._created; delete r._updated; return r; };
+        return Object.keys(DB._store)
+          .filter(function(n) { return n !== '_machines'; })
+          .map(function(n) {
+            var c = DB._store[n];
+            var seed = c.isArray
+              ? c.docs.map(stripMeta)
+              : (c.single && c.single._id ? [stripMeta(c.single)] : []);
+            return { name: n, isArray: !!c.isArray, seed: seed };
+          });
+      })(),
       _nextId:       MCE._nextId || 1
     };
   }

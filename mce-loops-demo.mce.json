@@ -1,0 +1,262 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "MCEngine — Loop System Demo" },
+  "_nextId": 15,
+  "rootOrder": ["M1"],
+
+  "events": {
+    "bookSelected": {
+      "name": "bookSelected",
+      "payload": "Full book record — { title, author, year, genre, description, status }"
+    }
+  },
+
+  "pipes": {
+    "getBooks": {
+      "name": "getBooks",
+      "method": "GET",
+      "collection": "books",
+      "endpoint": "/api/db/books",
+      "delay": 0,
+      "live": false,
+      "description": "Reads all books from the books collection"
+    }
+  },
+
+  "loops": {
+    "bookList": {
+      "name": "bookList",
+      "pipeName": "getBooks",
+      "targetId": "M7",
+      "dataField": "",
+      "clickEvent": "bookSelected",
+      "clickView": "",
+      "clickValueField": "",
+      "description": "One card per book — clicking fires bookSelected with the full record as payload",
+      "template": "<div style=\"padding:12px 14px;border:1px solid #fff;border-radius:6px;cursor:pointer;background:#000\"><div style=\"color:#fff;font-size:14px;font-weight:700\">{{title}}</div><div style=\"color:#aaa;font-size:12px;margin-top:4px\">{{author}} &middot; {{year}}</div><div style=\"color:#555;font-size:11px;margin-top:6px\">{{genre}}</div></div>"
+    }
+  },
+
+  "views": {},
+  "vars": {},
+  "logic": {},
+  "templates": {},
+
+  "dbCollections": [
+    {
+      "name": "books",
+      "isArray": true,
+      "seed": [
+        { "title": "The Pragmatic Programmer", "author": "Andrew Hunt",    "year": 1999, "genre": "Software Engineering", "description": "A journey toward mastery of programming craft covering DRY principles, code generation, and delivering software on time.", "status": "Classic"     },
+        { "title": "Clean Code",                "author": "Robert Martin",  "year": 2008, "genre": "Software Engineering", "description": "A handbook of agile craftsmanship showing how to write readable, maintainable code that other engineers actually enjoy.",  "status": "Essential"   },
+        { "title": "You Don't Know JS",         "author": "Kyle Simpson",   "year": 2015, "genre": "JavaScript",           "description": "A deep dive into the core mechanisms of JavaScript — types, scopes, closures, async, and the parts most devs skip.",     "status": "Open Source" },
+        { "title": "The Design of Everyday Things", "author": "Don Norman", "year": 1988, "genre": "Design",               "description": "Why some products feel natural and others frustrate — the principles behind good human-centred design.",                  "status": "Timeless"    },
+        { "title": "Hackers & Painters",        "author": "Paul Graham",    "year": 2004, "genre": "Essays",               "description": "Big ideas from the computer age — programming as creative work, what makes startups succeed, and building things that last.", "status": "Inspiring"   }
+      ]
+    }
+  ],
+
+  "machines": {
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2","M3","M4"],
+      "css": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "24px",
+        "padding": "40px 24px",
+        "maxWidth": "720px",
+        "width": "100%",
+        "margin": "0 auto",
+        "fontFamily": "system-ui, sans-serif",
+        "background": "#000",
+        "minHeight": "100vh",
+        "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2", "name": "title", "tag": "h1",
+      "text": "MCEngine — Loop System",
+      "parentId": "M1", "children": [],
+      "css": {
+        "color": "#fff",
+        "fontSize": "28px",
+        "fontWeight": "900",
+        "margin": "0",
+        "letterSpacing": "-0.5px",
+        "borderBottom": "1px solid #fff",
+        "paddingBottom": "16px"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M3": {
+      "id": "M3", "name": "subtitle", "tag": "p",
+      "text": "A loop fetches a pipe and renders a template card for each record. Clicking a card fires a clickEvent with the full record as payload — any wired machine updates instantly.",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#aaa", "fontSize": "13px", "lineHeight": "1.7", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4", "name": "columns", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M5","M8"],
+      "css": {
+        "display": "flex",
+        "gap": "20px",
+        "alignItems": "flex-start",
+        "width": "100%",
+        "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M5": {
+      "id": "M5", "name": "left_panel", "tag": "div",
+      "text": "", "parentId": "M4", "children": ["M6","M7"],
+      "css": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "10px",
+        "flex": "1",
+        "minWidth": "0"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M6": {
+      "id": "M6", "name": "list_label", "tag": "p",
+      "text": "Books — click any card",
+      "parentId": "M5", "children": [],
+      "css": {
+        "color": "#fff",
+        "fontSize": "11px",
+        "fontWeight": "700",
+        "letterSpacing": "1px",
+        "textTransform": "uppercase",
+        "margin": "0",
+        "paddingBottom": "10px",
+        "borderBottom": "1px solid #fff"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M7": {
+      "id": "M7", "name": "loop_target", "tag": "div",
+      "text": "", "parentId": "M5", "children": [],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "8px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M8": {
+      "id": "M8", "name": "detail_panel", "tag": "div",
+      "text": "", "parentId": "M4", "children": ["M9","M10","M11","M12","M13","M14"],
+      "css": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "10px",
+        "flex": "1",
+        "minWidth": "0",
+        "border": "1px solid #fff",
+        "borderRadius": "8px",
+        "padding": "16px",
+        "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M9": {
+      "id": "M9", "name": "detail_label", "tag": "p",
+      "text": "Selected Record",
+      "parentId": "M8", "children": [],
+      "css": {
+        "color": "#fff",
+        "fontSize": "11px",
+        "fontWeight": "700",
+        "letterSpacing": "1px",
+        "textTransform": "uppercase",
+        "margin": "0",
+        "paddingBottom": "10px",
+        "borderBottom": "1px solid #fff"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M10": {
+      "id": "M10", "name": "detail_title", "tag": "div",
+      "text": "← click a book",
+      "parentId": "M8", "children": [],
+      "css": { "color": "#fff", "fontSize": "16px", "fontWeight": "700", "lineHeight": "1.4" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "bookSelected", "targetId": "", "action": "setText", "actionArgs": "{{title}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M11": {
+      "id": "M11", "name": "detail_author", "tag": "div",
+      "text": "",
+      "parentId": "M8", "children": [],
+      "css": { "color": "#aaa", "fontSize": "13px" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "bookSelected", "targetId": "", "action": "setText", "actionArgs": "by {{author}} · {{year}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M12": {
+      "id": "M12", "name": "detail_genre", "tag": "div",
+      "text": "",
+      "parentId": "M8", "children": [],
+      "css": {
+        "color": "#fff",
+        "fontSize": "11px",
+        "padding": "3px 10px",
+        "border": "1px solid #fff",
+        "borderRadius": "20px",
+        "display": "inline-block",
+        "alignSelf": "flex-start"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "bookSelected", "targetId": "", "action": "setText", "actionArgs": "{{genre}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M13": {
+      "id": "M13", "name": "detail_description", "tag": "p",
+      "text": "",
+      "parentId": "M8", "children": [],
+      "css": {
+        "color": "#aaa",
+        "fontSize": "13px",
+        "lineHeight": "1.6",
+        "margin": "0",
+        "borderTop": "1px solid #333",
+        "paddingTop": "10px"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "bookSelected", "targetId": "", "action": "setText", "actionArgs": "{{description}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M14": {
+      "id": "M14", "name": "detail_status", "tag": "div",
+      "text": "",
+      "parentId": "M8", "children": [],
+      "css": { "color": "#555", "fontSize": "11px", "fontFamily": "monospace" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "bookSelected", "targetId": "", "action": "setText", "actionArgs": "status: {{status}}" }
+      ],
+      "viewBinding": null
+    }
+  }
+}

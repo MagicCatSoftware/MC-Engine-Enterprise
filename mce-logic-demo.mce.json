@@ -1,519 +1,399 @@
 {
   "version": "1.0.0",
-  "project": { "name": "Logic Panel Demo — Grade Calculator" },
-  "_nextId": 22,
-  "runtimeStyle": "ocean",
+  "project": { "name": "MCEngine — Logic System Demo" },
+  "_nextId": 20,
   "rootOrder": ["M1"],
 
   "events": {
-    "navGrade":   { "name": "navGrade",   "payload": "{}" },
-    "navHistory": { "name": "navHistory", "payload": "{}" },
-    "gradeAdded": { "name": "gradeAdded", "payload": "{ value } — summary string emitted by Logic code" }
-  },
-
-  "pipes": {
-    "loadHistory": {
-      "name": "loadHistory",
-      "method": "GET",
-      "endpoint": "/api/showcase/grades",
-      "collection": "grades",
-      "delay": 0,
-      "schema": [],
-      "live": false
-    }
-  },
-
-  "views": {
-    "grade": {
-      "name": "grade",
-      "title": "Grade",
-      "description": "Default view — form that runs the Logic chain.",
-      "params": []
+    "calcRequested": {
+      "name": "calcRequested",
+      "payload": "{ value } — number string from the input, passed as ctx to M5's logic"
     },
-    "history": {
-      "name": "history",
-      "title": "History",
-      "description": "View:history event triggers pipeOut loadHistory, Loop renders all grades from DB.",
-      "params": []
+    "loopRequested": {
+      "name": "loopRequested",
+      "payload": "{} — triggers M12's loop block to iterate the items collection"
+    },
+    "resultReady": {
+      "name": "resultReady",
+      "payload": "{ value, label } — emitted from code blocks, received by M9 and M19"
     }
   },
 
-  "loops": {
-    "historyLoop": {
-      "name": "historyLoop",
-      "pipeName": "loadHistory",
-      "targetId": "M21",
-      "template": "<div style=\"background:#13131f;border:1px solid #2e2e4e;border-radius:10px;padding:18px 20px;flex:1;min-width:180px;max-width:240px;text-align:center\"><div style=\"font-size:52px;font-weight:900;color:#a78bfa;line-height:1;margin-bottom:8px\">{{grade}}</div><div style=\"font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:4px\">{{name}}</div><div style=\"font-size:13px;color:#64748b;margin-bottom:6px\">Score: {{score}}</div><div style=\"font-size:11px;color:#334155\">{{date}}</div></div>"
-    }
-  },
-
-  "vars": {
-    "passMark": { "value": "60", "desc": "Minimum score to pass — used in the ELSEIF condition inside Logic" }
-  },
-
-  "logic": {
-    "M10": {
-      "blocks": [
-
-        {
-          "type": "if",
-          "condition": "!ctx.name",
-          "code": "",
-          "actions": [
-            { "targetId": "M14", "action": "show",    "actionArgs": "" },
-            { "targetId": "M14", "action": "setText", "actionArgs": "Name is required." },
-            { "targetId": "M11", "action": "hide",    "actionArgs": "" }
-          ],
-          "children": []
-        },
-
-        {
-          "type": "elseif",
-          "condition": "ctx.score === '' || isNaN(Number(ctx.score))",
-          "code": "",
-          "actions": [
-            { "targetId": "M14", "action": "show",    "actionArgs": "" },
-            { "targetId": "M14", "action": "setText", "actionArgs": "Enter a numeric score (0–100)." },
-            { "targetId": "M11", "action": "hide",    "actionArgs": "" }
-          ],
-          "children": []
-        },
-
-        {
-          "type": "elseif",
-          "condition": "Number(ctx.score) < 0 || Number(ctx.score) > 100",
-          "code": "",
-          "actions": [
-            { "targetId": "M14", "action": "show",    "actionArgs": "" },
-            { "targetId": "M14", "action": "setText", "actionArgs": "Score must be between 0 and 100." },
-            { "targetId": "M11", "action": "hide",    "actionArgs": "" }
-          ],
-          "children": []
-        },
-
-        {
-          "type": "elseif",
-          "condition": "Number(ctx.score) < Number(vars.passMark)",
-          "code": "DB.insert('grades',{name:ctx.name,score:Number(ctx.score),grade:'F',date:new Date().toLocaleDateString('en-US')}); EventBus.emit('gradeAdded',{value:ctx.name+' scored F ('+ctx.score+'/100).'});",
-          "actions": [
-            { "targetId": "M11", "action": "show",    "actionArgs": "" },
-            { "targetId": "M14", "action": "hide",    "actionArgs": "" },
-            { "targetId": "M12", "action": "setHTML", "actionArgs": "<span style=\"font-size:80px;font-weight:900;color:#ef4444;line-height:1\">F</span>" },
-            { "targetId": "M13", "action": "setText", "actionArgs": "FAIL — Score is below the pass mark." },
-            { "targetId": "",    "action": "log",     "actionArgs": "Grade F assigned via Logic elseif — vars.passMark threshold" }
-          ],
-          "children": []
-        },
-
-        {
-          "type": "elseif",
-          "condition": "Number(ctx.score) < 90",
-          "code": "DB.insert('grades',{name:ctx.name,score:Number(ctx.score),grade:'B',date:new Date().toLocaleDateString('en-US')}); EventBus.emit('gradeAdded',{value:ctx.name+' scored B ('+ctx.score+'/100).'});",
-          "actions": [
-            { "targetId": "M11", "action": "show",    "actionArgs": "" },
-            { "targetId": "M14", "action": "hide",    "actionArgs": "" },
-            { "targetId": "M12", "action": "setHTML", "actionArgs": "<span style=\"font-size:80px;font-weight:900;color:#f59e0b;line-height:1\">B</span>" },
-            { "targetId": "M13", "action": "setText", "actionArgs": "PASS — Good work." },
-            { "targetId": "",    "action": "log",     "actionArgs": "Grade B assigned via Logic elseif" }
-          ],
-          "children": []
-        },
-
-        {
-          "type": "else",
-          "condition": "",
-          "code": "DB.insert('grades',{name:ctx.name,score:Number(ctx.score),grade:'A',date:new Date().toLocaleDateString('en-US')}); EventBus.emit('gradeAdded',{value:ctx.name+' scored A ('+ctx.score+'/100).'});",
-          "actions": [
-            { "targetId": "M11", "action": "show",    "actionArgs": "" },
-            { "targetId": "M14", "action": "hide",    "actionArgs": "" },
-            { "targetId": "M12", "action": "setHTML", "actionArgs": "<span style=\"font-size:80px;font-weight:900;color:#22c55e;line-height:1\">A</span>" },
-            { "targetId": "M13", "action": "setText", "actionArgs": "EXCELLENT — Top score!" },
-            { "targetId": "",    "action": "log",     "actionArgs": "Grade A assigned via Logic else" }
-          ],
-          "children": []
-        },
-
-        {
-          "type": "loop",
-          "collection": "grades",
-          "query": "",
-          "itemVar": "g",
-          "code": "if(ctx._index===ctx._total-1){var _el=document.querySelector('[data-mce-id=M16]'); if(_el)_el.textContent=ctx._total+' grade'+(ctx._total===1?'':'s')+' in this session.';}",
-          "actions": [],
-          "children": []
-        }
-
-      ]
-    }
-  },
+  "pipes": {},
+  "views": {},
+  "vars": {},
+  "templates": {},
+  "loops": {},
 
   "dbCollections": [
     {
-      "name": "grades",
+      "name": "items",
+      "isArray": true,
       "seed": [
-        { "name": "Alice",  "score": 92, "grade": "A", "date": "1/1/2026" },
-        { "name": "Bob",    "score": 75, "grade": "B", "date": "1/2/2026" },
-        { "name": "Carol",  "score": 45, "grade": "F", "date": "1/3/2026" }
+        { "label": "Alpha",   "score": 92 },
+        { "label": "Beta",    "score": 45 },
+        { "label": "Gamma",   "score": 78 },
+        { "label": "Delta",   "score": 61 },
+        { "label": "Epsilon", "score": 33 }
       ]
     }
   ],
 
-  "machines": {
+  "logic": {
+    "M5": {
+      "blocks": [
+        {
+          "type": "if",
+          "condition": "parseInt(ctx.value) >= 100",
+          "actions": [
+            { "targetId": "M8", "action": "setText", "actionArgs": "BIG — {{value}} is ≥ 100" }
+          ],
+          "code": "EventBus.emit('resultReady', { value: ctx.value, label: 'BIG' });",
+          "children": []
+        },
+        {
+          "type": "elseif",
+          "condition": "parseInt(ctx.value) >= 50",
+          "actions": [
+            { "targetId": "M8", "action": "setText", "actionArgs": "MEDIUM — {{value}} is 50–99" }
+          ],
+          "code": "EventBus.emit('resultReady', { value: ctx.value, label: 'MEDIUM' });",
+          "children": []
+        },
+        {
+          "type": "elseif",
+          "condition": "parseInt(ctx.value) > 0",
+          "actions": [
+            { "targetId": "M8", "action": "setText", "actionArgs": "SMALL — {{value}} is 1–49" }
+          ],
+          "code": "EventBus.emit('resultReady', { value: ctx.value, label: 'SMALL' });",
+          "children": []
+        },
+        {
+          "type": "else",
+          "condition": "",
+          "actions": [
+            { "targetId": "M8", "action": "setText", "actionArgs": "Enter a number above 0" }
+          ],
+          "code": "",
+          "children": []
+        }
+      ]
+    },
+    "M12": {
+      "blocks": [
+        {
+          "type": "loop",
+          "collection": "items",
+          "query": "",
+          "itemVar": "item",
+          "actions": [],
+          "code": "EventBus.emit('resultReady', { value: ctx.item.label + ': ' + ctx.item.score, label: ctx.item.score >= 60 ? 'PASS' : 'FAIL' });",
+          "children": []
+        }
+      ]
+    }
+  },
 
+  "machines": {
     "M1": {
-      "id": "M1", "label": "app", "tag": "section",
-      "text": "", "parentId": "", "children": ["M2", "M5", "M17"],
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2","M3","M4","M10","M15","M19"],
       "css": {
         "display": "flex",
         "flexDirection": "column",
+        "gap": "28px",
+        "padding": "40px 24px",
+        "maxWidth": "640px",
+        "width": "100%",
+        "margin": "0 auto",
+        "fontFamily": "system-ui, sans-serif",
+        "background": "#000",
         "minHeight": "100vh",
-        "fontFamily": "system-ui, -apple-system, sans-serif"
+        "boxSizing": "border-box"
       },
       "attrs": {},
       "wires": [
-        { "eventName": "navGrade",   "targetId": "", "action": "navigate", "actionArgs": "grade"   },
-        { "eventName": "navHistory", "targetId": "", "action": "navigate", "actionArgs": "history" }
+        { "eventName": "loopRequested", "targetId": "", "action": "runLogic", "actionArgs": "M12" }
       ],
       "viewBinding": null
     },
 
     "M2": {
-      "id": "M2", "label": "nav_bar", "tag": "nav",
-      "text": "", "parentId": "M1", "children": ["M3", "M4"],
+      "id": "M2", "name": "title", "tag": "h1",
+      "text": "MCEngine — Logic System",
+      "parentId": "M1", "children": [],
       "css": {
-        "display": "flex",
-        "alignItems": "center",
-        "gap": "8px",
-        "padding": "14px 40px",
-        "background": "#0d0d1a",
-        "borderBottom": "1px solid #1e1e3e"
+        "color": "#fff",
+        "fontSize": "28px",
+        "fontWeight": "900",
+        "margin": "0",
+        "letterSpacing": "-0.5px",
+        "borderBottom": "1px solid #fff",
+        "paddingBottom": "16px"
       },
-      "attrs": {},
-      "wires": [],
-      "viewBinding": null
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M3": {
-      "id": "M3", "label": "btn_grade", "tag": "button",
-      "text": "Grade",
-      "parentId": "M2", "children": [],
-      "css": {
-        "padding": "6px 16px",
-        "background": "#a78bfa",
-        "color": "#000",
-        "fontWeight": "700",
-        "fontSize": "13px",
-        "border": "none",
-        "borderRadius": "4px",
-        "cursor": "pointer"
-      },
-      "attrs": {},
-      "emitOnClick": "navGrade",
-      "wires": [],
-      "viewBinding": null
+      "id": "M3", "name": "subtitle", "tag": "p",
+      "text": "Logic blocks run JavaScript conditionals (if/elseif/else), iterate DB collections (loop), and execute arbitrary code. They are triggered by the runLogic wire action with the event payload passed as ctx.",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#aaa", "fontSize": "13px", "lineHeight": "1.7", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M4": {
-      "id": "M4", "label": "btn_history", "tag": "button",
-      "text": "Grade History →",
-      "parentId": "M2", "children": [],
+      "id": "M4", "name": "if_section", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M5","M6","M7","M8","M9"],
       "css": {
-        "padding": "6px 16px",
-        "background": "transparent",
-        "color": "#a78bfa",
-        "border": "1px solid #3a3a5c",
-        "borderRadius": "4px",
-        "cursor": "pointer",
-        "fontSize": "13px"
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "12px",
+        "border": "1px solid #fff",
+        "borderRadius": "8px",
+        "padding": "18px",
+        "width": "100%",
+        "boxSizing": "border-box"
       },
-      "attrs": {},
-      "emitOnClick": "navHistory",
-      "wires": [],
-      "viewBinding": null
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M5": {
-      "id": "M5", "label": "grade_view", "tag": "section",
-      "text": "", "parentId": "M1",
-      "children": ["M6", "M7", "M8", "M9", "M10", "M11", "M14", "M15", "M16"],
-      "css": { "padding": "52px 40px", "maxWidth": "580px" },
+      "id": "M5", "name": "if_label", "tag": "p",
+      "text": "if / elseif / else — classify a number",
+      "parentId": "M4", "children": [],
+      "css": {
+        "color": "#fff",
+        "fontSize": "11px",
+        "fontWeight": "700",
+        "letterSpacing": "1px",
+        "textTransform": "uppercase",
+        "margin": "0",
+        "paddingBottom": "10px",
+        "borderBottom": "1px solid #fff"
+      },
       "attrs": {},
-      "wires": [],
-      "viewBinding": "grade"
+      "wires": [
+        { "eventName": "calcRequested", "targetId": "", "action": "runLogic", "actionArgs": "" }
+      ],
+      "viewBinding": null
     },
 
     "M6": {
-      "id": "M6", "label": "grade_title", "tag": "h1",
-      "text": "Logic Panel Demo",
-      "parentId": "M5", "children": [],
+      "id": "M6", "name": "number_input", "tag": "input",
+      "text": "", "parentId": "M4", "children": [],
       "css": {
-        "color": "#e2e8f0",
-        "fontSize": "34px",
-        "fontWeight": "900",
-        "letterSpacing": "-1px",
-        "margin": "0 0 14px 0",
-        "lineHeight": "1.1"
+        "padding": "10px 14px",
+        "background": "#000",
+        "border": "1px solid #fff",
+        "borderRadius": "6px",
+        "color": "#fff",
+        "fontSize": "20px",
+        "fontWeight": "700",
+        "outline": "none",
+        "fontFamily": "inherit",
+        "width": "160px",
+        "boxSizing": "border-box"
       },
-      "attrs": {},
-      "wires": [],
-      "viewBinding": null
+      "attrs": { "type": "number", "placeholder": "0–200" },
+      "wires": [], "viewBinding": null
     },
 
     "M7": {
-      "id": "M7", "label": "grade_desc", "tag": "p",
-      "text": "Enter a name and score, click Run Logic. The Logic chain on the Run button exercises: IF / ELSEIF / ELSE (three validation guards + three grade branches) · vars.passMark in a condition · DB.insert() and EventBus.emit() in block code · a LOOP block that always runs after the chain and counts the grades collection · show / hide / setHTML / setText / log actions · and a wire on the Last Graded label that responds to the gradeAdded event emitted by the code.",
-      "parentId": "M5", "children": [],
+      "id": "M7", "name": "classify_btn", "tag": "button",
+      "text": "Classify",
+      "parentId": "M4", "children": [],
       "css": {
-        "color": "#64748b",
-        "fontSize": "14px",
-        "lineHeight": "1.8",
-        "margin": "0 0 32px 0"
+        "padding": "10px 20px",
+        "background": "#fff",
+        "color": "#000",
+        "border": "1px solid #fff",
+        "borderRadius": "6px",
+        "fontSize": "13px",
+        "fontWeight": "700",
+        "cursor": "pointer",
+        "fontFamily": "inherit",
+        "alignSelf": "flex-start"
       },
       "attrs": {},
-      "wires": [],
-      "viewBinding": null
+      "transferOnClick": { "fromId": "M6", "eventName": "calcRequested" },
+      "wires": [], "viewBinding": null
     },
 
     "M8": {
-      "id": "M8", "label": "name_input", "tag": "input",
-      "text": "", "parentId": "M5", "children": [],
+      "id": "M8", "name": "if_result", "tag": "div",
+      "text": "Result — enter a number and click Classify",
+      "parentId": "M4", "children": [],
       "css": {
-        "display": "block",
-        "width": "100%",
-        "padding": "10px 14px",
-        "background": "#0d0d1a",
-        "border": "1px solid #2e2e4e",
+        "color": "#fff",
+        "fontSize": "18px",
+        "fontWeight": "700",
+        "padding": "12px 16px",
+        "border": "1px solid #333",
         "borderRadius": "6px",
-        "color": "#e2e8f0",
-        "fontSize": "14px",
-        "marginBottom": "12px",
-        "outline": "none",
-        "fontFamily": "inherit",
-        "boxSizing": "border-box"
+        "fontFamily": "monospace"
       },
-      "attrs": { "type": "text", "placeholder": "Student name" },
-      "wires": [],
-      "viewBinding": null
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M9": {
-      "id": "M9", "label": "score_input", "tag": "input",
-      "text": "", "parentId": "M5", "children": [],
-      "css": {
-        "display": "block",
-        "width": "100%",
-        "padding": "10px 14px",
-        "background": "#0d0d1a",
-        "border": "1px solid #2e2e4e",
-        "borderRadius": "6px",
-        "color": "#e2e8f0",
-        "fontSize": "14px",
-        "marginBottom": "20px",
-        "outline": "none",
-        "fontFamily": "inherit",
-        "boxSizing": "border-box"
-      },
-      "attrs": { "type": "number", "placeholder": "Score (0–100)" },
-      "wires": [],
+      "id": "M9", "name": "if_code_output", "tag": "div",
+      "text": "",
+      "parentId": "M4", "children": [],
+      "css": { "color": "#555", "fontSize": "11px", "fontFamily": "monospace" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "resultReady", "targetId": "", "action": "setText", "actionArgs": "code block emitted → label: {{label}}  value: {{value}}" }
+      ],
       "viewBinding": null
     },
 
     "M10": {
-      "id": "M10", "label": "run_btn", "tag": "button",
-      "text": "Run Logic",
-      "parentId": "M5", "children": [],
+      "id": "M10", "name": "loop_section", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M11","M12","M13","M14"],
       "css": {
-        "padding": "11px 28px",
-        "background": "#a78bfa",
-        "color": "#000000",
-        "fontWeight": "700",
-        "fontSize": "14px",
-        "border": "none",
-        "borderRadius": "6px",
-        "cursor": "pointer",
-        "display": "inline-block"
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "12px",
+        "border": "1px solid #fff",
+        "borderRadius": "8px",
+        "padding": "18px",
+        "width": "100%",
+        "boxSizing": "border-box"
       },
-      "attrs": {
-        "onclick": "var _n=document.querySelector('[data-mce-id=M8]'); var _s=document.querySelector('[data-mce-id=M9]'); var ctx={name:(_n?_n.value:'').trim(),score:(_s?_s.value:'').trim()}; if(typeof LogicSystem!=='undefined')LogicSystem.run('M10',ctx); else if(typeof MachineSystem!=='undefined')MachineSystem.executeLogic('M10',ctx);"
-      },
-      "wires": [],
-      "viewBinding": null
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M11": {
-      "id": "M11", "label": "result_panel", "tag": "div",
-      "text": "", "parentId": "M5", "children": ["M12", "M13"],
+      "id": "M11", "name": "loop_label", "tag": "p",
+      "text": "loop block — iterates items collection, emits resultReady per record",
+      "parentId": "M10", "children": [],
       "css": {
-        "display": "none",
-        "flexDirection": "column",
-        "alignItems": "flex-start",
-        "gap": "6px",
-        "marginTop": "24px",
-        "padding": "24px 28px",
-        "background": "#0d0d1a",
-        "border": "1px solid #2e2e4e",
-        "borderRadius": "10px"
+        "color": "#fff",
+        "fontSize": "11px",
+        "fontWeight": "700",
+        "letterSpacing": "1px",
+        "textTransform": "uppercase",
+        "margin": "0",
+        "paddingBottom": "10px",
+        "borderBottom": "1px solid #fff"
       },
-      "attrs": {},
-      "wires": [],
-      "viewBinding": null
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M12": {
-      "id": "M12", "label": "grade_badge", "tag": "div",
-      "text": "",
-      "parentId": "M11", "children": [],
-      "css": { "lineHeight": "1" },
+      "id": "M12", "name": "loop_runner", "tag": "div",
+      "text": "", "parentId": "M10", "children": [],
+      "css": { "display": "none" },
       "attrs": {},
       "wires": [],
       "viewBinding": null
     },
 
     "M13": {
-      "id": "M13", "label": "grade_msg", "tag": "p",
-      "text": "",
-      "parentId": "M11", "children": [],
+      "id": "M13", "name": "run_loop_btn", "tag": "button",
+      "text": "Run Loop Block",
+      "parentId": "M10", "children": [],
       "css": {
-        "color": "#94a3b8",
-        "fontSize": "15px",
-        "margin": "0",
-        "lineHeight": "1.5"
+        "padding": "10px 20px",
+        "background": "#fff",
+        "color": "#000",
+        "border": "1px solid #fff",
+        "borderRadius": "6px",
+        "fontSize": "13px",
+        "fontWeight": "700",
+        "cursor": "pointer",
+        "fontFamily": "inherit",
+        "alignSelf": "flex-start"
       },
       "attrs": {},
-      "wires": [],
-      "viewBinding": null
+      "emitOnClick": "loopRequested",
+      "wires": [], "viewBinding": null
     },
 
     "M14": {
-      "id": "M14", "label": "error_msg", "tag": "p",
-      "text": "",
-      "parentId": "M5", "children": [],
-      "css": {
-        "display": "none",
-        "marginTop": "14px",
-        "padding": "10px 14px",
-        "background": "#1f0e0e",
-        "border": "1px solid #7f1d1d",
-        "borderRadius": "6px",
-        "color": "#fca5a5",
-        "fontSize": "13px"
-      },
-      "attrs": {},
-      "wires": [],
-      "viewBinding": null
+      "id": "M14", "name": "loop_note", "tag": "p",
+      "text": "Iterates the items seed collection (5 records). For each, code calls EventBus.emit('resultReady', ...) — the event log below updates once per item. ctx.item holds the current record.",
+      "parentId": "M10", "children": [],
+      "css": { "color": "#555", "fontSize": "12px", "lineHeight": "1.6", "margin": "0", "fontFamily": "monospace" },
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M15": {
-      "id": "M15", "label": "last_graded", "tag": "p",
-      "text": "",
-      "parentId": "M5", "children": [],
+      "id": "M15", "name": "code_section", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M16","M17","M18"],
       "css": {
-        "display": "none",
-        "marginTop": "16px",
-        "fontSize": "12px",
-        "color": "#a78bfa",
-        "fontFamily": "monospace"
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "12px",
+        "border": "1px solid #fff",
+        "borderRadius": "8px",
+        "padding": "18px",
+        "width": "100%",
+        "boxSizing": "border-box"
       },
-      "attrs": {},
-      "wires": [
-        { "eventName": "gradeAdded", "targetId": "", "action": "show",    "actionArgs": "" },
-        { "eventName": "gradeAdded", "targetId": "", "action": "setText", "actionArgs": "gradeAdded event → {{THIS.VALUE}}" }
-      ],
-      "viewBinding": null
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M16": {
-      "id": "M16", "label": "counter_label", "tag": "p",
-      "text": "",
-      "parentId": "M5", "children": [],
+      "id": "M16", "name": "code_label", "tag": "p",
+      "text": "code block — what you write inside each block",
+      "parentId": "M15", "children": [],
       "css": {
-        "marginTop": "6px",
+        "color": "#fff",
         "fontSize": "11px",
-        "color": "#334155",
-        "fontFamily": "monospace"
+        "fontWeight": "700",
+        "letterSpacing": "1px",
+        "textTransform": "uppercase",
+        "margin": "0",
+        "paddingBottom": "10px",
+        "borderBottom": "1px solid #fff"
       },
-      "attrs": {},
-      "wires": [],
-      "viewBinding": null
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M17": {
-      "id": "M17", "label": "history_view", "tag": "section",
-      "text": "", "parentId": "M1",
-      "children": ["M18", "M19", "M20", "M21"],
-      "css": { "padding": "52px 40px" },
-      "attrs": {},
-      "wires": [
-        { "eventName": "view:history", "targetId": "", "action": "pipeOut", "actionArgs": "loadHistory" }
-      ],
-      "viewBinding": "history"
+      "id": "M17", "name": "code_snippet", "tag": "div",
+      "text": "EventBus.emit('resultReady', { value: ctx.value, label: 'BIG' });",
+      "parentId": "M15", "children": [],
+      "css": {
+        "color": "#aaa",
+        "fontSize": "12px",
+        "fontFamily": "monospace",
+        "background": "#111",
+        "border": "1px solid #333",
+        "borderRadius": "6px",
+        "padding": "12px 14px",
+        "lineHeight": "1.5"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M18": {
-      "id": "M18", "label": "history_title", "tag": "h1",
-      "text": "Grade History",
-      "parentId": "M17", "children": [],
-      "css": {
-        "color": "#e2e8f0",
-        "fontSize": "34px",
-        "fontWeight": "900",
-        "letterSpacing": "-1px",
-        "margin": "0 0 10px 0"
-      },
-      "attrs": {},
-      "wires": [],
-      "viewBinding": null
+      "id": "M18", "name": "code_vars", "tag": "p",
+      "text": "Available in every code block: ctx · DB · EventBus · PipeSystem · ViewSystem · LoopSystem · view · params · vars · loops",
+      "parentId": "M15", "children": [],
+      "css": { "color": "#555", "fontSize": "11px", "fontFamily": "monospace", "margin": "0", "lineHeight": "1.6" },
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M19": {
-      "id": "M19", "label": "history_note", "tag": "p",
-      "text": "All grades written by the Logic chain this session. The view:history event triggers pipeOut loadHistory — the historyLoop reads the grades collection from PREVIEW_DB and renders a card for every record, including the seeds loaded at import.",
-      "parentId": "M17", "children": [],
+      "id": "M19", "name": "event_log", "tag": "div",
+      "text": "event log — classify a number or run the loop to see resultReady fire here",
+      "parentId": "M1", "children": [],
       "css": {
-        "color": "#64748b",
-        "fontSize": "14px",
-        "lineHeight": "1.75",
-        "margin": "0 0 32px 0",
-        "maxWidth": "560px"
+        "color": "#555",
+        "fontSize": "11px",
+        "fontFamily": "monospace",
+        "paddingTop": "16px",
+        "borderTop": "1px solid #fff"
       },
       "attrs": {},
-      "wires": [],
-      "viewBinding": null
-    },
-
-    "M20": {
-      "id": "M20", "label": "back_btn", "tag": "button",
-      "text": "← Back to Grader",
-      "parentId": "M17", "children": [],
-      "css": {
-        "padding": "6px 14px",
-        "background": "transparent",
-        "color": "#64748b",
-        "border": "1px solid #2e2e4e",
-        "borderRadius": "4px",
-        "cursor": "pointer",
-        "fontSize": "13px",
-        "marginBottom": "32px",
-        "display": "inline-block"
-      },
-      "attrs": {},
-      "emitOnClick": "navGrade",
-      "wires": [],
-      "viewBinding": null
-    },
-
-    "M21": {
-      "id": "M21", "label": "history_grid", "tag": "div",
-      "text": "", "parentId": "M17", "children": [],
-      "css": {
-        "display": "flex",
-        "flexWrap": "wrap",
-        "gap": "16px"
-      },
-      "attrs": {},
-      "wires": [],
+      "wires": [
+        { "eventName": "resultReady", "targetId": "", "action": "setText", "actionArgs": "resultReady → label: {{label}}  value: {{value}}" }
+      ],
       "viewBinding": null
     }
-
   }
 }

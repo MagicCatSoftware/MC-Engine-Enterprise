@@ -1,493 +1,379 @@
 {
   "version": "1.0.0",
-  "project": { "name": "Views + URL Params Demo" },
-  "_nextId": 22,
-  "runtimeStyle": "ocean",
+  "project": { "name": "MCEngine — Views Demo" },
+  "_nextId": 20,
   "rootOrder": ["M1"],
 
   "events": {
-    "navHome":              { "name": "navHome",              "payload": "{}" },
-    "navProjects":          { "name": "navProjects",          "payload": "{}" },
-    "projectTitleSelected": { "name": "projectTitleSelected", "payload": "{ value }  — project title string" },
-    "projectDescSelected":  { "name": "projectDescSelected",  "payload": "{ value }  — project description string" },
-    "projectTechSelected":  { "name": "projectTechSelected",  "payload": "{ value }  — tech stack string" },
-    "projectParamsSelected":{ "name": "projectParamsSelected","payload": "{ value }  — raw URL query string for display" }
-  },
-
-  "pipes": {
-    "readProjects": {
-      "name": "readProjects",
-      "method": "GET",
-      "endpoint": "/api/showcase/projects",
-      "collection": "projects",
-      "delay": 200,
-      "schema": [],
-      "live": false
-    }
+    "goHome":    { "name": "goHome",    "payload": "{} — navigate to home view"    },
+    "goWork":    { "name": "goWork",    "payload": "{} — navigate to work view"    },
+    "goContact": { "name": "goContact", "payload": "{} — navigate to contact view" }
   },
 
   "views": {
-    "home": {
-      "name": "home",
-      "title": "Home",
-      "description": "Landing page. First view in the list — auto-activated on Live Preview load with no URL params.",
-      "params": []
-    },
-    "projects": {
-      "name": "projects",
-      "title": "Projects",
-      "description": "Project list. A wire on this section listens for view:projects → pipeOut, so the loop auto-loads when the view activates.",
-      "params": []
-    },
-    "detail": {
-      "name": "detail",
-      "title": "Project Detail",
-      "description": "Shows a selected project. URL becomes ?view=detail&id=X&title=...&tech=...&year=X when navigated to.",
-      "params": ["id", "title", "description", "tech", "year"]
-    }
+    "home":    { "name": "home"    },
+    "work":    { "name": "work"    },
+    "contact": { "name": "contact" }
   },
 
-  "loops": {
-    "projectsLoop": {
-      "pipeName": "readProjects",
-      "targetId": "M11",
-      "template": "<div style=\"background:#13131f;border:1px solid #2e2e4e;border-radius:10px;padding:20px;cursor:pointer;flex:1;min-width:240px;max-width:340px\" onclick=\"ViewSystem.navigate('detail',{id:'{{id}}',title:'{{title}}',description:'{{description}}',tech:'{{tech}}',year:'{{year}}'});EventBus.emit('projectTitleSelected',{value:'{{title}}'});EventBus.emit('projectDescSelected',{value:'{{description}}'});EventBus.emit('projectTechSelected',{value:'{{tech}}'});EventBus.emit('projectParamsSelected',{value:'?view=detail&id={{id}}&title={{title}}&tech={{tech}}&year={{year}}'});\"><div style=\"font-size:10px;color:#a78bfa;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px\">{{tech}}</div><div style=\"color:#e2e8f0;font-size:17px;font-weight:700;margin-bottom:8px\">{{title}}</div><div style=\"color:#64748b;font-size:13px;line-height:1.6;margin-bottom:14px\">{{description}}</div><div style=\"font-size:11px;color:#475569\">{{year}} &nbsp;·&nbsp; Click to open detail &rarr;</div></div>"
-    }
-  },
-
+  "pipes": {},
+  "loops": {},
   "vars": {},
-
   "logic": {},
-
-  "dbCollections": [
-    {
-      "name": "projects",
-      "seed": [
-        {
-          "id": "1",
-          "title": "Magic Cat Engine",
-          "description": "A visual no-code IDE for building interactive, database-driven profile pages using Pipes, Loops, and Views.",
-          "tech": "Node.js / MongoDB",
-          "year": "2026"
-        },
-        {
-          "id": "2",
-          "title": "Weather Dashboard",
-          "description": "Real-time weather data visualization with animated charts and a 7-day forecast, powered by a live API Pipe.",
-          "tech": "React / D3.js",
-          "year": "2025"
-        },
-        {
-          "id": "3",
-          "title": "Task Manager Pro",
-          "description": "Collaborative task manager with live sync, offline-first architecture, and automatic conflict resolution.",
-          "tech": "Vue.js / Socket.io",
-          "year": "2025"
-        }
-      ]
-    }
-  ],
+  "templates": {},
+  "dbCollections": [],
 
   "machines": {
-
     "M1": {
-      "id": "M1",
-      "label": "app",
-      "tag": "section",
-      "text": "",
-      "parentId": "",
-      "children": ["M2", "M5", "M9", "M12"],
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2","M6","M7","M11","M16"],
       "css": {
         "display": "flex",
         "flexDirection": "column",
+        "gap": "0px",
+        "maxWidth": "640px",
+        "width": "100%",
+        "margin": "0 auto",
+        "fontFamily": "system-ui, sans-serif",
+        "background": "#000",
         "minHeight": "100vh",
-        "fontFamily": "system-ui, -apple-system, sans-serif"
+        "boxSizing": "border-box"
       },
       "attrs": {},
       "wires": [
-        { "eventName": "navHome",     "targetId": "", "action": "navigate", "actionArgs": "home" },
-        { "eventName": "navProjects", "targetId": "", "action": "navigate", "actionArgs": "projects" }
+        { "eventName": "goHome",    "targetId": "", "action": "navigate", "actionArgs": "home"    },
+        { "eventName": "goWork",    "targetId": "", "action": "navigate", "actionArgs": "work"    },
+        { "eventName": "goContact", "targetId": "", "action": "navigate", "actionArgs": "contact" }
       ],
       "viewBinding": null
     },
 
     "M2": {
-      "id": "M2",
-      "label": "nav_bar",
-      "tag": "nav",
-      "text": "",
-      "parentId": "M1",
-      "children": ["M3", "M4"],
+      "id": "M2", "name": "nav", "tag": "nav",
+      "text": "", "parentId": "M1", "children": ["M3","M4","M5"],
       "css": {
         "display": "flex",
         "alignItems": "center",
-        "gap": "8px",
-        "padding": "14px 40px",
-        "background": "#0d0d1a",
-        "borderBottom": "1px solid #1e1e3e"
+        "gap": "4px",
+        "padding": "16px 24px",
+        "borderBottom": "1px solid #fff",
+        "boxSizing": "border-box",
+        "width": "100%"
       },
-      "attrs": {},
-      "wires": [],
-      "viewBinding": null
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M3": {
-      "id": "M3",
-      "label": "nav_home_btn",
-      "tag": "button",
+      "id": "M3", "name": "nav_home", "tag": "button",
       "text": "Home",
-      "parentId": "M2",
-      "children": [],
+      "parentId": "M2", "children": [],
       "css": {
-        "padding": "6px 16px",
+        "padding": "7px 16px",
         "background": "transparent",
-        "color": "#a78bfa",
-        "border": "1px solid #3a3a5c",
-        "borderRadius": "4px",
+        "color": "#fff",
+        "border": "1px solid #fff",
+        "borderRadius": "5px",
+        "fontSize": "12px",
+        "fontWeight": "700",
         "cursor": "pointer",
-        "fontSize": "13px",
-        "fontWeight": "600"
+        "fontFamily": "inherit"
       },
       "attrs": {},
-      "emitOnClick": "navHome",
-      "wires": [],
-      "viewBinding": null
+      "emitOnClick": "goHome",
+      "wires": [], "viewBinding": null
     },
 
     "M4": {
-      "id": "M4",
-      "label": "nav_projects_btn",
-      "tag": "button",
-      "text": "Projects",
-      "parentId": "M2",
-      "children": [],
+      "id": "M4", "name": "nav_work", "tag": "button",
+      "text": "Work",
+      "parentId": "M2", "children": [],
       "css": {
-        "padding": "6px 16px",
+        "padding": "7px 16px",
         "background": "transparent",
-        "color": "#a78bfa",
-        "border": "1px solid #3a3a5c",
-        "borderRadius": "4px",
+        "color": "#fff",
+        "border": "1px solid #fff",
+        "borderRadius": "5px",
+        "fontSize": "12px",
+        "fontWeight": "700",
         "cursor": "pointer",
-        "fontSize": "13px",
-        "fontWeight": "600"
+        "fontFamily": "inherit"
       },
       "attrs": {},
-      "emitOnClick": "navProjects",
-      "wires": [],
-      "viewBinding": null
+      "emitOnClick": "goWork",
+      "wires": [], "viewBinding": null
     },
 
     "M5": {
-      "id": "M5",
-      "label": "home_section",
-      "tag": "section",
-      "text": "",
-      "parentId": "M1",
-      "children": ["M6", "M7", "M8"],
+      "id": "M5", "name": "nav_contact", "tag": "button",
+      "text": "Contact",
+      "parentId": "M2", "children": [],
       "css": {
-        "padding": "72px 48px",
-        "maxWidth": "700px"
+        "padding": "7px 16px",
+        "background": "transparent",
+        "color": "#fff",
+        "border": "1px solid #fff",
+        "borderRadius": "5px",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "cursor": "pointer",
+        "fontFamily": "inherit"
+      },
+      "attrs": {},
+      "emitOnClick": "goContact",
+      "wires": [], "viewBinding": null
+    },
+
+    "M6": {
+      "id": "M6", "name": "view_indicator", "tag": "div",
+      "text": "current view: home",
+      "parentId": "M1", "children": [],
+      "css": {
+        "color": "#555",
+        "fontSize": "10px",
+        "fontFamily": "monospace",
+        "padding": "6px 24px",
+        "borderBottom": "1px solid #333",
+        "boxSizing": "border-box",
+        "width": "100%"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "goHome",    "targetId": "", "action": "setText", "actionArgs": "current view: home"    },
+        { "eventName": "goWork",    "targetId": "", "action": "setText", "actionArgs": "current view: work"    },
+        { "eventName": "goContact", "targetId": "", "action": "setText", "actionArgs": "current view: contact" }
+      ],
+      "viewBinding": null
+    },
+
+    "M7": {
+      "id": "M7", "name": "home_page", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M8","M9","M10"],
+      "css": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "20px",
+        "padding": "48px 24px",
+        "boxSizing": "border-box",
+        "width": "100%"
       },
       "attrs": {},
       "wires": [],
       "viewBinding": "home"
     },
 
-    "M6": {
-      "id": "M6",
-      "label": "home_title",
-      "tag": "h1",
-      "text": "Views + URL Params",
-      "parentId": "M5",
-      "children": [],
-      "css": {
-        "color": "#e2e8f0",
-        "fontSize": "44px",
-        "fontWeight": "900",
-        "letterSpacing": "-2px",
-        "margin": "0 0 24px 0",
-        "lineHeight": "1.05"
-      },
-      "attrs": {},
-      "wires": [],
-      "viewBinding": null
-    },
-
-    "M7": {
-      "id": "M7",
-      "label": "home_body",
-      "tag": "p",
-      "text": "This demo has three Views: home, projects, and detail. The home view auto-activates because it is first in the views list. Clicking Projects fires navProjects → a navigate wire on the root machine calls ViewSystem.navigate('projects') → the view:projects event fires → a pipeOut wire auto-loads the project list. Clicking a card calls ViewSystem.navigate('detail', { id, title, ... }) directly, pushing ?view=detail&id=1&title=... to the browser URL and routing you to the detail view.",
-      "parentId": "M5",
-      "children": [],
-      "css": {
-        "color": "#64748b",
-        "fontSize": "15px",
-        "lineHeight": "1.85",
-        "margin": "0 0 36px 0",
-        "maxWidth": "580px"
-      },
-      "attrs": {},
-      "wires": [],
-      "viewBinding": null
-    },
-
     "M8": {
-      "id": "M8",
-      "label": "home_cta",
-      "tag": "button",
-      "text": "Browse Projects →",
-      "parentId": "M5",
-      "children": [],
+      "id": "M8", "name": "home_heading", "tag": "h1",
+      "text": "Views — multi-page without reloading",
+      "parentId": "M7", "children": [],
       "css": {
-        "padding": "12px 28px",
-        "background": "#a78bfa",
-        "color": "#000000",
-        "fontWeight": "700",
-        "fontSize": "15px",
-        "border": "none",
-        "borderRadius": "6px",
-        "cursor": "pointer",
-        "display": "inline-block"
+        "color": "#fff",
+        "fontSize": "28px",
+        "fontWeight": "900",
+        "margin": "0",
+        "letterSpacing": "-0.5px",
+        "lineHeight": "1.2"
       },
-      "attrs": {},
-      "emitOnClick": "navProjects",
-      "wires": [],
-      "viewBinding": null
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M9": {
-      "id": "M9",
-      "label": "projects_section",
-      "tag": "section",
-      "text": "",
-      "parentId": "M1",
-      "children": ["M10", "M11"],
-      "css": {
-        "padding": "56px 40px"
-      },
-      "attrs": {},
-      "wires": [
-        {
-          "eventName": "view:projects",
-          "targetId": "",
-          "action": "pipeOut",
-          "actionArgs": "readProjects"
-        }
-      ],
-      "viewBinding": "projects"
+      "id": "M9", "name": "home_body", "tag": "p",
+      "text": "Each machine has an optional viewBinding property. Set it to a view name and that machine is hidden by default — shown only when that view is active. Navigation fires a navigate wire action which calls ViewSystem.navigate() and updates the URL with ?view=name.",
+      "parentId": "M7", "children": [],
+      "css": { "color": "#aaa", "fontSize": "14px", "lineHeight": "1.75", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M10": {
-      "id": "M10",
-      "label": "proj_heading",
-      "tag": "h2",
-      "text": "Projects",
-      "parentId": "M9",
-      "children": [],
+      "id": "M10", "name": "home_cta", "tag": "button",
+      "text": "See the Work view →",
+      "parentId": "M7", "children": [],
       "css": {
-        "color": "#e2e8f0",
-        "fontSize": "30px",
-        "fontWeight": "800",
-        "letterSpacing": "-0.5px",
-        "margin": "0 0 28px 0"
+        "padding": "12px 24px",
+        "background": "#fff",
+        "color": "#000",
+        "border": "1px solid #fff",
+        "borderRadius": "6px",
+        "fontSize": "13px",
+        "fontWeight": "700",
+        "cursor": "pointer",
+        "fontFamily": "inherit",
+        "alignSelf": "flex-start"
       },
       "attrs": {},
-      "wires": [],
-      "viewBinding": null
+      "emitOnClick": "goWork",
+      "wires": [], "viewBinding": null
     },
 
     "M11": {
-      "id": "M11",
-      "label": "proj_grid",
-      "tag": "div",
-      "text": "",
-      "parentId": "M9",
-      "children": [],
+      "id": "M11", "name": "work_page", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M12","M13","M14","M15"],
       "css": {
         "display": "flex",
-        "flexWrap": "wrap",
-        "gap": "16px"
+        "flexDirection": "column",
+        "gap": "16px",
+        "padding": "48px 24px",
+        "boxSizing": "border-box",
+        "width": "100%"
       },
       "attrs": {},
       "wires": [],
-      "viewBinding": null
+      "viewBinding": "work"
     },
 
     "M12": {
-      "id": "M12",
-      "label": "detail_section",
-      "tag": "section",
-      "text": "",
-      "parentId": "M1",
-      "children": ["M13", "M14", "M15", "M16", "M17", "M18", "M19"],
+      "id": "M12", "name": "work_heading", "tag": "h2",
+      "text": "Work",
+      "parentId": "M11", "children": [],
       "css": {
-        "padding": "48px 40px",
-        "maxWidth": "780px"
+        "color": "#fff",
+        "fontSize": "28px",
+        "fontWeight": "900",
+        "margin": "0",
+        "letterSpacing": "-0.5px",
+        "borderBottom": "1px solid #fff",
+        "paddingBottom": "16px"
       },
-      "attrs": {},
-      "wires": [],
-      "viewBinding": "detail"
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M13": {
-      "id": "M13",
-      "label": "detail_back",
-      "tag": "button",
-      "text": "← Back to Projects",
-      "parentId": "M12",
-      "children": [],
+      "id": "M13", "name": "work_item_1", "tag": "div",
+      "text": "", "parentId": "M11", "children": ["M13a","M13b"],
       "css": {
-        "padding": "6px 14px",
-        "background": "transparent",
-        "color": "#64748b",
-        "border": "1px solid #2e2e4e",
-        "borderRadius": "4px",
-        "cursor": "pointer",
-        "fontSize": "13px",
-        "marginBottom": "36px",
-        "display": "inline-block"
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "6px",
+        "padding": "16px",
+        "border": "1px solid #fff",
+        "borderRadius": "8px",
+        "boxSizing": "border-box"
       },
-      "attrs": {},
-      "emitOnClick": "navProjects",
-      "wires": [],
-      "viewBinding": null
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M13a": {
+      "id": "M13a", "name": "work1_title", "tag": "div",
+      "text": "MCEngine",
+      "parentId": "M13", "children": [],
+      "css": { "color": "#fff", "fontSize": "16px", "fontWeight": "700" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M13b": {
+      "id": "M13b", "name": "work1_desc", "tag": "div",
+      "text": "A visual IDE for building web apps with machines, pipes, events, and views.",
+      "parentId": "M13", "children": [],
+      "css": { "color": "#aaa", "fontSize": "13px", "lineHeight": "1.5" },
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M14": {
-      "id": "M14",
-      "label": "detail_tech_badge",
-      "tag": "div",
-      "text": "—",
-      "parentId": "M12",
-      "children": [],
+      "id": "M14", "name": "work_item_2", "tag": "div",
+      "text": "", "parentId": "M11", "children": ["M14a","M14b"],
       "css": {
-        "display": "inline-block",
-        "background": "#1e0f3e",
-        "color": "#a78bfa",
-        "fontSize": "11px",
-        "fontWeight": "700",
-        "textTransform": "uppercase",
-        "letterSpacing": "1px",
-        "padding": "4px 10px",
-        "borderRadius": "4px",
-        "marginBottom": "14px"
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "6px",
+        "padding": "16px",
+        "border": "1px solid #fff",
+        "borderRadius": "8px",
+        "boxSizing": "border-box"
       },
-      "attrs": {},
-      "wires": [
-        { "eventName": "projectTechSelected", "targetId": "", "action": "setText", "actionArgs": "{{THIS.VALUE}}" }
-      ],
-      "viewBinding": null
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M14a": {
+      "id": "M14a", "name": "work2_title", "tag": "div",
+      "text": "Live Database",
+      "parentId": "M14", "children": [],
+      "css": { "color": "#fff", "fontSize": "16px", "fontWeight": "700" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M14b": {
+      "id": "M14b", "name": "work2_desc", "tag": "div",
+      "text": "Real-time authenticated reads and writes via live pipes — no backend code required.",
+      "parentId": "M14", "children": [],
+      "css": { "color": "#aaa", "fontSize": "13px", "lineHeight": "1.5" },
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M15": {
-      "id": "M15",
-      "label": "detail_title",
-      "tag": "h1",
-      "text": "Select a project",
-      "parentId": "M12",
-      "children": [],
+      "id": "M15", "name": "work_cta", "tag": "button",
+      "text": "Go to Contact →",
+      "parentId": "M11", "children": [],
       "css": {
-        "color": "#e2e8f0",
-        "fontSize": "38px",
-        "fontWeight": "900",
-        "letterSpacing": "-1px",
-        "margin": "0 0 16px 0",
-        "lineHeight": "1.1"
+        "padding": "12px 24px",
+        "background": "#fff",
+        "color": "#000",
+        "border": "1px solid #fff",
+        "borderRadius": "6px",
+        "fontSize": "13px",
+        "fontWeight": "700",
+        "cursor": "pointer",
+        "fontFamily": "inherit",
+        "alignSelf": "flex-start"
       },
       "attrs": {},
-      "wires": [
-        { "eventName": "projectTitleSelected", "targetId": "", "action": "setText", "actionArgs": "{{THIS.VALUE}}" }
-      ],
-      "viewBinding": null
+      "emitOnClick": "goContact",
+      "wires": [], "viewBinding": null
     },
 
     "M16": {
-      "id": "M16",
-      "label": "detail_desc",
-      "tag": "p",
-      "text": "Click a card in the Projects view to navigate here with URL params.",
-      "parentId": "M12",
-      "children": [],
+      "id": "M16", "name": "contact_page", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M17","M18","M19"],
       "css": {
-        "color": "#94a3b8",
-        "fontSize": "16px",
-        "lineHeight": "1.8",
-        "margin": "0 0 44px 0",
-        "maxWidth": "600px"
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "20px",
+        "padding": "48px 24px",
+        "boxSizing": "border-box",
+        "width": "100%"
       },
       "attrs": {},
-      "wires": [
-        { "eventName": "projectDescSelected", "targetId": "", "action": "setText", "actionArgs": "{{THIS.VALUE}}" }
-      ],
-      "viewBinding": null
+      "wires": [],
+      "viewBinding": "contact"
     },
 
     "M17": {
-      "id": "M17",
-      "label": "params_label",
-      "tag": "div",
-      "text": "URL Parameters pushed by ViewSystem.navigate()",
-      "parentId": "M12",
-      "children": [],
+      "id": "M17", "name": "contact_heading", "tag": "h2",
+      "text": "Contact",
+      "parentId": "M16", "children": [],
       "css": {
-        "fontSize": "10px",
-        "fontWeight": "700",
-        "color": "#475569",
-        "textTransform": "uppercase",
-        "letterSpacing": "1px",
-        "marginBottom": "10px"
+        "color": "#fff",
+        "fontSize": "28px",
+        "fontWeight": "900",
+        "margin": "0",
+        "letterSpacing": "-0.5px",
+        "borderBottom": "1px solid #fff",
+        "paddingBottom": "16px"
       },
-      "attrs": {},
-      "wires": [],
-      "viewBinding": null
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M18": {
-      "id": "M18",
-      "label": "params_code",
-      "tag": "pre",
-      "text": "— navigate to this view from a project card —",
-      "parentId": "M12",
-      "children": [],
+      "id": "M18", "name": "contact_email", "tag": "div",
+      "text": "hello@magiccatengine.com",
+      "parentId": "M16", "children": [],
       "css": {
-        "background": "#0d0d1a",
-        "border": "1px solid #1e1e3e",
-        "borderRadius": "6px",
-        "padding": "16px 20px",
-        "color": "#a78bfa",
-        "fontSize": "13px",
-        "fontFamily": "monospace",
-        "lineHeight": "1.6",
-        "margin": "0 0 14px 0",
-        "whiteSpace": "pre-wrap",
-        "wordBreak": "break-all"
+        "color": "#fff",
+        "fontSize": "18px",
+        "fontWeight": "700",
+        "padding": "14px 18px",
+        "border": "1px solid #fff",
+        "borderRadius": "8px",
+        "fontFamily": "monospace"
       },
-      "attrs": {},
-      "wires": [
-        { "eventName": "projectParamsSelected", "targetId": "", "action": "setText", "actionArgs": "{{THIS.VALUE}}" }
-      ],
-      "viewBinding": null
+      "attrs": {}, "wires": [], "viewBinding": null
     },
 
     "M19": {
-      "id": "M19",
-      "label": "params_hint",
-      "tag": "p",
-      "text": "Read these in Logic or onclick: ViewSystem.getParam('id') · ViewSystem.getParam('title') · ViewSystem.getParams() returns all",
-      "parentId": "M12",
-      "children": [],
-      "css": {
-        "fontSize": "12px",
-        "color": "#334155",
-        "fontFamily": "monospace",
-        "margin": "0",
-        "lineHeight": "1.8"
-      },
-      "attrs": {},
-      "wires": [],
-      "viewBinding": null
+      "id": "M19", "name": "contact_note", "tag": "p",
+      "text": "This entire three-page app has zero JavaScript written by hand. Navigation, view switching, and URL routing (?view=home / ?view=work / ?view=contact) are all handled by the MCEngine runtime.",
+      "parentId": "M16", "children": [],
+      "css": { "color": "#aaa", "fontSize": "13px", "lineHeight": "1.75", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
     }
-
   }
 }

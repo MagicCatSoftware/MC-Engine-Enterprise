@@ -1,0 +1,351 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "MCEngine — Live Database Demo" },
+  "_nextId": 20,
+  "rootOrder": ["M1"],
+
+  "events": {
+    "entryTyped": {
+      "name": "entryTyped",
+      "payload": "{ value } — emitted on every keystroke"
+    },
+    "entryAdded": {
+      "name": "entryAdded",
+      "payload": "{ value } — emitted by Add button via transferOnClick"
+    },
+    "fetchTriggered": {
+      "name": "fetchTriggered",
+      "payload": "{} — emitted by Refresh button via emitOnClick"
+    }
+  },
+
+  "pipes": {
+    "getLiveEntries": {
+      "name": "getLiveEntries",
+      "method": "GET",
+      "collection": "entries",
+      "endpoint": "/api/db/entries",
+      "delay": 0,
+      "live": true,
+      "description": "Reads entries from the real database — live:true bypasses mock and hits /api/db/entries with your session"
+    },
+    "addLiveEntry": {
+      "name": "addLiveEntry",
+      "method": "POST",
+      "collection": "entries",
+      "endpoint": "/api/db/entries",
+      "delay": 0,
+      "live": true,
+      "description": "Writes a new entry to the real database — live:true sends a real authenticated POST"
+    }
+  },
+
+  "loops": {
+    "entriesList": {
+      "name": "entriesList",
+      "pipeName": "getLiveEntries",
+      "targetId": "M11",
+      "dataField": "",
+      "clickEvent": "",
+      "clickView": "",
+      "clickValueField": "",
+      "description": "One row per entry returned from the live /api/db/entries endpoint",
+      "template": "<div style=\"display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid #fff;border-radius:6px;background:#000\"><span style=\"color:#fff;font-size:14px;font-family:monospace\">{{value}}</span><span style=\"color:#555;font-size:10px;font-family:monospace\">{{_createdAt}}</span></div>"
+    }
+  },
+
+  "views": {},
+  "vars": {},
+  "logic": {},
+  "templates": {},
+  "dbCollections": [],
+
+  "machines": {
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2","M3","M4","M7","M12","M19"],
+      "css": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "28px",
+        "padding": "40px 24px",
+        "maxWidth": "640px",
+        "width": "100%",
+        "margin": "0 auto",
+        "fontFamily": "system-ui, sans-serif",
+        "background": "#000",
+        "minHeight": "100vh",
+        "boxSizing": "border-box"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "entryAdded",     "targetId": "", "action": "pipeIn",  "actionArgs": "addLiveEntry"    },
+        { "eventName": "fetchTriggered",  "targetId": "", "action": "pipeOut", "actionArgs": "getLiveEntries" }
+      ],
+      "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2", "name": "title", "tag": "h1",
+      "text": "MCEngine — Live Database",
+      "parentId": "M1", "children": [],
+      "css": {
+        "color": "#fff",
+        "fontSize": "28px",
+        "fontWeight": "900",
+        "margin": "0",
+        "letterSpacing": "-0.5px",
+        "borderBottom": "1px solid #fff",
+        "paddingBottom": "16px"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M3": {
+      "id": "M3", "name": "subtitle", "tag": "p",
+      "text": "Setting live: true on a pipe switches from the in-editor mock database to real authenticated HTTP calls against your server. Data persists across sessions and is shared with every user.",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#aaa", "fontSize": "13px", "lineHeight": "1.7", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4", "name": "mode_row", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M5","M6"],
+      "css": { "display": "flex", "gap": "12px", "flexWrap": "wrap" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M5": {
+      "id": "M5", "name": "mock_pill", "tag": "div",
+      "text": "live: false → mock DB (seed data, editor only)",
+      "parentId": "M4", "children": [],
+      "css": {
+        "color": "#555",
+        "fontSize": "11px",
+        "fontFamily": "monospace",
+        "padding": "6px 12px",
+        "border": "1px solid #333",
+        "borderRadius": "6px"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M6": {
+      "id": "M6", "name": "live_pill", "tag": "div",
+      "text": "live: true → real DB (persistent, authenticated)",
+      "parentId": "M4", "children": [],
+      "css": {
+        "color": "#fff",
+        "fontSize": "11px",
+        "fontFamily": "monospace",
+        "padding": "6px 12px",
+        "border": "1px solid #fff",
+        "borderRadius": "6px"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M7": {
+      "id": "M7", "name": "get_section", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M8","M9","M10","M11"],
+      "css": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "12px",
+        "border": "1px solid #fff",
+        "borderRadius": "8px",
+        "padding": "18px",
+        "width": "100%",
+        "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M8": {
+      "id": "M8", "name": "get_label", "tag": "p",
+      "text": "GET — read from live DB",
+      "parentId": "M7", "children": [],
+      "css": {
+        "color": "#fff",
+        "fontSize": "11px",
+        "fontWeight": "700",
+        "letterSpacing": "1px",
+        "textTransform": "uppercase",
+        "margin": "0",
+        "paddingBottom": "10px",
+        "borderBottom": "1px solid #fff"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M9": {
+      "id": "M9", "name": "get_endpoint", "tag": "div",
+      "text": "GET /api/db/entries  ·  live: true",
+      "parentId": "M7", "children": [],
+      "css": { "color": "#555", "fontSize": "11px", "fontFamily": "monospace" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M10": {
+      "id": "M10", "name": "refresh_btn", "tag": "button",
+      "text": "Refresh from DB",
+      "parentId": "M7", "children": [],
+      "css": {
+        "padding": "10px 18px",
+        "background": "#fff",
+        "color": "#000",
+        "border": "1px solid #fff",
+        "borderRadius": "6px",
+        "fontSize": "13px",
+        "fontWeight": "700",
+        "cursor": "pointer",
+        "fontFamily": "inherit",
+        "alignSelf": "flex-start"
+      },
+      "attrs": {},
+      "emitOnClick": "fetchTriggered",
+      "wires": [], "viewBinding": null
+    },
+
+    "M11": {
+      "id": "M11", "name": "entries_list", "tag": "div",
+      "text": "", "parentId": "M7", "children": [],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "8px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M12": {
+      "id": "M12", "name": "post_section", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M13","M14","M15","M18"],
+      "css": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "12px",
+        "border": "1px solid #fff",
+        "borderRadius": "8px",
+        "padding": "18px",
+        "width": "100%",
+        "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M13": {
+      "id": "M13", "name": "post_label", "tag": "p",
+      "text": "POST — write to live DB",
+      "parentId": "M12", "children": [],
+      "css": {
+        "color": "#fff",
+        "fontSize": "11px",
+        "fontWeight": "700",
+        "letterSpacing": "1px",
+        "textTransform": "uppercase",
+        "margin": "0",
+        "paddingBottom": "10px",
+        "borderBottom": "1px solid #fff"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M14": {
+      "id": "M14", "name": "post_endpoint", "tag": "div",
+      "text": "POST /api/db/entries  ·  live: true  ·  body: event payload",
+      "parentId": "M12", "children": [],
+      "css": { "color": "#555", "fontSize": "11px", "fontFamily": "monospace" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M15": {
+      "id": "M15", "name": "input_row", "tag": "div",
+      "text": "", "parentId": "M12", "children": ["M16","M17"],
+      "css": {
+        "display": "flex",
+        "gap": "10px",
+        "alignItems": "stretch",
+        "width": "100%",
+        "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M16": {
+      "id": "M16", "name": "entry_input", "tag": "input",
+      "text": "", "parentId": "M15", "children": [],
+      "css": {
+        "flex": "1",
+        "padding": "10px 14px",
+        "background": "#000",
+        "border": "1px solid #fff",
+        "borderRadius": "6px",
+        "color": "#fff",
+        "fontSize": "14px",
+        "outline": "none",
+        "fontFamily": "inherit",
+        "boxSizing": "border-box"
+      },
+      "attrs": { "type": "text", "placeholder": "Type an entry…", "autocomplete": "off" },
+      "emitOnInput": "entryTyped",
+      "wires": [], "viewBinding": null
+    },
+
+    "M17": {
+      "id": "M17", "name": "add_btn", "tag": "button",
+      "text": "Add to DB",
+      "parentId": "M15", "children": [],
+      "css": {
+        "padding": "10px 18px",
+        "background": "#fff",
+        "color": "#000",
+        "border": "1px solid #fff",
+        "borderRadius": "6px",
+        "fontSize": "13px",
+        "fontWeight": "700",
+        "cursor": "pointer",
+        "fontFamily": "inherit",
+        "whiteSpace": "nowrap"
+      },
+      "attrs": {},
+      "transferOnClick": { "fromId": "M16", "eventName": "entryAdded" },
+      "wires": [], "viewBinding": null
+    },
+
+    "M18": {
+      "id": "M18", "name": "post_status", "tag": "div",
+      "text": "POST status — add an entry to see the real write fire",
+      "parentId": "M12", "children": [],
+      "css": {
+        "color": "#555",
+        "fontSize": "12px",
+        "fontFamily": "monospace",
+        "padding": "8px 12px",
+        "border": "1px solid #333",
+        "borderRadius": "6px"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "entryAdded", "targetId": "", "action": "setText", "actionArgs": "POST fired → wrote {value: \"{{value}}\"} to /api/db/entries" }
+      ],
+      "viewBinding": null
+    },
+
+    "M19": {
+      "id": "M19", "name": "pipe_log", "tag": "div",
+      "text": "pipe log — trigger GET or POST to see it here",
+      "parentId": "M1", "children": [],
+      "css": {
+        "color": "#555",
+        "fontSize": "11px",
+        "fontFamily": "monospace",
+        "paddingTop": "16px",
+        "borderTop": "1px solid #fff"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "fetchTriggered", "targetId": "", "action": "setText", "actionArgs": "last: GET /api/db/entries (live: true)" },
+        { "eventName": "entryAdded",     "targetId": "", "action": "setText", "actionArgs": "last: POST /api/db/entries (live: true) — body: {value: \"{{value}}\"}" }
+      ],
+      "viewBinding": null
+    }
+  }
+}

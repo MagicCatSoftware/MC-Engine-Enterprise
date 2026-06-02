@@ -1,0 +1,502 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "MCEngine — Full Feature Demo" },
+  "_nextId": 31,
+  "rootOrder": ["M1"],
+
+  "events": {
+    "goBoard":          { "name": "goBoard",          "payload": "{} — navigate to Board view"                        },
+    "goAdd":            { "name": "goAdd",             "payload": "{} — navigate to Add Task view"                    },
+    "goAnalytics":      { "name": "goAnalytics",       "payload": "{} — navigate to Analytics view"                   },
+    "fetchTriggered":   { "name": "fetchTriggered",    "payload": "{} — fires pipeOut getTasks via M1 wire"           },
+    "taskSelected":     { "name": "taskSelected",      "payload": "full task record — {title, priority, status, assignee}" },
+    "taskTyped":        { "name": "taskTyped",         "payload": "{ value } — emitted on every keystroke"            },
+    "taskAdded":        { "name": "taskAdded",         "payload": "{ value } — fires pipeIn addTask via M1 wire"      },
+    "analyzeRequested": { "name": "analyzeRequested",  "payload": "{} — triggers runLogic on M28"                    },
+    "analyzeResult":    { "name": "analyzeResult",     "payload": "{ value, high, done } — emitted from logic code"   }
+  },
+
+  "views": {
+    "board":     { "name": "board"     },
+    "add":       { "name": "add"       },
+    "analytics": { "name": "analytics" }
+  },
+
+  "pipes": {
+    "getTasks": {
+      "name": "getTasks",
+      "method": "GET",
+      "collection": "tasks",
+      "endpoint": "/api/db/tasks",
+      "delay": 0,
+      "live": false,
+      "description": "Reads all task records from the tasks collection"
+    },
+    "addTask": {
+      "name": "addTask",
+      "method": "POST",
+      "collection": "tasks",
+      "endpoint": "/api/db/tasks",
+      "delay": 0,
+      "live": false,
+      "description": "Creates a new task — body is the event payload {value}"
+    }
+  },
+
+  "loops": {
+    "taskList": {
+      "name": "taskList",
+      "pipeName": "getTasks",
+      "targetId": "M13",
+      "dataField": "",
+      "clickEvent": "taskSelected",
+      "clickView": "",
+      "clickValueField": "",
+      "description": "One card per task — clicking fires taskSelected with the full record",
+      "template": "<div style=\"display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1px solid #fff;border-radius:8px;background:#000;gap:12px;cursor:pointer;box-sizing:border-box\"><div style=\"flex:1;min-width:0\"><div style=\"color:#fff;font-size:14px;font-weight:700\">{{value}}</div><div style=\"color:#555;font-size:11px;margin-top:4px;font-family:monospace\">{{assignee}}</div></div><div style=\"display:flex;gap:8px;align-items:center;flex-shrink:0\"><span style=\"font-size:10px;padding:2px 10px;border:1px solid #fff;border-radius:20px;color:#fff;white-space:nowrap\">{{priority}}</span><span style=\"font-size:10px;color:#555;white-space:nowrap\">{{status}}</span></div></div>"
+    }
+  },
+
+  "templates": {
+    "taskCard": {
+      "name": "taskCard",
+      "rootId": "TN1",
+      "machines": {
+        "TN1": {
+          "id": "TN1", "tag": "div", "text": "", "children": ["TN2","TN3"],
+          "css": { "display": "flex", "alignItems": "center", "justifyContent": "space-between", "padding": "12px 16px", "border": "1px solid #fff", "borderRadius": "8px", "background": "#000", "gap": "12px", "cursor": "pointer", "width": "100%", "boxSizing": "border-box" },
+          "attrs": {}
+        },
+        "TN2": {
+          "id": "TN2", "tag": "div", "text": "{{value}}", "children": [],
+          "css": { "color": "#fff", "fontSize": "14px", "fontWeight": "700", "flex": "1" },
+          "attrs": {}
+        },
+        "TN3": {
+          "id": "TN3", "tag": "span", "text": "{{priority}}", "children": [],
+          "css": { "color": "#fff", "fontSize": "10px", "padding": "2px 10px", "border": "1px solid #fff", "borderRadius": "20px", "flexShrink": "0" },
+          "attrs": {}
+        }
+      }
+    }
+  },
+
+  "vars": {},
+
+  "logic": {
+    "M28": {
+      "blocks": [
+        {
+          "type": "if",
+          "condition": "true",
+          "actions": [],
+          "code": "var t=DB.find('tasks',{});var h=t.filter(function(x){return x.priority==='High';}).length;var d=t.filter(function(x){return x.status==='Done';}).length;EventBus.emit('analyzeResult',{value:String(t.length)+' total tasks',high:String(h)+' high priority',done:String(d)+' completed'});",
+          "children": []
+        }
+      ]
+    }
+  },
+
+  "dbCollections": [
+    {
+      "name": "tasks",
+      "isArray": true,
+      "seed": [
+        { "value": "Build the API",      "priority": "High",   "status": "In Progress", "assignee": "Adom" },
+        { "value": "Design the UI",      "priority": "High",   "status": "Done",        "assignee": "Adom" },
+        { "value": "Write tests",        "priority": "Medium", "status": "Todo",        "assignee": "Adom" },
+        { "value": "Deploy to prod",     "priority": "High",   "status": "Todo",        "assignee": "Adom" },
+        { "value": "Write the docs",     "priority": "Low",    "status": "Todo",        "assignee": "Adom" }
+      ]
+    }
+  ],
+
+  "machines": {
+
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2","M8","M9","M18","M25"],
+      "css": {
+        "display": "flex", "flexDirection": "column",
+        "maxWidth": "700px", "width": "100%", "margin": "0 auto",
+        "fontFamily": "system-ui, sans-serif", "background": "#000",
+        "minHeight": "100vh", "boxSizing": "border-box"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "goBoard",          "targetId": "", "action": "navigate",  "actionArgs": "board"        },
+        { "eventName": "goAdd",            "targetId": "", "action": "navigate",  "actionArgs": "add"          },
+        { "eventName": "goAnalytics",      "targetId": "", "action": "navigate",  "actionArgs": "analytics"    },
+        { "eventName": "taskAdded",        "targetId": "", "action": "pipeIn",    "actionArgs": "addTask"      },
+        { "eventName": "fetchTriggered",   "targetId": "", "action": "pipeOut",   "actionArgs": "getTasks"     },
+        { "eventName": "analyzeRequested", "targetId": "", "action": "runLogic",  "actionArgs": "M28"          }
+      ],
+      "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2", "name": "nav", "tag": "nav",
+      "text": "", "parentId": "M1", "children": ["M3","M4"],
+      "css": {
+        "display": "flex", "alignItems": "center",
+        "padding": "14px 24px", "borderBottom": "1px solid #fff",
+        "gap": "16px", "width": "100%", "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M3": {
+      "id": "M3", "name": "logo", "tag": "div",
+      "text": "Team Board",
+      "parentId": "M2", "children": [],
+      "css": {
+        "color": "#fff", "fontSize": "16px", "fontWeight": "900",
+        "letterSpacing": "-0.5px", "flex": "1"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4", "name": "nav_btns", "tag": "div",
+      "text": "", "parentId": "M2", "children": ["M5","M6","M7"],
+      "css": { "display": "flex", "gap": "6px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M5": {
+      "id": "M5", "name": "btn_board", "tag": "button",
+      "text": "Board",
+      "parentId": "M4", "children": [],
+      "css": {
+        "padding": "6px 14px", "background": "transparent", "color": "#fff",
+        "border": "1px solid #fff", "borderRadius": "5px", "fontSize": "11px",
+        "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit"
+      },
+      "attrs": { "class": "tab-active" },
+      "emitOnClick": "goBoard",
+      "wires": [
+        { "eventName": "goBoard",     "targetId": "", "action": "addClass",    "actionArgs": "tab-active" },
+        { "eventName": "goAdd",       "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "goAnalytics", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" }
+      ],
+      "viewBinding": null
+    },
+
+    "M6": {
+      "id": "M6", "name": "btn_add", "tag": "button",
+      "text": "Add Task",
+      "parentId": "M4", "children": [],
+      "css": {
+        "padding": "6px 14px", "background": "transparent", "color": "#fff",
+        "border": "1px solid #fff", "borderRadius": "5px", "fontSize": "11px",
+        "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit"
+      },
+      "attrs": {},
+      "emitOnClick": "goAdd",
+      "wires": [
+        { "eventName": "goBoard",     "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "goAdd",       "targetId": "", "action": "addClass",    "actionArgs": "tab-active" },
+        { "eventName": "goAnalytics", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" }
+      ],
+      "viewBinding": null
+    },
+
+    "M7": {
+      "id": "M7", "name": "btn_analytics", "tag": "button",
+      "text": "Analytics",
+      "parentId": "M4", "children": [],
+      "css": {
+        "padding": "6px 14px", "background": "transparent", "color": "#fff",
+        "border": "1px solid #fff", "borderRadius": "5px", "fontSize": "11px",
+        "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit"
+      },
+      "attrs": {},
+      "emitOnClick": "goAnalytics",
+      "wires": [
+        { "eventName": "goBoard",     "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "goAdd",       "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "goAnalytics", "targetId": "", "action": "addClass",    "actionArgs": "tab-active" }
+      ],
+      "viewBinding": null
+    },
+
+    "M8": {
+      "id": "M8", "name": "pipe_log", "tag": "div",
+      "text": "pipe log — fetch tasks or add one to see it fire here",
+      "parentId": "M1", "children": [],
+      "css": {
+        "color": "#555", "fontSize": "10px", "fontFamily": "monospace",
+        "padding": "6px 24px", "borderBottom": "1px solid #333",
+        "width": "100%", "boxSizing": "border-box"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "fetchTriggered", "targetId": "", "action": "setText", "actionArgs": "pipe: GET /api/db/tasks — loading task list" },
+        { "eventName": "taskAdded",      "targetId": "", "action": "setText", "actionArgs": "pipe: POST /api/db/tasks — body: {value: \"{{value}}\"}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M9": {
+      "id": "M9", "name": "board_page", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M10","M13","M14"],
+      "css": {
+        "display": "flex", "flexDirection": "column", "gap": "16px",
+        "padding": "24px", "width": "100%", "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": "board"
+    },
+
+    "M10": {
+      "id": "M10", "name": "board_header", "tag": "div",
+      "text": "", "parentId": "M9", "children": ["M11","M12"],
+      "css": {
+        "display": "flex", "alignItems": "center",
+        "justifyContent": "space-between",
+        "borderBottom": "1px solid #fff", "paddingBottom": "14px"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M11": {
+      "id": "M11", "name": "board_heading", "tag": "h2",
+      "text": "Task Board",
+      "parentId": "M10", "children": [],
+      "css": { "color": "#fff", "fontSize": "22px", "fontWeight": "900", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M12": {
+      "id": "M12", "name": "fetch_btn", "tag": "button",
+      "text": "Fetch Tasks",
+      "parentId": "M10", "children": [],
+      "css": {
+        "padding": "8px 16px", "background": "#fff", "color": "#000",
+        "border": "1px solid #fff", "borderRadius": "5px", "fontSize": "12px",
+        "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit"
+      },
+      "attrs": {},
+      "emitOnClick": "fetchTriggered",
+      "wires": [], "viewBinding": null
+    },
+
+    "M13": {
+      "id": "M13", "name": "task_list", "tag": "div",
+      "text": "", "parentId": "M9", "children": [],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "8px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M14": {
+      "id": "M14", "name": "detail_panel", "tag": "div",
+      "text": "", "parentId": "M9", "children": ["M15","M16","M17"],
+      "css": {
+        "display": "flex", "flexDirection": "column", "gap": "6px",
+        "border": "1px solid #fff", "borderRadius": "8px",
+        "padding": "16px", "width": "100%", "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M15": {
+      "id": "M15", "name": "detail_title", "tag": "div",
+      "text": "← click a task card",
+      "parentId": "M14", "children": [],
+      "css": { "color": "#fff", "fontSize": "16px", "fontWeight": "700" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "taskSelected", "targetId": "", "action": "setText", "actionArgs": "{{value}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M16": {
+      "id": "M16", "name": "detail_meta", "tag": "div",
+      "text": "",
+      "parentId": "M14", "children": [],
+      "css": { "color": "#aaa", "fontSize": "12px", "fontFamily": "monospace" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "taskSelected", "targetId": "", "action": "setText", "actionArgs": "{{priority}} priority · assigned to {{assignee}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M17": {
+      "id": "M17", "name": "detail_status", "tag": "div",
+      "text": "",
+      "parentId": "M14", "children": [],
+      "css": { "color": "#555", "fontSize": "11px", "fontFamily": "monospace" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "taskSelected", "targetId": "", "action": "setText", "actionArgs": "Status: {{status}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M18": {
+      "id": "M18", "name": "add_page", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M19","M20","M23","M24"],
+      "css": {
+        "display": "flex", "flexDirection": "column", "gap": "16px",
+        "padding": "24px", "width": "100%", "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": "add"
+    },
+
+    "M19": {
+      "id": "M19", "name": "add_heading", "tag": "h2",
+      "text": "Add Task",
+      "parentId": "M18", "children": [],
+      "css": {
+        "color": "#fff", "fontSize": "22px", "fontWeight": "900", "margin": "0",
+        "borderBottom": "1px solid #fff", "paddingBottom": "12px"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M20": {
+      "id": "M20", "name": "add_form", "tag": "div",
+      "text": "", "parentId": "M18", "children": ["M21","M22"],
+      "css": {
+        "display": "flex", "gap": "10px", "alignItems": "stretch",
+        "width": "100%", "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M21": {
+      "id": "M21", "name": "task_input", "tag": "input",
+      "text": "", "parentId": "M20", "children": [],
+      "css": {
+        "flex": "1", "padding": "10px 14px", "background": "#000",
+        "border": "1px solid #fff", "borderRadius": "6px", "color": "#fff",
+        "fontSize": "14px", "outline": "none", "fontFamily": "inherit",
+        "boxSizing": "border-box"
+      },
+      "attrs": { "type": "text", "placeholder": "Task title…", "autocomplete": "off" },
+      "emitOnInput": "taskTyped",
+      "wires": [], "viewBinding": null
+    },
+
+    "M22": {
+      "id": "M22", "name": "add_btn", "tag": "button",
+      "text": "Add Task",
+      "parentId": "M20", "children": [],
+      "css": {
+        "padding": "10px 20px", "background": "#fff", "color": "#000",
+        "border": "1px solid #fff", "borderRadius": "6px", "fontSize": "13px",
+        "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit",
+        "whiteSpace": "nowrap"
+      },
+      "attrs": {},
+      "transferOnClick": { "fromId": "M21", "eventName": "taskAdded" },
+      "wires": [], "viewBinding": null
+    },
+
+    "M23": {
+      "id": "M23", "name": "live_preview", "tag": "div",
+      "text": "Live preview — start typing to see event wires fire",
+      "parentId": "M18", "children": [],
+      "css": {
+        "color": "#aaa", "fontSize": "13px", "fontFamily": "monospace",
+        "padding": "10px 14px", "border": "1px solid #333", "borderRadius": "6px"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "taskTyped", "targetId": "", "action": "setText", "actionArgs": "taskTyped → live preview: \"{{value}}\"" }
+      ],
+      "viewBinding": null
+    },
+
+    "M24": {
+      "id": "M24", "name": "add_status", "tag": "div",
+      "text": "POST status — add a task to see pipeIn fire",
+      "parentId": "M18", "children": [],
+      "css": {
+        "color": "#555", "fontSize": "12px", "fontFamily": "monospace",
+        "padding": "10px 14px", "border": "1px solid #333", "borderRadius": "6px"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "taskAdded", "targetId": "", "action": "setText", "actionArgs": "taskAdded → POST fired — saved: \"{{value}}\" — switch to Board and Fetch to see it" }
+      ],
+      "viewBinding": null
+    },
+
+    "M25": {
+      "id": "M25", "name": "analytics_page", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M26","M27","M28","M29","M30"],
+      "css": {
+        "display": "flex", "flexDirection": "column", "gap": "16px",
+        "padding": "24px", "width": "100%", "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": "analytics"
+    },
+
+    "M26": {
+      "id": "M26", "name": "analytics_heading", "tag": "h2",
+      "text": "Analytics",
+      "parentId": "M25", "children": [],
+      "css": {
+        "color": "#fff", "fontSize": "22px", "fontWeight": "900", "margin": "0",
+        "borderBottom": "1px solid #fff", "paddingBottom": "12px"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M27": {
+      "id": "M27", "name": "analyze_btn", "tag": "button",
+      "text": "Run Analysis",
+      "parentId": "M25", "children": [],
+      "css": {
+        "padding": "10px 20px", "background": "#fff", "color": "#000",
+        "border": "1px solid #fff", "borderRadius": "6px", "fontSize": "13px",
+        "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit",
+        "alignSelf": "flex-start"
+      },
+      "attrs": {},
+      "emitOnClick": "analyzeRequested",
+      "wires": [], "viewBinding": null
+    },
+
+    "M28": {
+      "id": "M28", "name": "logic_runner", "tag": "div",
+      "text": "", "parentId": "M25", "children": [],
+      "css": { "display": "none" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M29": {
+      "id": "M29", "name": "result_summary", "tag": "div",
+      "text": "Result — click Run Analysis to execute the logic block",
+      "parentId": "M25", "children": [],
+      "css": {
+        "color": "#fff", "fontSize": "16px", "fontWeight": "700",
+        "padding": "14px 18px", "border": "1px solid #fff", "borderRadius": "8px"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "analyzeResult", "targetId": "", "action": "setText", "actionArgs": "{{value}} · {{high}} · {{done}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M30": {
+      "id": "M30", "name": "result_detail", "tag": "div",
+      "text": "",
+      "parentId": "M25", "children": [],
+      "css": {
+        "color": "#aaa", "fontSize": "13px", "lineHeight": "1.8",
+        "padding": "14px 18px", "border": "1px solid #333",
+        "borderRadius": "8px", "fontFamily": "monospace"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "analyzeResult", "targetId": "", "action": "setHTML", "actionArgs": "High priority: {{high}}<br>Completed: {{done}}<br><br>Logic read DB.find('tasks') — result emitted via EventBus → 2 machines wired to analyzeResult updated" }
+      ],
+      "viewBinding": null
+    }
+
+  }
+}
