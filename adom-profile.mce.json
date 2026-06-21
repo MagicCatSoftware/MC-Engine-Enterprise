@@ -1,36 +1,36 @@
 {
   "version": "1.0.0",
-  "project": { "name": "Adom — Feature Demo" },
+  "project": { "name": "Adom — Magic Cat Engine" },
   "_nextId": 53,
-  "runtimeStyle": "ocean",
+  "runtimeStyle": "clean",
   "rootOrder": ["M1"],
 
   "events": {
-    "goAbout":       { "name": "goAbout",       "payload": "{}" },
-    "goWork":        { "name": "goWork",         "payload": "{}" },
-    "goContact":     { "name": "goContact",      "payload": "{}" },
-    "typed":         { "name": "typed",          "payload": "{ value } — emitted on every keystroke in the demo input" },
-    "noteSaved":     { "name": "noteSaved",      "payload": "{ value } — transferred from input, then piped to POST" },
-    "selectProject": { "name": "selectProject",  "payload": "{ value, title, type, year, description } — full project doc on click" }
+    "goAbout":       { "name": "goAbout",       "payload": "" },
+    "goWork":        { "name": "goWork",         "payload": "" },
+    "goContact":     { "name": "goContact",      "payload": "" },
+    "typed":         { "name": "typed",          "payload": "{ value } — fires on every keystroke in the demo input" },
+    "noteSaved":     { "name": "noteSaved",      "payload": "{ value } — transferred from note input on button click" },
+    "selectProject": { "name": "selectProject",  "payload": "{ value, title, type, year, description } — emitted on project row click" }
   },
 
   "pipes": {
     "getProjects": {
-      "name": "getProjects", "method": "GET", "collection": "projects",
-      "endpoint": "/api/db/projects", "delay": 0, "live": false,
-      "queryTemplate": "", "description": "GET pipe — fetches project cards on view:work"
-    },
-    "saveNote": {
-      "name": "saveNote", "method": "POST", "collection": "notes",
-      "endpoint": "/api/db/notes", "delay": 300, "live": false,
-      "queryTemplate": "", "description": "POST pipe — saves a note, triggered by button via pipeIn wire"
+      "name": "getProjects",
+      "method": "GET",
+      "collection": "projects",
+      "endpoint": "/api/db/projects",
+      "delay": 0,
+      "live": false,
+      "queryTemplate": "",
+      "description": "Fetches all projects for the work-view loop"
     }
   },
 
   "views": {
-    "about":   { "name": "about",   "title": "About",   "description": "Bio + live wire demo", "params": [] },
-    "work":    { "name": "work",    "title": "Work",    "description": "Projects from GET pipe + loop + template", "params": [] },
-    "contact": { "name": "contact", "title": "Contact", "description": "Contact links", "params": [] }
+    "about":   { "name": "about",   "title": "About",   "description": "Profile + bio + live tech demos", "params": [] },
+    "work":    { "name": "work",    "title": "Work",    "description": "Projects via GET pipe + loop",     "params": [] },
+    "contact": { "name": "contact", "title": "Contact", "description": "Get in touch",                     "params": [] }
   },
 
   "loops": {
@@ -42,54 +42,16 @@
       "clickEvent": "selectProject",
       "clickView": "",
       "clickValueField": "title",
-      "description": "Renders one projectCard template per project. Click fires selectProject event.",
-      "template": "<div style=\"padding:28px 0;border-top:1px solid #fff;cursor:pointer;transition:padding-left .2s\" onmouseenter=\"this.style.paddingLeft='14px'\" onmouseleave=\"this.style.paddingLeft='0'\"><div style=\"display:flex;justify-content:space-between;margin-bottom:10px\"><span style=\"font-size:9px;font-weight:700;letter-spacing:3px;color:#fff;text-transform:uppercase\">{{type}}</span><span style=\"font-size:9px;letter-spacing:2px;color:#fff\">{{year}}</span></div><h3 style=\"font-size:26px;font-weight:900;color:#fff;margin:0 0 10px 0;letter-spacing:-0.5px\">{{title}}</h3><p style=\"font-size:13px;color:#fff;line-height:1.8;margin:0\">{{description}}</p></div>"
+      "description": "Renders one row per project. Click fires selectProject with full doc as payload.",
+      "template": "<div style=\"padding:24px 0;border-top:1px solid #1a1a1a;transition:padding-left .15s ease\" onmouseenter=\"this.style.paddingLeft='14px';this.style.borderTopColor='#333'\" onmouseleave=\"this.style.paddingLeft='0';this.style.borderTopColor='#1a1a1a'\"><div style=\"display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px\"><span style=\"font-size:9px;font-weight:700;letter-spacing:3px;color:#555;text-transform:uppercase\">{{type}}</span><span style=\"font-size:9px;letter-spacing:1px;color:#444\">{{year}}</span></div><h3 style=\"font-size:20px;font-weight:900;color:#fff;margin:0 0 8px 0;letter-spacing:-0.3px\">{{title}}</h3><p style=\"font-size:12px;color:#777;line-height:1.9;margin:0\">{{description}}</p></div>",
+      "pageSize": 0,
+      "paginationId": ""
     }
   },
 
   "vars": {},
   "logic": {},
-
-  "templates": {
-    "projectCard": {
-      "name": "projectCard",
-      "description": "Visual card for each project — built in the Templates panel, compiled into the projectList loop",
-      "rootId": "TN1",
-      "machines": {
-        "TN1": {
-          "id": "TN1", "tag": "div", "text": "",
-          "css": { "padding": "28px 0", "borderTop": "1px solid #fff", "cursor": "pointer", "transition": "padding-left .2s" },
-          "attrs": { "onmouseenter": "this.style.paddingLeft='14px'", "onmouseleave": "this.style.paddingLeft='0'" },
-          "children": ["TN2", "TN3", "TN4"]
-        },
-        "TN2": {
-          "id": "TN2", "tag": "div", "text": "",
-          "css": { "display": "flex", "justifyContent": "space-between", "marginBottom": "10px" },
-          "attrs": {}, "children": ["TN5", "TN6"]
-        },
-        "TN3": {
-          "id": "TN3", "tag": "h3", "text": "{{title}}",
-          "css": { "fontSize": "26px", "fontWeight": "900", "color": "#fff", "margin": "0 0 10px 0", "letterSpacing": "-0.5px" },
-          "attrs": {}, "children": []
-        },
-        "TN4": {
-          "id": "TN4", "tag": "p", "text": "{{description}}",
-          "css": { "fontSize": "13px", "color": "#fff", "lineHeight": "1.8", "margin": "0" },
-          "attrs": {}, "children": []
-        },
-        "TN5": {
-          "id": "TN5", "tag": "span", "text": "{{type}}",
-          "css": { "fontSize": "9px", "fontWeight": "700", "letterSpacing": "3px", "color": "#fff", "textTransform": "uppercase" },
-          "attrs": {}, "children": []
-        },
-        "TN6": {
-          "id": "TN6", "tag": "span", "text": "{{year}}",
-          "css": { "fontSize": "9px", "letterSpacing": "2px", "color": "#fff" },
-          "attrs": {}, "children": []
-        }
-      }
-    }
-  },
+  "templates": {},
 
   "dbCollections": [
     {
@@ -97,10 +59,28 @@
       "isArray": true,
       "seed": [
         {
-          "title": "MCEngine",
+          "title": "Magic Cat Engine",
           "type": "Platform",
           "year": "2026",
-          "description": "A visual IDE for building interactive web applications. Machines, pipes, events, loops and templates — wired together in real time."
+          "description": "A visual IDE for assembling interactive web apps. Machines, events, pipes, loops, logic and templates — wired together in real time without leaving the browser."
+        },
+        {
+          "title": "Expense Tracker",
+          "type": "App",
+          "year": "2026",
+          "description": "Full CRUD expense tracker. Add, categorise and delete entries using POST/DELETE pipes, DB collections and live loop rendering."
+        },
+        {
+          "title": "Photo Gallery",
+          "type": "App",
+          "year": "2026",
+          "description": "Paginated media gallery. Pulls from the media library, renders a responsive grid and navigates to a detail view on click."
+        },
+        {
+          "title": "Reviews",
+          "type": "App",
+          "year": "2026",
+          "description": "Star-rating and comment system. Submit reviews via POST pipe; loop re-fetches and re-renders automatically on each submission."
         }
       ]
     }
@@ -110,20 +90,25 @@
 
     "M1": {
       "id": "M1", "name": "root", "tag": "section",
-      "text": "", "parentId": "", "children": ["M2", "M10", "M30", "M40", "M50"],
+      "text": "",
+      "parentId": null, "children": ["M2", "M10", "M30", "M40", "M50"],
       "css": {
-        "background": "#000", "color": "#fff", "minHeight": "100vh",
-        "fontFamily": "system-ui, -apple-system, sans-serif", "overflowX": "hidden"
+        "minHeight": "100vh",
+        "background": "#000",
+        "color": "#fff",
+        "fontFamily": "'Inter', 'Helvetica Neue', Arial, sans-serif",
+        "fontSize": "14px",
+        "lineHeight": "1.6"
       },
       "attrs": {},
       "wires": [
-        { "eventName": "goAbout",       "targetId": "", "action": "navigate", "actionArgs": "about"       },
-        { "eventName": "goWork",        "targetId": "", "action": "navigate", "actionArgs": "work"        },
-        { "eventName": "goContact",     "targetId": "", "action": "navigate", "actionArgs": "contact"     },
-        { "eventName": "view:work",     "targetId": "", "action": "pipeOut",  "actionArgs": "getProjects" },
-        { "eventName": "noteSaved",     "targetId": "", "action": "pipeIn",   "actionArgs": "saveNote"    }
+        { "eventName": "goAbout",   "targetId": "", "action": "navigate", "actionArgs": "about" },
+        { "eventName": "goWork",    "targetId": "", "action": "navigate", "actionArgs": "work" },
+        { "eventName": "goContact", "targetId": "", "action": "navigate", "actionArgs": "contact" },
+        { "eventName": "view:work", "targetId": "", "action": "pipeOut",  "actionArgs": "getProjects" }
       ],
-      "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -131,15 +116,18 @@
     },
 
     "M2": {
-      "id": "M2", "name": "nav", "tag": "div",
-      "text": "", "parentId": "M1", "children": ["M3", "M4"],
+      "id": "M2", "name": "nav", "tag": "nav",
+      "text": "",
+      "parentId": "M1", "children": ["M3", "M4"],
       "css": {
-        "display": "flex", "flexDirection": "column", "alignItems": "flex-start", "gap": "14px",
-        "padding": "24px 28px", "borderBottom": "1px solid #fff",
-        "position": "sticky", "top": "0", "background": "#000",
-        "zIndex": "100", "boxSizing": "border-box", "width": "100%"
+        "position": "sticky", "top": "0", "zIndex": "100",
+        "background": "#000", "borderBottom": "1px solid #1a1a1a",
+        "display": "flex", "alignItems": "center", "justifyContent": "space-between",
+        "padding": "0 48px", "height": "56px", "boxSizing": "border-box"
       },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -148,10 +136,15 @@
 
     "M3": {
       "id": "M3", "name": "nav-brand", "tag": "div",
-      "text": "ADOM",
+      "text": "MAGIC CAT ENGINE",
       "parentId": "M2", "children": [],
-      "css": { "fontSize": "12px", "fontWeight": "900", "letterSpacing": "5px", "color": "#fff", "cursor": "pointer" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "goAbout", "emitOnInput": "",
+      "css": {
+        "fontSize": "11px", "fontWeight": "900",
+        "letterSpacing": "4px", "color": "#fff", "textTransform": "uppercase"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -160,9 +153,12 @@
 
     "M4": {
       "id": "M4", "name": "nav-links", "tag": "div",
-      "text": "", "parentId": "M2", "children": ["M5", "M6", "M7"],
-      "css": { "display": "flex", "gap": "32px", "alignItems": "center" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "text": "",
+      "parentId": "M2", "children": ["M5", "M6", "M7"],
+      "css": { "display": "flex", "gap": "4px" },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -174,12 +170,15 @@
       "text": "ABOUT",
       "parentId": "M4", "children": [],
       "css": {
-        "background": "transparent", "border": "none", "color": "#fff",
-        "fontSize": "9px", "fontWeight": "700", "letterSpacing": "3px",
-        "textTransform": "uppercase", "cursor": "pointer", "padding": "0", "fontFamily": "inherit"
+        "background": "none", "border": "none",
+        "color": "#888", "fontFamily": "inherit",
+        "fontSize": "10px", "fontWeight": "700",
+        "letterSpacing": "2px", "textTransform": "uppercase",
+        "cursor": "pointer", "padding": "8px 16px"
       },
-      "attrs": { "onmouseenter": "this.style.color='#fff'", "onmouseleave": "this.style.color='#fff'" },
-      "wires": [], "viewBinding": null, "emitOnClick": "goAbout", "emitOnInput": "",
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "goAbout", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -191,12 +190,15 @@
       "text": "WORK",
       "parentId": "M4", "children": [],
       "css": {
-        "background": "transparent", "border": "none", "color": "#fff",
-        "fontSize": "9px", "fontWeight": "700", "letterSpacing": "3px",
-        "textTransform": "uppercase", "cursor": "pointer", "padding": "0", "fontFamily": "inherit"
+        "background": "none", "border": "none",
+        "color": "#888", "fontFamily": "inherit",
+        "fontSize": "10px", "fontWeight": "700",
+        "letterSpacing": "2px", "textTransform": "uppercase",
+        "cursor": "pointer", "padding": "8px 16px"
       },
-      "attrs": { "onmouseenter": "this.style.color='#fff'", "onmouseleave": "this.style.color='#fff'" },
-      "wires": [], "viewBinding": null, "emitOnClick": "goWork", "emitOnInput": "",
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "goWork", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -208,12 +210,15 @@
       "text": "CONTACT",
       "parentId": "M4", "children": [],
       "css": {
-        "background": "transparent", "border": "none", "color": "#fff",
-        "fontSize": "9px", "fontWeight": "700", "letterSpacing": "3px",
-        "textTransform": "uppercase", "cursor": "pointer", "padding": "0", "fontFamily": "inherit"
+        "background": "none", "border": "none",
+        "color": "#888", "fontFamily": "inherit",
+        "fontSize": "10px", "fontWeight": "700",
+        "letterSpacing": "2px", "textTransform": "uppercase",
+        "cursor": "pointer", "padding": "8px 16px"
       },
-      "attrs": { "onmouseenter": "this.style.color='#fff'", "onmouseleave": "this.style.color='#fff'" },
-      "wires": [], "viewBinding": null, "emitOnClick": "goContact", "emitOnInput": "",
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "goContact", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -222,9 +227,12 @@
 
     "M10": {
       "id": "M10", "name": "about-view", "tag": "div",
-      "text": "", "parentId": "M1", "children": ["M11"],
-      "css": {},
-      "attrs": {}, "wires": [], "viewBinding": "about", "emitOnClick": "", "emitOnInput": "",
+      "text": "",
+      "parentId": "M1", "children": ["M11"],
+      "css": { "width": "100%", "padding": "64px 48px 80px", "boxSizing": "border-box" },
+      "attrs": {},
+      "wires": [], "viewBinding": "about",
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -233,9 +241,12 @@
 
     "M11": {
       "id": "M11", "name": "about-inner", "tag": "div",
-      "text": "", "parentId": "M10", "children": ["M12", "M13", "M14", "M15", "M16", "M17"],
-      "css": { "maxWidth": "860px", "width": "100%", "boxSizing": "border-box", "padding": "56px 28px 80px" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "text": "",
+      "parentId": "M10", "children": ["M12", "M18", "M19", "M20", "M21"],
+      "css": { "maxWidth": "800px", "margin": "0 auto" },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -243,11 +254,16 @@
     },
 
     "M12": {
-      "id": "M12", "name": "about-eyebrow", "tag": "p",
-      "text": "FULL STACK DEVELOPER",
-      "parentId": "M11", "children": [],
-      "css": { "fontSize": "9px", "fontWeight": "700", "letterSpacing": "5px", "color": "#fff", "textTransform": "uppercase", "margin": "0 0 20px 0" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "id": "M12", "name": "hero-row", "tag": "div",
+      "text": "",
+      "parentId": "M11", "children": ["M13", "M15"],
+      "css": {
+        "display": "flex", "gap": "48px",
+        "alignItems": "flex-end", "marginBottom": "48px"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -255,11 +271,17 @@
     },
 
     "M13": {
-      "id": "M13", "name": "about-name", "tag": "h1",
-      "text": "ADOM",
-      "parentId": "M11", "children": [],
-      "css": { "fontSize": "clamp(56px, 14vw, 110px)", "fontWeight": "900", "letterSpacing": "-2px", "color": "#fff", "margin": "0 0 28px 0", "lineHeight": "0.92", "wordBreak": "break-word" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "id": "M13", "name": "photo-wrap", "tag": "div",
+      "text": "",
+      "parentId": "M12", "children": ["M14"],
+      "css": {
+        "width": "200px", "height": "200px",
+        "flexShrink": "0", "overflow": "hidden",
+        "border": "1px solid #2a2a2a"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -267,10 +289,21 @@
     },
 
     "M14": {
-      "id": "M14", "name": "about-rule", "tag": "hr",
-      "text": "", "parentId": "M11", "children": [],
-      "css": { "border": "none", "borderTop": "1px solid #fff", "margin": "0 0 28px 0" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "id": "M14", "name": "profile-img", "tag": "img",
+      "text": "",
+      "parentId": "M13", "children": [],
+      "css": {
+        "width": "100%", "height": "100%",
+        "objectFit": "cover", "objectPosition": "center top",
+        "display": "block",
+        "filter": "grayscale(100%) contrast(1.1)"
+      },
+      "attrs": {
+        "src": "https://magiccatengine.com/media/6a1979decb515bdb9196f94b/Adom_Profile_Picture_2026_06_13_1781350254602.png",
+        "alt": "Adom Patchett"
+      },
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -278,11 +311,17 @@
     },
 
     "M15": {
-      "id": "M15", "name": "bio-label", "tag": "p",
-      "text": "STORY",
-      "parentId": "M11", "children": [],
-      "css": { "fontSize": "9px", "fontWeight": "700", "letterSpacing": "5px", "color": "#fff", "textTransform": "uppercase", "margin": "0 0 16px 0" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "id": "M15", "name": "hero-text", "tag": "div",
+      "text": "",
+      "parentId": "M12", "children": ["M16", "M17"],
+      "css": {
+        "flex": "1", "display": "flex",
+        "flexDirection": "column", "justifyContent": "flex-end",
+        "paddingBottom": "8px"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -290,11 +329,17 @@
     },
 
     "M16": {
-      "id": "M16", "name": "bio-text", "tag": "p",
-      "text": "I started as a kid, always wanting to know how to code. I would get really happy in software book aisles in the chapters. Started with HTML, then got into Adobe Flash Development. From there, Javascript, PHP, Node, Express, MongoDB, a bit of Java, a bit of C++.",
-      "parentId": "M11", "children": [],
-      "css": { "fontSize": "16px", "lineHeight": "1.9", "color": "#fff", "margin": "0", "overflowWrap": "break-word" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "id": "M16", "name": "eyebrow", "tag": "p",
+      "text": "CREATOR — MAGIC CAT ENGINE",
+      "parentId": "M15", "children": [],
+      "css": {
+        "fontSize": "9px", "fontWeight": "700",
+        "letterSpacing": "4px", "color": "#555",
+        "margin": "0 0 16px 0", "textTransform": "uppercase"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -302,10 +347,17 @@
     },
 
     "M17": {
-      "id": "M17", "name": "wire-demo", "tag": "div",
-      "text": "", "parentId": "M11", "children": ["M18", "M19", "M20", "M21", "M22", "M23"],
-      "css": { "marginTop": "48px", "paddingTop": "40px", "borderTop": "1px solid #fff" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "id": "M17", "name": "hero-name", "tag": "h1",
+      "text": "ADOM",
+      "parentId": "M15", "children": [],
+      "css": {
+        "fontSize": "72px", "fontWeight": "900",
+        "letterSpacing": "-3px", "margin": "0",
+        "lineHeight": "1", "color": "#fff"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -313,11 +365,13 @@
     },
 
     "M18": {
-      "id": "M18", "name": "wire-label", "tag": "p",
-      "text": "WIRE + EVENT DEMO",
-      "parentId": "M17", "children": [],
-      "css": { "fontSize": "9px", "fontWeight": "700", "letterSpacing": "5px", "color": "#fff", "textTransform": "uppercase", "margin": "0 0 16px 0" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "id": "M18", "name": "about-rule", "tag": "hr",
+      "text": "",
+      "parentId": "M11", "children": [],
+      "css": { "border": "none", "borderTop": "1px solid #1a1a1a", "margin": "0 0 40px 0" },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -325,17 +379,17 @@
     },
 
     "M19": {
-      "id": "M19", "name": "demo-input", "tag": "input",
-      "text": "", "parentId": "M17", "children": [],
+      "id": "M19", "name": "bio-label", "tag": "p",
+      "text": "BIO",
+      "parentId": "M11", "children": [],
       "css": {
-        "display": "block", "width": "100%", "padding": "12px 16px",
-        "background": "#000", "border": "1px solid #fff", "borderRadius": "3px",
-        "color": "#fff", "fontSize": "14px", "fontFamily": "inherit",
-        "boxSizing": "border-box", "outline": "none", "marginBottom": "12px"
+        "fontSize": "9px", "fontWeight": "700",
+        "letterSpacing": "4px", "color": "#555",
+        "margin": "0 0 16px 0", "textTransform": "uppercase"
       },
-      "attrs": { "type": "text", "placeholder": "Type anything — watch the wire relay it live below" },
-      "emitOnInput": "typed",
-      "wires": [], "viewBinding": null, "emitOnClick": "",
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -343,15 +397,16 @@
     },
 
     "M20": {
-      "id": "M20", "name": "wire-output", "tag": "p",
-      "text": "— waiting for input —",
-      "parentId": "M17", "children": [],
-      "css": { "fontSize": "13px", "color": "#fff", "fontFamily": "monospace", "margin": "0 0 32px 0" },
+      "id": "M20", "name": "bio-text", "tag": "p",
+      "text": "Started coding as a kid — always drawn to the craft. HTML, Flash, JavaScript, PHP, Node, Express, MongoDB. Now building Magic Cat Engine: a visual runtime for assembling interactive web apps from machines, events and wires.",
+      "parentId": "M11", "children": [],
+      "css": {
+        "fontSize": "15px", "lineHeight": "1.9",
+        "color": "#bbb", "margin": "0 0 56px 0", "maxWidth": "600px"
+      },
       "attrs": {},
-      "wires": [
-        { "eventName": "typed", "targetId": "", "action": "setText", "actionArgs": "Wire received: {{value}}" }
-      ],
-      "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -359,11 +414,13 @@
     },
 
     "M21": {
-      "id": "M21", "name": "pipe-label", "tag": "p",
-      "text": "PIPE DEMO — click to POST the input text",
-      "parentId": "M17", "children": [],
-      "css": { "fontSize": "9px", "fontWeight": "700", "letterSpacing": "5px", "color": "#fff", "textTransform": "uppercase", "margin": "0 0 16px 0" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "id": "M21", "name": "demo-section", "tag": "div",
+      "text": "",
+      "parentId": "M11", "children": ["M22", "M23", "M24", "M25", "M26", "M27", "M28", "M29"],
+      "css": { "borderTop": "1px solid #1a1a1a", "paddingTop": "40px" },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -371,33 +428,154 @@
     },
 
     "M22": {
-      "id": "M22", "name": "save-btn", "tag": "button",
-      "text": "Save Note →",
-      "parentId": "M17", "children": [],
+      "id": "M22", "name": "events-label", "tag": "p",
+      "text": "EVENTS + WIRES",
+      "parentId": "M21", "children": [],
       "css": {
-        "display": "inline-block", "padding": "10px 24px",
-        "background": "#fff", "color": "#000", "border": "none",
-        "fontSize": "11px", "fontWeight": "700", "letterSpacing": "2px",
-        "textTransform": "uppercase", "cursor": "pointer", "fontFamily": "inherit", "marginBottom": "12px"
+        "fontSize": "9px", "fontWeight": "700",
+        "letterSpacing": "4px", "color": "#555",
+        "margin": "0 0 8px 0", "textTransform": "uppercase"
       },
       "attrs": {},
-      "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
-      "transferOnClick": { "fromId": "M19", "eventName": "noteSaved" },
+      "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
       "outputTransform": { "filter": "", "arg": "" }
     },
 
     "M23": {
-      "id": "M23", "name": "save-status", "tag": "p",
-      "text": "— nothing saved yet —",
-      "parentId": "M17", "children": [],
-      "css": { "fontSize": "13px", "color": "#fff", "fontFamily": "monospace", "margin": "0" },
+      "id": "M23", "name": "events-hint", "tag": "p",
+      "text": "Every keystroke fires the typed event via emitOnInput. The wire on the output below catches it and calls setText.",
+      "parentId": "M21", "children": [],
+      "css": { "fontSize": "12px", "color": "#555", "margin": "0 0 20px 0" },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
+      "pipeBindings": [], "varWires": [],
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform": { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M24": {
+      "id": "M24", "name": "demo-input", "tag": "input",
+      "text": "",
+      "parentId": "M21", "children": [],
+      "css": {
+        "display": "block",
+        "width": "100%", "maxWidth": "480px",
+        "padding": "12px 16px",
+        "background": "#080808", "border": "1px solid #2a2a2a",
+        "color": "#fff", "fontSize": "14px",
+        "fontFamily": "inherit", "boxSizing": "border-box",
+        "marginBottom": "12px"
+      },
+      "attrs": { "type": "text", "placeholder": "Type anything — watch the event fire below…" },
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "typed",
+      "pipeBindings": [], "varWires": [],
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform": { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M25": {
+      "id": "M25", "name": "wire-output", "tag": "p",
+      "text": "— waiting for typed event —",
+      "parentId": "M21", "children": [],
+      "css": {
+        "fontSize": "12px", "fontFamily": "monospace",
+        "color": "#555", "margin": "0 0 40px 0"
+      },
       "attrs": {},
       "wires": [
-        { "eventName": "noteSaved", "targetId": "", "action": "setText", "actionArgs": "POST fired — saved: {{value}}" }
+        { "eventName": "typed", "targetId": "", "action": "setText", "actionArgs": "→ {{value}}" }
       ],
-      "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
+      "pipeBindings": [], "varWires": [],
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform": { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M26": {
+      "id": "M26", "name": "transfer-label", "tag": "p",
+      "text": "TRANSFER ON CLICK",
+      "parentId": "M21", "children": [],
+      "css": {
+        "fontSize": "9px", "fontWeight": "700",
+        "letterSpacing": "4px", "color": "#555",
+        "margin": "0 0 8px 0", "textTransform": "uppercase"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
+      "pipeBindings": [], "varWires": [],
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform": { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M27": {
+      "id": "M27", "name": "note-input", "tag": "input",
+      "text": "",
+      "parentId": "M21", "children": [],
+      "css": {
+        "display": "inline-block",
+        "width": "300px", "padding": "12px 16px",
+        "background": "#080808", "border": "1px solid #2a2a2a",
+        "color": "#fff", "fontSize": "14px",
+        "fontFamily": "inherit", "boxSizing": "border-box",
+        "marginBottom": "12px", "marginRight": "8px",
+        "verticalAlign": "top"
+      },
+      "attrs": { "type": "text", "placeholder": "Write anything…" },
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
+      "pipeBindings": [], "varWires": [],
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform": { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M28": {
+      "id": "M28", "name": "save-btn", "tag": "button",
+      "text": "TRANSFER →",
+      "parentId": "M21", "children": [],
+      "css": {
+        "background": "#fff", "color": "#000",
+        "border": "none", "fontSize": "10px",
+        "fontWeight": "700", "letterSpacing": "2px",
+        "textTransform": "uppercase", "cursor": "pointer",
+        "padding": "12px 24px", "fontFamily": "inherit",
+        "verticalAlign": "top", "marginBottom": "12px"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
+      "pipeBindings": [], "varWires": [],
+      "transferOnClick": { "fromId": "M27", "eventName": "noteSaved" },
+      "inputTransform": { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M29": {
+      "id": "M29", "name": "save-status", "tag": "p",
+      "text": "— nothing transferred yet —",
+      "parentId": "M21", "children": [],
+      "css": {
+        "fontSize": "12px", "fontFamily": "monospace",
+        "color": "#555", "margin": "0"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "noteSaved", "targetId": "", "action": "setText", "actionArgs": "Received: {{value}}" }
+      ],
+      "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -406,9 +584,12 @@
 
     "M30": {
       "id": "M30", "name": "work-view", "tag": "div",
-      "text": "", "parentId": "M1", "children": ["M31"],
-      "css": {},
-      "attrs": {}, "wires": [], "viewBinding": "work", "emitOnClick": "", "emitOnInput": "",
+      "text": "",
+      "parentId": "M1", "children": ["M31"],
+      "css": { "width": "100%", "padding": "64px 48px 80px", "boxSizing": "border-box" },
+      "attrs": {},
+      "wires": [], "viewBinding": "work",
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -417,9 +598,12 @@
 
     "M31": {
       "id": "M31", "name": "work-inner", "tag": "div",
-      "text": "", "parentId": "M30", "children": ["M32", "M33", "M34", "M35", "M36"],
-      "css": { "maxWidth": "860px", "width": "100%", "boxSizing": "border-box", "padding": "56px 28px 80px" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "text": "",
+      "parentId": "M30", "children": ["M32", "M33", "M34", "M35", "M36"],
+      "css": { "maxWidth": "800px", "margin": "0 auto" },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -428,10 +612,16 @@
 
     "M32": {
       "id": "M32", "name": "work-eyebrow", "tag": "p",
-      "text": "GET PIPE → LOOP → TEMPLATE",
+      "text": "GET PIPE → LOOP → CLICK EVENT",
       "parentId": "M31", "children": [],
-      "css": { "fontSize": "9px", "fontWeight": "700", "letterSpacing": "5px", "color": "#fff", "textTransform": "uppercase", "margin": "0 0 20px 0" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "css": {
+        "fontSize": "9px", "fontWeight": "700",
+        "letterSpacing": "4px", "color": "#555",
+        "margin": "0 0 16px 0", "textTransform": "uppercase"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -440,10 +630,16 @@
 
     "M33": {
       "id": "M33", "name": "work-title", "tag": "h1",
-      "text": "WORK",
+      "text": "WORK.",
       "parentId": "M31", "children": [],
-      "css": { "fontSize": "clamp(56px, 14vw, 110px)", "fontWeight": "900", "letterSpacing": "-2px", "color": "#fff", "margin": "0 0 28px 0", "lineHeight": "0.92", "wordBreak": "break-word" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "css": {
+        "fontSize": "72px", "fontWeight": "900",
+        "letterSpacing": "-3px", "margin": "0 0 40px 0",
+        "lineHeight": "1", "color": "#fff"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -452,9 +648,12 @@
 
     "M34": {
       "id": "M34", "name": "work-rule", "tag": "hr",
-      "text": "", "parentId": "M31", "children": [],
-      "css": { "border": "none", "borderTop": "1px solid #fff", "margin": "0 0 0 0" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "text": "",
+      "parentId": "M31", "children": [],
+      "css": { "border": "none", "borderTop": "1px solid #1a1a1a", "margin": "0" },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -462,10 +661,13 @@
     },
 
     "M35": {
-      "id": "M35", "name": "projects-grid", "tag": "div",
-      "text": "", "parentId": "M31", "children": [],
-      "css": { "marginBottom": "48px" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "id": "M35", "name": "projects-list", "tag": "div",
+      "text": "",
+      "parentId": "M31", "children": [],
+      "css": {},
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -473,13 +675,21 @@
     },
 
     "M36": {
-      "id": "M36", "name": "project-detail", "tag": "div",
-      "text": "", "parentId": "M31", "children": ["M37", "M38", "M39"],
+      "id": "M36", "name": "detail-panel", "tag": "div",
+      "text": "",
+      "parentId": "M31", "children": ["M37", "M38", "M39"],
       "css": {
-        "borderTop": "1px solid #fff", "paddingTop": "32px",
-        "marginTop": "8px"
+        "display": "none",
+        "marginTop": "40px",
+        "borderTop": "1px solid #222",
+        "paddingTop": "28px"
       },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "attrs": {},
+      "wires": [
+        { "eventName": "selectProject", "targetId": "", "action": "show", "actionArgs": "" }
+      ],
+      "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -487,15 +697,20 @@
     },
 
     "M37": {
-      "id": "M37", "name": "detail-label", "tag": "p",
-      "text": "SELECTED — click a project above",
+      "id": "M37", "name": "detail-title", "tag": "h2",
+      "text": "",
       "parentId": "M36", "children": [],
-      "css": { "fontSize": "9px", "fontWeight": "700", "letterSpacing": "5px", "color": "#fff", "textTransform": "uppercase", "margin": "0 0 12px 0" },
+      "css": {
+        "fontSize": "28px", "fontWeight": "900",
+        "letterSpacing": "-0.5px", "margin": "0 0 10px 0",
+        "color": "#fff"
+      },
       "attrs": {},
       "wires": [
-        { "eventName": "selectProject", "targetId": "", "action": "setText", "actionArgs": "SELECTED — {{title}}" }
+        { "eventName": "selectProject", "targetId": "", "action": "setText", "actionArgs": "{{title}}" }
       ],
-      "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -506,12 +721,17 @@
       "id": "M38", "name": "detail-meta", "tag": "p",
       "text": "",
       "parentId": "M36", "children": [],
-      "css": { "fontSize": "10px", "letterSpacing": "3px", "color": "#fff", "textTransform": "uppercase", "margin": "0 0 16px 0", "fontWeight": "700" },
+      "css": {
+        "fontSize": "9px", "fontWeight": "700",
+        "letterSpacing": "3px", "color": "#555",
+        "margin": "0 0 20px 0", "textTransform": "uppercase"
+      },
       "attrs": {},
       "wires": [
-        { "eventName": "selectProject", "targetId": "", "action": "setText", "actionArgs": "{{type}} — {{year}}" }
+        { "eventName": "selectProject", "targetId": "", "action": "setText", "actionArgs": "{{type}} · {{year}}" }
       ],
-      "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -522,12 +742,13 @@
       "id": "M39", "name": "detail-desc", "tag": "p",
       "text": "",
       "parentId": "M36", "children": [],
-      "css": { "fontSize": "15px", "lineHeight": "1.8", "color": "#fff", "margin": "0", "overflowWrap": "break-word" },
+      "css": { "fontSize": "14px", "lineHeight": "1.85", "color": "#aaa", "margin": "0" },
       "attrs": {},
       "wires": [
         { "eventName": "selectProject", "targetId": "", "action": "setText", "actionArgs": "{{description}}" }
       ],
-      "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -536,9 +757,12 @@
 
     "M40": {
       "id": "M40", "name": "contact-view", "tag": "div",
-      "text": "", "parentId": "M1", "children": ["M41"],
-      "css": {},
-      "attrs": {}, "wires": [], "viewBinding": "contact", "emitOnClick": "", "emitOnInput": "",
+      "text": "",
+      "parentId": "M1", "children": ["M41"],
+      "css": { "width": "100%", "padding": "64px 48px 80px", "boxSizing": "border-box" },
+      "attrs": {},
+      "wires": [], "viewBinding": "contact",
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -547,9 +771,12 @@
 
     "M41": {
       "id": "M41", "name": "contact-inner", "tag": "div",
-      "text": "", "parentId": "M40", "children": ["M42", "M43", "M44", "M45", "M46"],
-      "css": { "maxWidth": "860px", "width": "100%", "boxSizing": "border-box", "padding": "56px 28px 80px" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "text": "",
+      "parentId": "M40", "children": ["M42", "M43", "M44", "M45", "M46"],
+      "css": { "maxWidth": "800px", "margin": "0 auto" },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -560,8 +787,14 @@
       "id": "M42", "name": "contact-eyebrow", "tag": "p",
       "text": "GET IN TOUCH",
       "parentId": "M41", "children": [],
-      "css": { "fontSize": "9px", "fontWeight": "700", "letterSpacing": "5px", "color": "#fff", "textTransform": "uppercase", "margin": "0 0 20px 0" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "css": {
+        "fontSize": "9px", "fontWeight": "700",
+        "letterSpacing": "4px", "color": "#555",
+        "margin": "0 0 16px 0", "textTransform": "uppercase"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -570,10 +803,16 @@
 
     "M43": {
       "id": "M43", "name": "contact-title", "tag": "h1",
-      "text": "CONTACT",
+      "text": "CONTACT.",
       "parentId": "M41", "children": [],
-      "css": { "fontSize": "clamp(48px, 12vw, 100px)", "fontWeight": "900", "letterSpacing": "-2px", "color": "#fff", "margin": "0 0 28px 0", "lineHeight": "0.92", "wordBreak": "break-word" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "css": {
+        "fontSize": "72px", "fontWeight": "900",
+        "letterSpacing": "-3px", "margin": "0 0 40px 0",
+        "lineHeight": "1", "color": "#fff"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -582,9 +821,12 @@
 
     "M44": {
       "id": "M44", "name": "contact-rule", "tag": "hr",
-      "text": "", "parentId": "M41", "children": [],
-      "css": { "border": "none", "borderTop": "1px solid #fff", "margin": "0 0 32px 0" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "text": "",
+      "parentId": "M41", "children": [],
+      "css": { "border": "none", "borderTop": "1px solid #1a1a1a", "margin": "0 0 40px 0" },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -593,10 +835,15 @@
 
     "M45": {
       "id": "M45", "name": "contact-sub", "tag": "p",
-      "text": "Open to opportunities and interesting conversations.",
+      "text": "I’m always interested in building something new. Drop me a line.",
       "parentId": "M41", "children": [],
-      "css": { "fontSize": "17px", "color": "#fff", "lineHeight": "1.8", "margin": "0 0 48px 0", "overflowWrap": "break-word" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "css": {
+        "fontSize": "15px", "lineHeight": "1.85",
+        "color": "#bbb", "margin": "0 0 32px 0"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -608,16 +855,16 @@
       "text": "adompatchett@gmail.com",
       "parentId": "M41", "children": [],
       "css": {
-        "display": "block", "fontSize": "20px", "fontWeight": "700", "color": "#fff",
-        "textDecoration": "none", "letterSpacing": "-0.5px", "padding": "24px 0",
-        "borderTop": "1px solid #fff", "borderBottom": "1px solid #fff", "transition": "color .2s"
+        "display": "inline-block",
+        "color": "#fff", "fontSize": "20px",
+        "fontWeight": "700", "letterSpacing": "-0.3px",
+        "textDecoration": "none",
+        "borderBottom": "2px solid #fff",
+        "paddingBottom": "2px"
       },
-      "attrs": {
-        "href": "mailto:adompatchett@gmail.com",
-        "onmouseenter": "this.style.color='#fff'",
-        "onmouseleave": "this.style.color='#fff'"
-      },
-      "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "attrs": { "href": "mailto:adompatchett@gmail.com" },
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -625,14 +872,20 @@
     },
 
     "M50": {
-      "id": "M50", "name": "footer", "tag": "div",
-      "text": "", "parentId": "M1", "children": ["M51", "M52"],
+      "id": "M50", "name": "footer", "tag": "footer",
+      "text": "",
+      "parentId": "M1", "children": ["M51", "M52"],
       "css": {
-        "display": "flex", "justifyContent": "space-between", "alignItems": "center",
-        "padding": "20px 28px", "borderTop": "1px solid #fff",
-        "boxSizing": "border-box", "width": "100%", "flexWrap": "wrap", "gap": "8px"
+        "borderTop": "1px solid #1a1a1a",
+        "padding": "24px 48px",
+        "display": "flex",
+        "justifyContent": "space-between",
+        "alignItems": "center",
+        "boxSizing": "border-box"
       },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -641,10 +894,15 @@
 
     "M51": {
       "id": "M51", "name": "footer-copy", "tag": "p",
-      "text": "© 2026 Adom",
+      "text": "© 2026 ADOM PATCHETT",
       "parentId": "M50", "children": [],
-      "css": { "fontSize": "9px", "fontWeight": "700", "letterSpacing": "3px", "color": "#fff", "textTransform": "uppercase", "margin": "0" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "css": {
+        "fontSize": "9px", "fontWeight": "700",
+        "letterSpacing": "3px", "color": "#444", "margin": "0"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },
@@ -653,10 +911,15 @@
 
     "M52": {
       "id": "M52", "name": "footer-built", "tag": "p",
-      "text": "Built with MCEngine",
+      "text": "BUILT WITH MAGIC CAT ENGINE",
       "parentId": "M50", "children": [],
-      "css": { "fontSize": "9px", "fontWeight": "700", "letterSpacing": "3px", "color": "#fff", "textTransform": "uppercase", "margin": "0" },
-      "attrs": {}, "wires": [], "viewBinding": null, "emitOnClick": "", "emitOnInput": "",
+      "css": {
+        "fontSize": "9px", "fontWeight": "700",
+        "letterSpacing": "3px", "color": "#444", "margin": "0"
+      },
+      "attrs": {},
+      "wires": [], "viewBinding": null,
+      "emitOnClick": "", "emitOnInput": "",
       "pipeBindings": [], "varWires": [],
       "transferOnClick": { "fromId": "", "eventName": "" },
       "inputTransform": { "filter": "", "arg": "" },

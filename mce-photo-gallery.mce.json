@@ -1,201 +1,442 @@
 {
   "version": "1.0.0",
   "project": { "name": "Photo Gallery" },
-  "_nextId": 9,
+  "_nextId": 29,
+  "runtimeStyle": "ocean",
   "rootOrder": ["M1"],
 
   "events": {
-    "photoSelected": { "name": "photoSelected", "payload": "full photo record — { url, caption } — fired by loop click" },
-    "galleryClose":  { "name": "galleryClose",  "payload": "{} — fired by back button to return to grid"               }
+    "selectPhoto":              { "name": "selectPhoto",              "payload": "{ value:_id, _id, url, name, caption } — photo card clicked in grid" },
+    "goGallery":                { "name": "goGallery",                "payload": "— navigate back to the gallery grid" },
+    "goUpload":                 { "name": "goUpload",                 "payload": "— open the Add Photo form" },
+    "doCreate":                 { "name": "doCreate",                 "payload": "— Add Photo save button clicked" },
+    "doUpdate":                 { "name": "doUpdate",                 "payload": "{ value:_id } — Save Changes button clicked on detail view" },
+    "doDelete":                 { "name": "doDelete",                 "payload": "{ value:_id } — Delete button clicked on detail view" },
+    "urlPreview":               { "name": "urlPreview",               "payload": "{ value:url } — URL field typed in upload form; used to preview the image" },
+    "fileSelected":              { "name": "fileSelected",              "payload": "— image file chosen; triggers uploadFile pipe" },
+    "pipe:createPhoto:written": { "name": "pipe:createPhoto:written", "payload": "{ pipe, data } — POST succeeded; navigate away and refresh grid" },
+    "pipe:updatePhoto:written": { "name": "pipe:updatePhoto:written", "payload": "{ pipe, data } — PATCH succeeded; navigate away and refresh grid" },
+    "pipe:deletePhoto:written": { "name": "pipe:deletePhoto:written", "payload": "{ pipe, data } — DELETE succeeded; navigate away and refresh grid" }
   },
 
   "pipes": {
     "getPhotos": {
       "name": "getPhotos",
       "method": "GET",
-      "collection": "photos",
-      "endpoint": "/api/db/photos",
+      "endpoint": "/api/db/Photos",
       "delay": 0,
-      "live": false,
-      "description": "Loads the photos collection into the thumbnail grid loop"
+      "live": true,
+      "description": "Fetch all photo records — feeds the photoGrid loop."
+    },
+    "getOnePhoto": {
+      "name": "getOnePhoto",
+      "method": "GET",
+      "endpoint": "/api/db/Photos",
+      "urlTemplate": "/api/db/Photos/{{payload:value}}",
+      "delay": 0,
+      "live": true,
+      "description": "Fetch one photo by _id — triggered on selectPhoto to populate the detail view."
+    },
+    "createPhoto": {
+      "name": "createPhoto",
+      "method": "POST",
+      "endpoint": "/api/db/Photos",
+      "bodyTemplate": {
+        "url":     "{{machine:M23}}",
+        "name":    "{{machine:M25}}",
+        "caption": "{{machine:M26}}"
+      },
+      "delay": 0,
+      "live": true,
+      "description": "Create a new photo — reads url/name/caption directly from the upload form input machines"
+    },
+    "updatePhoto": {
+      "name": "updatePhoto",
+      "method": "PUT",
+      "endpoint": "/api/db/Photos",
+      "urlTemplate": "/api/db/Photos/{{payload:value}}",
+      "bodyTemplate": {
+        "url":     "{{machine:M13}}",
+        "name":    "{{machine:M14}}",
+        "caption": "{{machine:M15}}"
+      },
+      "delay": 0,
+      "live": true,
+      "description": "Update a photo — payload.value is the _id; reads edited field values from detail-view inputs"
+    },
+    "deletePhoto": {
+      "name": "deletePhoto",
+      "method": "DELETE",
+      "endpoint": "/api/db/Photos",
+      "urlTemplate": "/api/db/Photos/{{payload:value}}",
+      "delay": 0,
+      "live": true,
+      "description": "Delete a photo by _id — payload.value must be the _id string"
+    },
+    "uploadFile": {
+      "name": "uploadFile",
+      "method": "UPLOAD",
+      "endpoint": "/api/files/upload",
+      "sourceField": "M28",
+      "live": true,
+      "description": "Upload an image file from M28 — result url auto-fills M23 and M24 via pipeBindings"
     }
+  },
+
+  "views": {
+    "gallery": { "name": "gallery", "title": "Gallery",    "description": "Default view — photo grid with Add button",                     "params": [] },
+    "detail":  { "name": "detail",  "title": "Photo",      "description": "View, edit or delete one photo; populated via getOnePhoto pipe", "params": ["_id"] },
+    "upload":  { "name": "upload",  "title": "Add Photo",  "description": "Form for creating a new photo record",                          "params": [] }
   },
 
   "loops": {
     "photoGrid": {
       "name": "photoGrid",
       "pipeName": "getPhotos",
-      "targetId": "M5",
+      "targetId": "M6",
       "dataField": "",
-      "clickEvent": "photoSelected",
-      "clickView": "",
-      "clickValueField": "",
-      "description": "One thumbnail card per photo — clicking fires photoSelected with the full record",
-      "template": "<div style=\"cursor:pointer;overflow:hidden;border-radius:8px;border:1px solid #333;background:#000;transition:border-color 0.15s\" onmouseover=\"this.style.borderColor='#fff'\" onmouseout=\"this.style.borderColor='#333'\"><img src=\"{{url}}\" style=\"width:100%;height:160px;object-fit:cover;display:block\"><div style=\"color:#aaa;font-size:11px;padding:6px 10px;font-family:monospace\">{{caption}}</div></div>"
+      "clickEvent": "selectPhoto",
+      "clickView": "detail",
+      "clickValueField": "_id",
+      "description": "One card per photo — clicking emits selectPhoto (value=_id) and navigates to detail view",
+      "template": "<div style=\"overflow:hidden;border-radius:10px;background:#111827;border:1px solid #1e1e3e;cursor:pointer;transition:transform .15s\" onmouseover=\"this.style.transform='scale(1.02)'\" onmouseout=\"this.style.transform=''\"><img src=\"{{url}}\" style=\"width:100%;aspect-ratio:1;object-fit:cover;display:block\" loading=\"lazy\"/><div style=\"padding:8px 10px\"><p style=\"margin:0;font-size:12px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis\">{{name}}</p><p style=\"margin:3px 0 0;font-size:11px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis\">{{caption}}</p></div></div>"
     }
   },
 
-  "views": {},
   "vars": {},
-  "logic": {},
-  "templates": {},
-
-  "dbCollections": [
-    {
-      "name": "photos",
-      "isArray": true,
-      "seed": [
-        { "url": "https://magiccatengine.com/media/6a1979decb515bdb9196f94b/05_1780263489291.jpg", "caption": "Photo 05" },
-        { "url": "https://magiccatengine.com/media/6a1979decb515bdb9196f94b/04_1780263489289.jpg", "caption": "Photo 04" },
-        { "url": "https://magiccatengine.com/media/6a1979decb515bdb9196f94b/03_1780263489284.jpg", "caption": "Photo 03" },
-        { "url": "https://magiccatengine.com/media/6a1979decb515bdb9196f94b/02_1780263489280.jpg", "caption": "Photo 02" },
-        { "url": "https://magiccatengine.com/media/6a1979decb515bdb9196f94b/02_1780263489280.jpg", "caption": "Photo 01" }
-      ]
-    }
-  ],
 
   "machines": {
 
     "M1": {
       "id": "M1", "name": "app", "tag": "section",
-      "text": "", "parentId": "", "children": ["M2","M5","M6"],
-      "css": {
-        "display": "flex",
-        "flexDirection": "column",
-        "gap": "16px",
-        "padding": "32px 24px",
-        "maxWidth": "700px",
-        "width": "100%",
-        "margin": "0 auto",
-        "fontFamily": "system-ui, sans-serif",
-        "background": "#000",
-        "minHeight": "100vh",
-        "boxSizing": "border-box"
-      },
-      "attrs": {}, "wires": [], "viewBinding": null
+      "text": "", "parentId": "", "children": ["M2", "M7", "M20"],
+      "css": { "minHeight": "100vh", "background": "#080812", "fontFamily": "system-ui, sans-serif" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [
+        { "eventName": "view:gallery",              "targetId": "", "action": "pipeOut",  "actionArgs": "getPhotos"    },
+        { "eventName": "goGallery",                 "targetId": "", "action": "navigate", "actionArgs": "gallery"      },
+        { "eventName": "goUpload",                  "targetId": "", "action": "navigate", "actionArgs": "upload"       },
+        { "eventName": "fileSelected",              "targetId": "", "action": "pipeExec", "actionArgs": "uploadFile"    },
+        { "eventName": "selectPhoto",               "targetId": "", "action": "pipeExec", "actionArgs": "getOnePhoto"   },
+        { "eventName": "doCreate",                  "targetId": "", "action": "pipeExec", "actionArgs": "createPhoto"  },
+        { "eventName": "doUpdate",                  "targetId": "", "action": "pipeExec", "actionArgs": "updatePhoto"  },
+        { "eventName": "doDelete",                  "targetId": "", "action": "pipeExec", "actionArgs": "deletePhoto"  },
+        { "eventName": "pipe:createPhoto:written",  "targetId": "", "action": "navigate", "actionArgs": "gallery"      },
+        { "eventName": "pipe:createPhoto:written",  "targetId": "", "action": "pipeOut",  "actionArgs": "getPhotos"    },
+        { "eventName": "pipe:updatePhoto:written",  "targetId": "", "action": "navigate", "actionArgs": "gallery"      },
+        { "eventName": "pipe:updatePhoto:written",  "targetId": "", "action": "pipeOut",  "actionArgs": "getPhotos"    },
+        { "eventName": "pipe:deletePhoto:written",  "targetId": "", "action": "navigate", "actionArgs": "gallery"      },
+        { "eventName": "pipe:deletePhoto:written",  "targetId": "", "action": "pipeOut",  "actionArgs": "getPhotos"    }
+      ],
+      "varWires": [],
+      "pipeBindings": []
     },
 
     "M2": {
-      "id": "M2", "name": "header", "tag": "div",
-      "text": "", "parentId": "M1", "children": ["M3","M4"],
-      "css": {
-        "display": "flex",
-        "alignItems": "center",
-        "justifyContent": "space-between",
-        "borderBottom": "1px solid #fff",
-        "paddingBottom": "14px"
-      },
-      "attrs": {}, "wires": [], "viewBinding": null
+      "id": "M2", "name": "gallery_view", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M3", "M6"],
+      "css": { "padding": "48px 40px", "maxWidth": "1200px", "margin": "0 auto", "display": "flex", "flexDirection": "column", "gap": "0" },
+      "attrs": { "data-mce-display": "flex" },
+      "viewBinding": "gallery",
+      "wires": [], "pipeBindings": []
     },
 
     "M3": {
-      "id": "M3", "name": "title", "tag": "h1",
-      "text": "Photo Gallery",
-      "parentId": "M2", "children": [],
-      "css": {
-        "color": "#fff",
-        "fontSize": "24px",
-        "fontWeight": "900",
-        "margin": "0",
-        "letterSpacing": "-0.5px"
-      },
+      "id": "M3", "name": "gallery_header", "tag": "div",
+      "text": "", "parentId": "M2", "children": ["M4", "M5"],
+      "css": { "display": "flex", "justifyContent": "space-between", "alignItems": "flex-end", "marginBottom": "32px" },
       "attrs": {},
-      "wires": [
-        { "eventName": "photoSelected", "targetId": "", "action": "setText", "actionArgs": "{{caption}}" },
-        { "eventName": "galleryClose",  "targetId": "", "action": "setText", "actionArgs": "Photo Gallery" }
-      ],
-      "viewBinding": null
+      "viewBinding": null,
+      "wires": [], "pipeBindings": []
     },
 
     "M4": {
-      "id": "M4", "name": "back_btn", "tag": "button",
-      "text": "← Back to Gallery",
-      "parentId": "M2", "children": [],
-      "css": {
-        "display": "none",
-        "padding": "8px 16px",
-        "background": "transparent",
-        "color": "#fff",
-        "border": "1px solid #fff",
-        "borderRadius": "6px",
-        "fontSize": "12px",
-        "fontWeight": "700",
-        "cursor": "pointer",
-        "fontFamily": "inherit"
-      },
+      "id": "M4", "name": "gallery_title", "tag": "h1",
+      "text": "My Photos",
+      "parentId": "M3", "children": [],
+      "css": { "color": "#e2e8f0", "fontSize": "36px", "fontWeight": "900", "margin": "0", "letterSpacing": "-1px" },
       "attrs": {},
-      "emitOnClick": "galleryClose",
-      "wires": [
-        { "eventName": "photoSelected", "targetId": "", "action": "show", "actionArgs": "" },
-        { "eventName": "galleryClose",  "targetId": "", "action": "hide", "actionArgs": "" }
-      ],
-      "viewBinding": null
+      "viewBinding": null,
+      "wires": [], "pipeBindings": []
     },
 
     "M5": {
-      "id": "M5", "name": "thumbnail_grid", "tag": "div",
-      "text": "", "parentId": "M1", "children": [],
-      "css": {
-        "display": "grid",
-        "gridTemplateColumns": "repeat(2, 1fr)",
-        "gap": "12px"
-      },
+      "id": "M5", "name": "add_btn", "tag": "button",
+      "text": "+ Add Photo",
+      "parentId": "M3", "children": [],
+      "css": { "padding": "10px 20px", "background": "#7c3aed", "color": "#fff", "border": "none", "borderRadius": "8px", "fontSize": "13px", "fontWeight": "700", "cursor": "pointer" },
       "attrs": {},
-      "wires": [
-        { "eventName": "photoSelected", "targetId": "", "action": "hide", "actionArgs": "" },
-        { "eventName": "galleryClose",  "targetId": "", "action": "show", "actionArgs": "" }
-      ],
-      "viewBinding": null
+      "viewBinding": null,
+      "emitOnClick": "goUpload",
+      "wires": [], "pipeBindings": []
     },
 
     "M6": {
-      "id": "M6", "name": "viewer", "tag": "div",
-      "text": "", "parentId": "M1", "children": ["M7","M8"],
-      "css": {
-        "display": "none",
-        "flexDirection": "column",
-        "gap": "12px"
-      },
+      "id": "M6", "name": "photo_grid", "tag": "div",
+      "text": "", "parentId": "M2", "children": [],
+      "css": { "display": "grid", "gridTemplateColumns": "repeat(auto-fill, minmax(210px, 1fr))", "gap": "14px" },
       "attrs": {},
-      "wires": [
-        { "eventName": "photoSelected", "targetId": "", "action": "show", "actionArgs": "" },
-        { "eventName": "galleryClose",  "targetId": "", "action": "hide", "actionArgs": "" }
-      ],
-      "viewBinding": null
+      "viewBinding": null,
+      "wires": [], "pipeBindings": []
     },
 
     "M7": {
-      "id": "M7", "name": "photo_display", "tag": "div",
-      "text": "", "parentId": "M6", "children": [],
-      "css": {
-        "width": "100%",
-        "borderRadius": "8px",
-        "overflow": "hidden",
-        "border": "1px solid #fff"
-      },
-      "attrs": {},
-      "wires": [
-        { "eventName": "photoSelected", "targetId": "", "action": "setHTML", "actionArgs": "<img src='{{url}}' style='width:100%;max-height:65vh;object-fit:contain;display:block;background:#111'>" }
-      ],
-      "viewBinding": null
+      "id": "M7", "name": "detail_view", "tag": "div",
+      "text": "", "parentId": "M1",
+      "children": ["M8", "M9", "M10", "M11", "M12", "M13", "M14", "M15", "M16", "M17"],
+      "css": { "padding": "40px", "maxWidth": "680px", "margin": "0 auto", "display": "flex", "flexDirection": "column", "gap": "16px" },
+      "attrs": { "data-mce-display": "flex" },
+      "viewBinding": "detail",
+      "wires": [], "pipeBindings": []
     },
 
     "M8": {
-      "id": "M8", "name": "photo_caption", "tag": "div",
-      "text": "",
-      "parentId": "M6", "children": [],
-      "css": {
-        "color": "#aaa",
-        "fontSize": "12px",
-        "fontFamily": "monospace",
-        "textAlign": "center"
-      },
+      "id": "M8", "name": "detail_back", "tag": "button",
+      "text": "← Back to Gallery",
+      "parentId": "M7", "children": [],
+      "css": { "display": "inline-block", "alignSelf": "flex-start", "padding": "8px 16px", "background": "transparent", "color": "#a78bfa", "border": "1px solid #3a3a5c", "borderRadius": "6px", "fontSize": "13px", "fontWeight": "600", "cursor": "pointer" },
       "attrs": {},
+      "viewBinding": null,
+      "emitOnClick": "goGallery",
+      "wires": [], "pipeBindings": []
+    },
+
+    "M9": {
+      "id": "M9", "name": "detail_img", "tag": "img",
+      "text": "", "parentId": "M7", "children": [],
+      "css": { "width": "100%", "borderRadius": "12px", "maxHeight": "55vh", "objectFit": "contain", "display": "block", "background": "#111827" },
+      "attrs": { "src": "", "alt": "" },
+      "viewBinding": null,
+      "wires": [],
+      "pipeBindings": [
+        { "pipeName": "getOnePhoto", "action": "src", "field": "url", "actionArgs": "" }
+      ]
+    },
+
+    "M10": {
+      "id": "M10", "name": "detail_name", "tag": "h2",
+      "text": "",
+      "parentId": "M7", "children": [],
+      "css": { "color": "#e2e8f0", "fontSize": "22px", "fontWeight": "800", "margin": "0", "letterSpacing": "-0.5px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [],
+      "pipeBindings": [
+        { "pipeName": "getOnePhoto", "action": "setText", "field": "name", "actionArgs": "" }
+      ]
+    },
+
+    "M11": {
+      "id": "M11", "name": "detail_caption", "tag": "p",
+      "text": "",
+      "parentId": "M7", "children": [],
+      "css": { "color": "#64748b", "fontSize": "14px", "margin": "0", "lineHeight": "1.6" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [],
+      "pipeBindings": [
+        { "pipeName": "getOnePhoto", "action": "setText", "field": "caption", "actionArgs": "" }
+      ]
+    },
+
+    "M12": {
+      "id": "M12", "name": "edit_divider", "tag": "p",
+      "text": "Edit Photo",
+      "parentId": "M7", "children": [],
+      "css": { "color": "#334155", "fontSize": "10px", "fontWeight": "700", "letterSpacing": "2px", "textTransform": "uppercase", "margin": "8px 0 0", "borderTop": "1px solid #1e1e3e", "paddingTop": "16px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "pipeBindings": []
+    },
+
+    "M13": {
+      "id": "M13", "name": "edit_url_input", "tag": "input",
+      "text": "", "parentId": "M7", "children": [],
+      "css": { "width": "100%", "padding": "10px 12px", "background": "#0f172a", "border": "1px solid #1e1e3e", "borderRadius": "6px", "color": "#e2e8f0", "fontSize": "13px", "boxSizing": "border-box" },
+      "attrs": { "type": "text", "placeholder": "Image URL" },
+      "viewBinding": null,
+      "wires": [],
+      "pipeBindings": [
+        { "pipeName": "getOnePhoto", "action": "setValue", "field": "url", "actionArgs": "" }
+      ]
+    },
+
+    "M14": {
+      "id": "M14", "name": "edit_name_input", "tag": "input",
+      "text": "", "parentId": "M7", "children": [],
+      "css": { "width": "100%", "padding": "10px 12px", "background": "#0f172a", "border": "1px solid #1e1e3e", "borderRadius": "6px", "color": "#e2e8f0", "fontSize": "13px", "boxSizing": "border-box" },
+      "attrs": { "type": "text", "placeholder": "Photo name" },
+      "viewBinding": null,
+      "wires": [],
+      "pipeBindings": [
+        { "pipeName": "getOnePhoto", "action": "setValue", "field": "name", "actionArgs": "" }
+      ]
+    },
+
+    "M15": {
+      "id": "M15", "name": "edit_caption_input", "tag": "input",
+      "text": "", "parentId": "M7", "children": [],
+      "css": { "width": "100%", "padding": "10px 12px", "background": "#0f172a", "border": "1px solid #1e1e3e", "borderRadius": "6px", "color": "#e2e8f0", "fontSize": "13px", "boxSizing": "border-box" },
+      "attrs": { "type": "text", "placeholder": "Caption" },
+      "viewBinding": null,
+      "wires": [],
+      "pipeBindings": [
+        { "pipeName": "getOnePhoto", "action": "setValue", "field": "caption", "actionArgs": "" }
+      ]
+    },
+
+    "M16": {
+      "id": "M16", "name": "edit_id_hidden", "tag": "input",
+      "text": "", "parentId": "M7", "children": [],
+      "css": { "display": "none" },
+      "attrs": { "type": "hidden" },
+      "viewBinding": null,
+      "wires": [],
+      "pipeBindings": [
+        { "pipeName": "getOnePhoto", "action": "setValue", "field": "_id", "actionArgs": "" }
+      ]
+    },
+
+    "M17": {
+      "id": "M17", "name": "detail_actions", "tag": "div",
+      "text": "", "parentId": "M7", "children": ["M18", "M19"],
+      "css": { "display": "flex", "gap": "10px", "marginTop": "4px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "pipeBindings": []
+    },
+
+    "M18": {
+      "id": "M18", "name": "save_btn", "tag": "button",
+      "text": "Save Changes",
+      "parentId": "M17", "children": [],
+      "css": { "flex": "1", "padding": "11px 0", "background": "#7c3aed", "color": "#fff", "border": "none", "borderRadius": "8px", "fontSize": "13px", "fontWeight": "700", "cursor": "pointer" },
+      "attrs": {},
+      "viewBinding": null,
+      "transferOnClick": { "fromId": "M16", "eventName": "doUpdate" },
+      "wires": [], "pipeBindings": []
+    },
+
+    "M19": {
+      "id": "M19", "name": "delete_btn", "tag": "button",
+      "text": "Delete Photo",
+      "parentId": "M17", "children": [],
+      "css": { "padding": "11px 20px", "background": "transparent", "color": "#ef4444", "border": "1px solid #ef4444", "borderRadius": "8px", "fontSize": "13px", "fontWeight": "700", "cursor": "pointer" },
+      "attrs": {},
+      "viewBinding": null,
+      "transferOnClick": { "fromId": "M16", "eventName": "doDelete" },
+      "wires": [], "pipeBindings": []
+    },
+
+    "M20": {
+      "id": "M20", "name": "upload_view", "tag": "div",
+      "text": "", "parentId": "M1",
+      "children": ["M21", "M22", "M28", "M23", "M24", "M25", "M26", "M27"],
+      "css": { "padding": "40px", "maxWidth": "520px", "margin": "0 auto", "display": "flex", "flexDirection": "column", "gap": "14px" },
+      "attrs": { "data-mce-display": "flex" },
+      "viewBinding": "upload",
+      "wires": [], "pipeBindings": []
+    },
+
+    "M21": {
+      "id": "M21", "name": "upload_back", "tag": "button",
+      "text": "← Back to Gallery",
+      "parentId": "M20", "children": [],
+      "css": { "display": "inline-block", "alignSelf": "flex-start", "padding": "8px 16px", "background": "transparent", "color": "#a78bfa", "border": "1px solid #3a3a5c", "borderRadius": "6px", "fontSize": "13px", "fontWeight": "600", "cursor": "pointer" },
+      "attrs": {},
+      "viewBinding": null,
+      "emitOnClick": "goGallery",
+      "wires": [], "pipeBindings": []
+    },
+
+    "M22": {
+      "id": "M22", "name": "upload_title", "tag": "h2",
+      "text": "Add Photo",
+      "parentId": "M20", "children": [],
+      "css": { "color": "#e2e8f0", "fontSize": "26px", "fontWeight": "900", "margin": "0", "letterSpacing": "-0.5px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "pipeBindings": []
+    },
+
+    "M23": {
+      "id": "M23", "name": "upload_url_input", "tag": "input",
+      "text": "", "parentId": "M20", "children": [],
+      "css": { "width": "100%", "padding": "10px 12px", "background": "#0f172a", "border": "1px solid #1e1e3e", "borderRadius": "6px", "color": "#e2e8f0", "fontSize": "13px", "boxSizing": "border-box" },
+      "attrs": { "type": "text", "placeholder": "Paste image URL (auto-filled after file upload)" },
+      "viewBinding": null,
+      "emitOnInput": "urlPreview",
+      "wires": [],
+      "pipeBindings": [
+        { "pipeName": "uploadFile", "action": "setValue", "field": "url", "actionArgs": "" }
+      ]
+    },
+
+    "M24": {
+      "id": "M24", "name": "upload_preview_img", "tag": "img",
+      "text": "", "parentId": "M20", "children": [],
+      "css": { "width": "100%", "maxHeight": "260px", "objectFit": "contain", "borderRadius": "8px", "background": "#0f172a", "border": "1px solid #1e1e3e", "display": "block" },
+      "attrs": { "src": "", "alt": "Preview" },
+      "viewBinding": null,
       "wires": [
-        { "eventName": "photoSelected", "targetId": "", "action": "setText", "actionArgs": "{{url}}" }
+        { "eventName": "urlPreview", "targetId": "", "action": "src", "actionArgs": "{{THIS.VALUE}}" }
       ],
-      "viewBinding": null
+      "pipeBindings": [
+        { "pipeName": "uploadFile", "action": "src", "field": "url", "actionArgs": "" }
+      ]
+    },
+
+    "M25": {
+      "id": "M25", "name": "upload_name_input", "tag": "input",
+      "text": "", "parentId": "M20", "children": [],
+      "css": { "width": "100%", "padding": "10px 12px", "background": "#0f172a", "border": "1px solid #1e1e3e", "borderRadius": "6px", "color": "#e2e8f0", "fontSize": "13px", "boxSizing": "border-box" },
+      "attrs": { "type": "text", "placeholder": "Photo name" },
+      "viewBinding": null,
+      "wires": [], "pipeBindings": []
+    },
+
+    "M26": {
+      "id": "M26", "name": "upload_caption_input", "tag": "input",
+      "text": "", "parentId": "M20", "children": [],
+      "css": { "width": "100%", "padding": "10px 12px", "background": "#0f172a", "border": "1px solid #1e1e3e", "borderRadius": "6px", "color": "#e2e8f0", "fontSize": "13px", "boxSizing": "border-box" },
+      "attrs": { "type": "text", "placeholder": "Caption (optional)" },
+      "viewBinding": null,
+      "wires": [], "pipeBindings": []
+    },
+
+    "M27": {
+      "id": "M27", "name": "upload_save_btn", "tag": "button",
+      "text": "Add Photo",
+      "parentId": "M20", "children": [],
+      "css": { "padding": "12px 0", "background": "#7c3aed", "color": "#fff", "border": "none", "borderRadius": "8px", "fontSize": "14px", "fontWeight": "700", "cursor": "pointer" },
+      "attrs": {},
+      "viewBinding": null,
+      "emitOnClick": "doCreate",
+      "wires": [], "pipeBindings": []
+    },
+
+    "M28": {
+      "id": "M28", "name": "upload_file_input", "tag": "input",
+      "text": "", "parentId": "M20", "children": [],
+      "css": { "width": "100%", "padding": "10px 12px", "background": "#0f172a", "border": "1px dashed #3a3a5c", "borderRadius": "6px", "color": "#94a3b8", "fontSize": "13px", "boxSizing": "border-box", "cursor": "pointer" },
+      "attrs": { "type": "file", "accept": "image/*", "onchange": "if(this.files&&this.files.length)EventBus.emit('fileSelected',{})" },
+      "viewBinding": null,
+      "wires": [], "pipeBindings": []
     }
 
-  }
+  },
+
+  "dbCollections": [
+    {
+      "name": "Photos",
+      "isArray": true,
+      "seed": [
+        { "name": "Sunset",    "url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600", "caption": "Golden hour over the mountains" },
+        { "name": "Forest",    "url": "https://images.unsplash.com/photo-1448375240586-882707db888b?w=600", "caption": "Tall pines in the morning mist" },
+        { "name": "Ocean",     "url": "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=600", "caption": "Deep blue at low tide" },
+        { "name": "City",      "url": "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600", "caption": "Skyline after rain" }
+      ]
+    }
+  ]
 }

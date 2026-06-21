@@ -1,0 +1,351 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "Reviews" },
+  "_nextId": 23,
+  "runtimeStyle": "ocean",
+  "rootOrder": ["M1"],
+
+  "events": {
+    "navRate":  { "name": "navRate",  "payload": "— switch to the rate view" },
+    "navFeed":  { "name": "navFeed",  "payload": "— switch to the reviews feed" },
+    "starClick": { "name": "starClick", "payload": "{ value: '1'–'5' } — star button clicked; varWire captures value into selectedRating" },
+    "doSubmit": { "name": "doSubmit", "payload": "— emitted by Logic after rating + comment validation passes" },
+    "pipe:saveReview:written": { "name": "pipe:saveReview:written", "payload": "{ pipe, data } — POST succeeded; navigate to feed and reload" }
+  },
+
+  "pipes": {
+    "loadReviews": {
+      "name": "loadReviews",
+      "method": "GET",
+      "collection": "Reviews",
+      "endpoint": "/api/db/Reviews",
+      "live": false,
+      "description": "Fetch all reviews — feeds reviewLoop."
+    },
+    "saveReview": {
+      "name": "saveReview",
+      "method": "POST",
+      "collection": "Reviews",
+      "endpoint": "/api/db/Reviews",
+      "bodyTemplate": {
+        "rating":  "{{var:selectedRating}}",
+        "comment": "{{machine:M15}}"
+      },
+      "live": false,
+      "description": "Save a new review — rating from vars.selectedRating (set by varWire on starClick), comment from textarea M15."
+    }
+  },
+
+  "views": {
+    "rate": { "name": "rate", "title": "Rate",    "description": "Default — star selector, textarea, Logic validation before save.", "params": [] },
+    "feed": { "name": "feed", "title": "Reviews", "description": "All reviews loaded via pipeOut on view:feed.", "params": [] }
+  },
+
+  "loops": {
+    "reviewLoop": {
+      "name": "reviewLoop",
+      "pipeName": "loadReviews",
+      "targetId": "M22",
+      "dataField": "",
+      "description": "One card per review — shows star rating and comment text.",
+      "template": "<div style=\"padding:18px 22px;background:#0f172a;border:1px solid #1e1e3e;border-radius:12px;margin-bottom:12px\"><div style=\"display:flex;align-items:center;gap:10px;margin-bottom:10px\"><span style=\"font-size:20px;color:#f59e0b;letter-spacing:-2px\">{{rating}}★</span><span style=\"font-size:12px;color:#475569;font-family:monospace\">{{rating}} / 5</span></div><p style=\"margin:0;font-size:14px;color:#94a3b8;line-height:1.7\">{{comment}}</p></div>"
+    }
+  },
+
+  "vars": {
+    "selectedRating": { "value": "0",  "desc": "Current star rating — updated by a varWire on M1 whenever starClick fires (payload.value = the clicked star number)." },
+    "minChars":       { "value": "20", "desc": "Minimum comment length — checked in the Logic ELSEIF condition and displayed in the hint label via wire." }
+  },
+
+  "logic": {
+    "M16": {
+      "blocks": [
+        {
+          "type": "if",
+          "condition": "Number(vars.selectedRating) < 1 || Number(vars.selectedRating) > 5",
+          "code": "",
+          "actions": [
+            { "targetId": "M17", "action": "show",    "actionArgs": "" },
+            { "targetId": "M17", "action": "setText", "actionArgs": "Select a star rating (1–5) before submitting." }
+          ],
+          "children": []
+        },
+        {
+          "type": "elseif",
+          "condition": "ctx.comment.length < Number(vars.minChars)",
+          "code": "",
+          "actions": [
+            { "targetId": "M17", "action": "show",    "actionArgs": "" },
+            { "targetId": "M17", "action": "setText", "actionArgs": "Comment must be at least {{minChars}} characters (currently {{commentLen}})." }
+          ],
+          "children": []
+        },
+        {
+          "type": "else",
+          "condition": "",
+          "code": "EventBus.emit('doSubmit', {}); MCE_VARS.selectedRating = '0';",
+          "actions": [
+            { "targetId": "M17", "action": "hide",    "actionArgs": "" },
+            { "targetId": "M14", "action": "setText", "actionArgs": "No rating selected yet." }
+          ],
+          "children": []
+        }
+      ]
+    }
+  },
+
+  "dbCollections": [
+    {
+      "name": "Reviews",
+      "isArray": true,
+      "seed": [
+        { "rating": "5", "comment": "The event-driven approach makes building reactive UI intuitive. varWires for state and Logic blocks for branching — it all fits together." },
+        { "rating": "4", "comment": "Pipes and wires eliminate so much boilerplate. Once the mental model clicks you stop thinking in frameworks and start thinking in signals." },
+        { "rating": "5", "comment": "Exported a fully functional app as a single HTML file with zero dependencies. That is genuinely impressive engineering." }
+      ]
+    }
+  ],
+
+  "machines": {
+
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2", "M5", "M19"],
+      "css": { "minHeight": "100vh", "background": "#080812", "fontFamily": "system-ui, -apple-system, sans-serif" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [
+        { "eventName": "navRate",                 "targetId": "", "action": "navigate", "actionArgs": "rate"        },
+        { "eventName": "navFeed",                 "targetId": "", "action": "navigate", "actionArgs": "feed"        },
+        { "eventName": "doSubmit",                "targetId": "", "action": "pipeExec", "actionArgs": "saveReview"  },
+        { "eventName": "view:feed",               "targetId": "", "action": "pipeOut",  "actionArgs": "loadReviews" },
+        { "eventName": "pipe:saveReview:written", "targetId": "", "action": "navigate", "actionArgs": "feed"        },
+        { "eventName": "pipe:saveReview:written", "targetId": "", "action": "pipeOut",  "actionArgs": "loadReviews" }
+      ],
+      "varWires": [
+        { "eventName": "starClick", "varName": "selectedRating" }
+      ],
+      "pipeBindings": []
+    },
+
+    "M2": {
+      "id": "M2", "name": "nav_bar", "tag": "nav",
+      "text": "", "parentId": "M1", "children": ["M3", "M4"],
+      "css": { "display": "flex", "alignItems": "center", "gap": "8px", "padding": "14px 40px", "background": "#0d0d1a", "borderBottom": "1px solid #1e1e3e" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M3": {
+      "id": "M3", "name": "nav_rate_btn", "tag": "button",
+      "text": "Leave a Review",
+      "parentId": "M2", "children": [],
+      "css": { "padding": "7px 16px", "background": "#7c3aed", "color": "#fff", "border": "none", "borderRadius": "6px", "fontSize": "13px", "fontWeight": "700", "cursor": "pointer" },
+      "attrs": {},
+      "viewBinding": null,
+      "emitOnClick": "navRate",
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M4": {
+      "id": "M4", "name": "nav_feed_btn", "tag": "button",
+      "text": "All Reviews →",
+      "parentId": "M2", "children": [],
+      "css": { "padding": "7px 16px", "background": "transparent", "color": "#a78bfa", "border": "1px solid #3a3a5c", "borderRadius": "6px", "fontSize": "13px", "fontWeight": "600", "cursor": "pointer" },
+      "attrs": {},
+      "viewBinding": null,
+      "emitOnClick": "navFeed",
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M5": {
+      "id": "M5", "name": "rate_view", "tag": "section",
+      "text": "", "parentId": "M1",
+      "children": ["M6", "M7", "M8", "M14", "M15", "M16", "M17", "M18"],
+      "css": { "padding": "52px 40px", "maxWidth": "600px", "margin": "0 auto" },
+      "attrs": {},
+      "viewBinding": "rate",
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M6": {
+      "id": "M6", "name": "rate_title", "tag": "h1",
+      "text": "Leave a Review",
+      "parentId": "M5", "children": [],
+      "css": { "color": "#e2e8f0", "fontSize": "34px", "fontWeight": "900", "margin": "0 0 10px", "letterSpacing": "-1px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M7": {
+      "id": "M7", "name": "rate_desc", "tag": "p",
+      "text": "Select 1–5 stars and write a comment. The star click emits a starClick event — a varWire on the app captures payload.value into vars.selectedRating. The Logic block on Submit validates the rating (IF), checks comment length against vars.minChars (ELSEIF), then emits doSubmit (ELSE) which triggers pipeExec saveReview. The body template reads {{var:selectedRating}} and {{machine:M15}}.",
+      "parentId": "M5", "children": [],
+      "css": { "color": "#64748b", "fontSize": "13px", "lineHeight": "1.8", "margin": "0 0 36px", "maxWidth": "520px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M8": {
+      "id": "M8", "name": "stars_row", "tag": "div",
+      "text": "", "parentId": "M5",
+      "children": ["M9", "M10", "M11", "M12", "M13"],
+      "css": { "display": "flex", "gap": "8px", "marginBottom": "12px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M9": {
+      "id": "M9", "name": "star1", "tag": "button",
+      "text": "1 ★",
+      "parentId": "M8", "children": [],
+      "css": { "padding": "10px 14px", "background": "transparent", "border": "1px solid #3a3a5c", "borderRadius": "8px", "color": "#94a3b8", "cursor": "pointer", "fontSize": "17px", "fontWeight": "700", "transition": "all .15s" },
+      "attrs": { "onclick": "EventBus.emit('starClick',{value:'1'})" },
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M10": {
+      "id": "M10", "name": "star2", "tag": "button",
+      "text": "2 ★",
+      "parentId": "M8", "children": [],
+      "css": { "padding": "10px 14px", "background": "transparent", "border": "1px solid #3a3a5c", "borderRadius": "8px", "color": "#94a3b8", "cursor": "pointer", "fontSize": "17px", "fontWeight": "700", "transition": "all .15s" },
+      "attrs": { "onclick": "EventBus.emit('starClick',{value:'2'})" },
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M11": {
+      "id": "M11", "name": "star3", "tag": "button",
+      "text": "3 ★",
+      "parentId": "M8", "children": [],
+      "css": { "padding": "10px 14px", "background": "transparent", "border": "1px solid #3a3a5c", "borderRadius": "8px", "color": "#94a3b8", "cursor": "pointer", "fontSize": "17px", "fontWeight": "700", "transition": "all .15s" },
+      "attrs": { "onclick": "EventBus.emit('starClick',{value:'3'})" },
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M12": {
+      "id": "M12", "name": "star4", "tag": "button",
+      "text": "4 ★",
+      "parentId": "M8", "children": [],
+      "css": { "padding": "10px 14px", "background": "transparent", "border": "1px solid #3a3a5c", "borderRadius": "8px", "color": "#94a3b8", "cursor": "pointer", "fontSize": "17px", "fontWeight": "700", "transition": "all .15s" },
+      "attrs": { "onclick": "EventBus.emit('starClick',{value:'4'})" },
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M13": {
+      "id": "M13", "name": "star5", "tag": "button",
+      "text": "5 ★",
+      "parentId": "M8", "children": [],
+      "css": { "padding": "10px 14px", "background": "transparent", "border": "1px solid #3a3a5c", "borderRadius": "8px", "color": "#94a3b8", "cursor": "pointer", "fontSize": "17px", "fontWeight": "700", "transition": "all .15s" },
+      "attrs": { "onclick": "EventBus.emit('starClick',{value:'5'})" },
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M14": {
+      "id": "M14", "name": "rating_display", "tag": "p",
+      "text": "No rating selected yet.",
+      "parentId": "M5", "children": [],
+      "css": { "color": "#a78bfa", "fontSize": "13px", "fontFamily": "monospace", "margin": "0 0 16px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [
+        { "eventName": "starClick", "targetId": "", "action": "setText", "actionArgs": "{{value}} / 5 — {{value}} stars selected" }
+      ],
+      "varWires": [], "pipeBindings": []
+    },
+
+    "M15": {
+      "id": "M15", "name": "comment_input", "tag": "textarea",
+      "text": "",
+      "parentId": "M5", "children": [],
+      "css": { "display": "block", "width": "100%", "padding": "12px 14px", "background": "#0f172a", "border": "1px solid #1e1e3e", "borderRadius": "8px", "color": "#e2e8f0", "fontSize": "14px", "lineHeight": "1.7", "minHeight": "110px", "resize": "vertical", "boxSizing": "border-box", "fontFamily": "inherit", "outline": "none" },
+      "attrs": { "placeholder": "Write your review here..." },
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M16": {
+      "id": "M16", "name": "submit_btn", "tag": "button",
+      "text": "Submit Review",
+      "parentId": "M5", "children": [],
+      "css": { "padding": "12px 28px", "background": "#7c3aed", "color": "#fff", "border": "none", "borderRadius": "8px", "fontSize": "14px", "fontWeight": "700", "cursor": "pointer", "marginTop": "4px" },
+      "attrs": {
+        "onclick": "var _cm=document.querySelector('[data-mce-id=M15]');var ctx={comment:(_cm?_cm.value:'').trim(),commentLen:(_cm?String(_cm.value.trim().length):'0')};if(typeof LogicSystem!=='undefined')LogicSystem.run('M16',ctx);else if(typeof MachineSystem!=='undefined')MachineSystem.executeLogic('M16',ctx);"
+      },
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M17": {
+      "id": "M17", "name": "error_msg", "tag": "p",
+      "text": "",
+      "parentId": "M5", "children": [],
+      "css": { "display": "none", "margin": "8px 0 0", "padding": "10px 14px", "background": "#1f0e0e", "border": "1px solid #7f1d1d", "borderRadius": "6px", "color": "#fca5a5", "fontSize": "13px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M18": {
+      "id": "M18", "name": "char_hint", "tag": "p",
+      "text": "",
+      "parentId": "M5", "children": [],
+      "css": { "color": "#334155", "fontSize": "11px", "fontFamily": "monospace", "margin": "4px 0 0" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [
+        { "eventName": "view:rate", "targetId": "", "action": "setText", "actionArgs": "Minimum {{minChars}} characters required." }
+      ],
+      "varWires": [], "pipeBindings": []
+    },
+
+    "M19": {
+      "id": "M19", "name": "feed_view", "tag": "section",
+      "text": "", "parentId": "M1",
+      "children": ["M20", "M21", "M22"],
+      "css": { "padding": "52px 40px", "maxWidth": "680px", "margin": "0 auto" },
+      "attrs": {},
+      "viewBinding": "feed",
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M20": {
+      "id": "M20", "name": "feed_title", "tag": "h1",
+      "text": "All Reviews",
+      "parentId": "M19", "children": [],
+      "css": { "color": "#e2e8f0", "fontSize": "34px", "fontWeight": "900", "margin": "0 0 10px", "letterSpacing": "-1px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M21": {
+      "id": "M21", "name": "feed_back_btn", "tag": "button",
+      "text": "← Leave a Review",
+      "parentId": "M19", "children": [],
+      "css": { "display": "inline-block", "padding": "8px 16px", "background": "transparent", "color": "#64748b", "border": "1px solid #2e2e4e", "borderRadius": "6px", "fontSize": "13px", "cursor": "pointer", "marginBottom": "32px" },
+      "attrs": {},
+      "viewBinding": null,
+      "emitOnClick": "navRate",
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M22": {
+      "id": "M22", "name": "reviews_list", "tag": "div",
+      "text": "", "parentId": "M19", "children": [],
+      "css": { "display": "flex", "flexDirection": "column" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    }
+
+  }
+}

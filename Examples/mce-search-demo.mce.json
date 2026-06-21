@@ -1,0 +1,144 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "Search Demo — live filter from DB" },
+  "_nextId": 12,
+  "runtimeStyle": "ocean",
+  "rootOrder": ["M1"],
+
+  "events": {
+    "searched": { "name": "searched", "payload": "{ value } — emitted on every keystroke" }
+  },
+
+  "pipes": {
+    "searchPeople": {
+      "name": "searchPeople",
+      "method": "GET",
+      "collection": "people",
+      "endpoint": "/api/db/people",
+      "delay": 0,
+      "live": false,
+      "queryTemplate": "{{value}}",
+      "description": "Returns people filtered by ?q={{value}} from the searched event"
+    }
+  },
+
+  "views": {},
+
+  "loops": {
+    "peopleList": {
+      "name": "peopleList",
+      "pipeName": "searchPeople",
+      "targetId": "M6",
+      "dataField": "",
+      "clickEvent": "",
+      "clickView": "",
+      "clickValueField": "",
+      "description": "One card per person returned by searchPeople",
+      "template": "<div style=\"display:flex;align-items:center;gap:14px;padding:14px 16px;background:#0d0d1a;border:1px solid #1e1e3e;border-radius:10px\"><div style=\"width:42px;height:42px;border-radius:50%;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0\">{{avatar}}</div><div style=\"flex:1;min-width:0\"><div style=\"color:#e2e8f0;font-size:14px;font-weight:700\">{{name}}</div><div style=\"color:#64748b;font-size:12px;margin-top:3px\">{{role}} &middot; {{company}}</div></div><span style=\"font-size:10px;padding:3px 9px;border-radius:20px;background:#1e3a5f;color:#60a5fa;font-weight:600;white-space:nowrap\">{{department}}</span></div>"
+    }
+  },
+
+  "vars": {},
+  "logic": {},
+
+  "dbCollections": [
+    {
+      "name": "people",
+      "isArray": true,
+      "seed": [
+        { "name": "Alice Chen",   "role": "Senior Engineer",  "company": "Acme Corp", "department": "Engineering", "avatar": "👩‍💻" },
+        { "name": "Bob Martinez", "role": "Product Manager",  "company": "Globex",    "department": "Product",     "avatar": "👨‍💼" },
+        { "name": "Carol Smith",  "role": "Designer",         "company": "Acme Corp", "department": "Design",      "avatar": "👩‍🎨" },
+        { "name": "David Kim",    "role": "Data Scientist",   "company": "Initech",   "department": "Analytics",   "avatar": "👨‍🔬" },
+        { "name": "Eva Johnson",  "role": "Marketing Lead",   "company": "Globex",    "department": "Marketing",   "avatar": "👩‍💼" },
+        { "name": "Frank Torres", "role": "Backend Engineer", "company": "Initech",   "department": "Engineering", "avatar": "👨‍💻" },
+        { "name": "Grace Park",   "role": "UX Researcher",    "company": "Acme Corp", "department": "Design",      "avatar": "👩‍🔬" },
+        { "name": "Henry Wilson", "role": "DevOps",           "company": "Globex",    "department": "Engineering", "avatar": "🧑‍💻" }
+      ]
+    }
+  ],
+
+  "machines": {
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2","M3","M4","M5","M6"],
+      "css": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "20px",
+        "padding": "60px 40px",
+        "maxWidth": "640px",
+        "margin": "0 auto",
+        "fontFamily": "system-ui, sans-serif",
+        "minHeight": "100vh"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "searched", "targetId": "", "action": "pipeOut", "actionArgs": "searchPeople" }
+      ],
+      "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2", "name": "title", "tag": "h1",
+      "text": "🔍 People Search",
+      "parentId": "M1", "children": [],
+      "css": {
+        "color": "#e2e8f0",
+        "fontSize": "30px",
+        "fontWeight": "900",
+        "margin": "0",
+        "letterSpacing": "-0.5px"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M3": {
+      "id": "M3", "name": "hint", "tag": "p",
+      "text": "Type to filter 8 people by name, role, company, or department. The pipe has queryTemplate: {{value}} — each keystroke fires pipeOut, resolves the query, and returns only matching records.",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#64748b", "fontSize": "13px", "lineHeight": "1.75", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4", "name": "search_input", "tag": "input",
+      "text": "", "parentId": "M1", "children": [],
+      "css": {
+        "display": "block",
+        "width": "100%",
+        "padding": "14px 18px",
+        "background": "#0d0d1a",
+        "border": "1px solid #2e2e4e",
+        "borderRadius": "10px",
+        "color": "#e2e8f0",
+        "fontSize": "15px",
+        "outline": "none",
+        "fontFamily": "inherit",
+        "boxSizing": "border-box"
+      },
+      "attrs": { "type": "text", "placeholder": "Search by name, role, company…", "autocomplete": "off" },
+      "emitOnInput": "searched",
+      "wires": [], "viewBinding": null
+    },
+
+    "M5": {
+      "id": "M5", "name": "result_label", "tag": "p",
+      "text": "All 8 people — start typing to filter",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#334155", "fontSize": "11px", "fontFamily": "monospace", "margin": "0" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "searched", "targetId": "", "action": "setText", "actionArgs": "Filtering for: \"{{value}}\"" }
+      ],
+      "viewBinding": null
+    },
+
+    "M6": {
+      "id": "M6", "name": "results_list", "tag": "div",
+      "text": "", "parentId": "M1", "children": [],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "8px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    }
+  }
+}

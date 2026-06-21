@@ -1,0 +1,107 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "Counter — onclick reads machine value" },
+  "_nextId": 10,
+  "runtimeStyle": "ocean",
+  "rootOrder": ["M1"],
+
+  "events": {},
+  "pipes": {},
+  "views": {},
+  "loops": {},
+  "vars": {},
+  "logic": {},
+  "dbCollections": [],
+
+  "machines": {
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2","M3","M4","M9"],
+      "css": {
+        "display": "flex", "flexDirection": "column", "alignItems": "center",
+        "justifyContent": "center", "minHeight": "100vh", "gap": "24px",
+        "fontFamily": "system-ui, sans-serif", "background": "#06060f"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2", "name": "title", "tag": "h1",
+      "text": "Click Counter",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#e2e8f0", "fontSize": "28px", "fontWeight": "900", "margin": "0", "letterSpacing": "-0.5px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M3": {
+      "id": "M3", "name": "hint", "tag": "p",
+      "text": "Each button reads the counter machine's textContent, updates it, then writes it back. No events or wires needed — pure inline onclick JavaScript.",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#475569", "fontSize": "13px", "maxWidth": "400px", "textAlign": "center", "lineHeight": "1.7", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4", "name": "controls", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M5","M6","M7"],
+      "css": { "display": "flex", "alignItems": "center", "gap": "20px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M5": {
+      "id": "M5", "name": "decrement", "tag": "button",
+      "text": "−",
+      "parentId": "M4", "children": [],
+      "css": {
+        "width": "56px", "height": "56px", "fontSize": "28px", "fontWeight": "700",
+        "background": "#1e1e3e", "color": "#e2e8f0", "border": "1px solid #3a3a5c",
+        "borderRadius": "8px", "cursor": "pointer"
+      },
+      "attrs": {
+        "onclick": "var _s=document.querySelector('[data-mce-id=\"M6\"]');var v=(parseInt(_s.textContent)||0)-1;_s.textContent=v;"
+      },
+      "wires": [], "viewBinding": null
+    },
+
+    "M6": {
+      "id": "M6", "name": "count_display", "tag": "span",
+      "text": "0",
+      "parentId": "M4", "children": [],
+      "css": {
+        "fontSize": "72px", "fontWeight": "900", "color": "#a78bfa",
+        "minWidth": "120px", "textAlign": "center", "lineHeight": "1", "fontVariantNumeric": "tabular-nums"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M7": {
+      "id": "M7", "name": "increment", "tag": "button",
+      "text": "+",
+      "parentId": "M4", "children": [],
+      "css": {
+        "width": "56px", "height": "56px", "fontSize": "28px", "fontWeight": "700",
+        "background": "#a78bfa", "color": "#000", "border": "none",
+        "borderRadius": "8px", "cursor": "pointer"
+      },
+      "attrs": {
+        "onclick": "var _s=document.querySelector('[data-mce-id=\"M6\"]');var v=(parseInt(_s.textContent)||0)+1;_s.textContent=v;"
+      },
+      "wires": [], "viewBinding": null
+    },
+
+    "M9": {
+      "id": "M9", "name": "reset_btn", "tag": "button",
+      "text": "Reset",
+      "parentId": "M1", "children": [],
+      "css": {
+        "padding": "6px 18px", "fontSize": "12px",
+        "background": "transparent", "color": "#475569",
+        "border": "1px solid #2e2e4e", "borderRadius": "6px", "cursor": "pointer"
+      },
+      "attrs": {
+        "onclick": "document.querySelector('[data-mce-id=\"M6\"]').textContent='0';"
+      },
+      "wires": [], "viewBinding": null
+    }
+  }
+}

@@ -188,7 +188,7 @@ label{color:var(--txt2);font-size:11px;display:block;margin-bottom:3px}
       <button class="small" onclick="UI.importJSON()">Import JSON</button>
       <button class="small primary" onclick="UI.switchCanvasTab('preview')">&#9654; Run Preview</button>
       <button class="small" onclick="UI.replicateSelf()">&#x2728; Replicate Self</button>
-      <button class="small" onclick="UI.resetAll()" title="Reset all machines to their initial state" style="margin-left:8px;border-left:1px solid var(--bg3);padding-left:12px;border-radius:0 4px 4px 0">&#8635; Refresh App</button>
+      <button class="small" onclick="if(confirm('Refresh App will reset all machines to their initial state. Continue?'))UI.resetAll()" title="Reset all machines to their initial state" style="margin-left:8px;border-left:1px solid var(--bg3);padding-left:12px;border-radius:0 4px 4px 0">&#8635; Refresh App</button>
     </div>
   </div>
   <div id="main-layout">
@@ -200,6 +200,7 @@ label{color:var(--txt2);font-size:11px;display:block;margin-bottom:3px}
         <button class="tab-btn" data-tab="views" onclick="UI.switchLeftTab('views')">Views</button>
         <button class="tab-btn" data-tab="css" onclick="UI.switchLeftTab('css')">CSS</button>
         <button class="tab-btn" data-tab="logic" onclick="UI.switchLeftTab('logic')">Logic</button>
+        <button class="tab-btn" data-tab="code" onclick="UI.switchLeftTab('code')">Code</button>
         <button class="tab-btn" data-tab="loops" onclick="UI.switchLeftTab('loops')">Loops</button>
         <button class="tab-btn" data-tab="vars" onclick="UI.switchLeftTab('vars')">Vars</button>
         <button class="tab-btn" data-tab="files" onclick="UI.switchLeftTab('files')">Files</button>
@@ -212,6 +213,7 @@ label{color:var(--txt2);font-size:11px;display:block;margin-bottom:3px}
         <div class="tab-panel" id="tab-views"><div id="views-panel-content"></div></div>
         <div class="tab-panel" id="tab-css"><div id="css-panel-content"></div></div>
         <div class="tab-panel" id="tab-logic"><div id="logic-panel-content"></div></div>
+        <div class="tab-panel" id="tab-code"><div id="code-panel-content"></div></div>
         <div class="tab-panel" id="tab-loops"><div id="loops-panel-content"></div></div>
         <div class="tab-panel" id="tab-vars"><div id="vars-panel-content"></div></div>
         <div class="tab-panel" id="tab-files"><div id="files-panel-content"></div></div>
@@ -997,8 +999,8 @@ const PipeSystem = {
           case 'setText': case 'textContent': target.textContent = effectiveArgs; m.text = effectiveArgs; break;
           case 'setHTML': case 'innerHTML':   target.innerHTML  = effectiveArgs; m.text = effectiveArgs; break;
           case 'setValue': case 'value':       target.value     = effectiveArgs; break;
-          case 'src':  target.src  = effectiveArgs; break;
-          case 'href': target.href = effectiveArgs; break;
+          case 'src':  if (target) target.src  = effectiveArgs; break;
+          case 'href': if (target) target.href = effectiveArgs; break;
           case 'show':   target.style.display = (target.dataset.mceDisplay !== undefined ? target.dataset.mceDisplay : ''); break;
           case 'hide':   target.dataset.mceDisplay = target.style.display; target.style.display = 'none'; break;
           case 'toggle': if (target.style.display === 'none') { target.style.display = (target.dataset.mceDisplay !== undefined ? target.dataset.mceDisplay : ''); } else { target.dataset.mceDisplay = target.style.display; target.style.display = 'none'; } break;
@@ -1146,6 +1148,8 @@ const LoopSystem = {
       clickView: config.clickView || '',
       clickValueField: config.clickValueField || '',
       description: config.description || '',
+      pageSize: config.pageSize || 0,
+      paginationId: config.paginationId || '',
     };
     Logger.ok(`Loop "${name}" created (source: ${config.pipeName})`);
     UI.renderLoops();
@@ -1155,6 +1159,7 @@ const LoopSystem = {
     UndoSystem.push();
     delete MCE.loops[name];
     UI.renderLoops();
+    UI.renderInspector && UI.renderInspector();
     Logger.warn(`Loop "${name}" deleted`);
   },
   render(name, data) {
@@ -1312,6 +1317,7 @@ const MachineSystem = {
       transferOnClick: { fromId: '', eventName: '' },
       inputTransform:  { filter: '', arg: '' },
       outputTransform: { filter: '', arg: '' },
+      code: '',
     };
     MCE.machines[id] = machine;
     if (parentId && MCE.machines[parentId]) {
@@ -1345,6 +1351,7 @@ const MachineSystem = {
     if (dn) dn.classList.add('selected');
     UI.renderInspector();
     UI.renderLogicPanel();
+    UI.renderCodePanel();
     UI.renderCSSPanel();
     Logger.info(`Selected: ${id} (${MCE.machines[id]?.name || 'unknown'})`);
     // Sync selection ring in live canvas
@@ -1588,6 +1595,8 @@ const MachineSystem = {
       case 'setText': if (inner) { const it = MCE.machines[id]?.inputTransform; const raw = args || payload.text || payload.value || ''; inner.textContent = (it && it.filter) ? FilterSystem.apply(raw, it.filter, it.arg || undefined) : raw; } break;
       case 'setHTML': if (inner) { const it = MCE.machines[id]?.inputTransform; const raw = args || payload.html || ''; inner.innerHTML = (it && it.filter) ? FilterSystem.apply(raw, it.filter, it.arg || undefined) : raw; } break;
       case 'setValue': if (inner) { const it = MCE.machines[id]?.inputTransform; const raw = args || payload.value || ''; inner.value = (it && it.filter) ? FilterSystem.apply(raw, it.filter, it.arg || undefined) : raw; } break;
+      case 'src':  if (target) target.src  = args; break;
+      case 'href': if (target) target.href = args; break;
       case 'emit': EventBus.emit(args, payload); break;
       case 'navigate': ViewSystem.navigate(args, payload); break;
       case 'pipeIn': PipeSystem.execute(args, payload, payload); break;
@@ -1627,6 +1636,7 @@ const MachineSystem = {
         break;
       }
       case 'runLogic': MachineSystem.executeLogic((args && args.trim()) || id, payload); break;
+      case 'runCode': MachineSystem.executeCode((args && args.trim()) || id, payload); break;
       case 'loopRender': if (args) { const loop = MCE.loops[args]; if (loop && loop.pipeName) PipeSystem.fetch(loop.pipeName, payload); else if (loop) LoopSystem.render(args, []); } break;
       case 'renderPreview': this._renderPreviewAction(args); break;
       case 'appendValue': this._appendValueAction(args); break;
@@ -1730,6 +1740,24 @@ const MachineSystem = {
       } else if (block.type === 'else' && !chainPassed) { pass = true; }
       if (pass) { chainPassed = true; _runBlock(block, context); }
     }
+  },
+  // ---- CODE PORT (free-form per-machine JS — editor quick-test) ----
+  executeCode(id, context = {}) {
+    const m = MCE.machines[id];
+    if (!m || !m.code || !m.code.trim()) return;
+    const _view = ViewSystem._active;
+    const _params = { ...ViewSystem._params };
+    const _vars = Object.fromEntries(Object.entries(MCE.vars || {}).map(([k, v]) => [k, (v && typeof v === 'object') ? String(v.value || '') : String(v || '')]));
+    const _logicSys = { run: (lid, ctx) => MachineSystem.executeLogic(lid, ctx) };
+    const el = document.getElementById('mw_' + id);
+    const inner = el ? el.querySelector('[data-machine-inner]') : null;
+    const target = inner || el;
+    const _emit = (name, payload) => EventBus.emit(name, payload);
+    try {
+      (new Function('ctx','id','el','EventBus','PipeSystem','DB','ViewSystem','LogicSystem','FilterSystem','MCE_VARS','vars','emit','view','params',
+        m.code
+      ))(context, id, target, EventBus, PipeSystem, DB, ViewSystem, _logicSys, FilterSystem, _vars, _vars, _emit, _view, _params);
+    } catch(e) { Logger.error(`Code port (${m.name}): ${e.message}`); }
   },
   buildHTML(id, forExport = false) {
     const m = MCE.machines[id];
@@ -1878,6 +1906,7 @@ const UI = {
     this.renderCanvas();
     this.renderDOMTree();
     this.renderLogicPanel();
+    this.renderCodePanel();
     this.renderCSSPanel();
 
     document.getElementById('project-name-input').addEventListener('change', e => {
@@ -1908,6 +1937,7 @@ const UI = {
     document.querySelectorAll('#left-panel .tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
     if (tab === 'css') this.renderCSSPanel();
     if (tab === 'logic') this.renderLogicPanel();
+    if (tab === 'code') this.renderCodePanel();
     if (tab === 'db') {
       if (LiveDBPanel._collections === null && !LiveDBPanel._loading) LiveDBPanel.loadCollections();
       else this.renderDB();
@@ -2019,6 +2049,7 @@ const UI = {
     Object.values(MCE.machines).forEach(m => {
       (m.pipeBindings || []).forEach(pb => { if (pb.pipeName) _boundPipes.add(pb.pipeName); });
     });
+    Object.values(MCE.loops || {}).forEach(loop => { if (loop.pipeName) _boundPipes.add(loop.pipeName); });
     _boundPipes.forEach(pipeName => {
       const pipe = MCE.pipes[pipeName];
       if (!pipe || pipe.method !== 'GET') return;
@@ -2748,6 +2779,13 @@ const UI = {
       <div class="field"><label>Click Event <small style="color:var(--txt3)">(optional — event emitted when an item is clicked; payload contains all doc fields)</small></label><input id="loop-clickevent" placeholder="e.g. selectPhoto"></div>
       <div class="field"><label>Click → View <small style="color:var(--txt3)">(optional — view to navigate to on item click)</small></label><input id="loop-clickview" placeholder="e.g. detail"></div>
       <div class="field"><label>Value Field <small style="color:var(--txt3)">(optional — which field becomes payload.value; defaults to first string field)</small></label><input id="loop-clickvaluefield" placeholder="e.g. PHOTO_URL, url"></div>
+      <div class="field"><label>Page Size <small style="color:var(--txt3)">(optional — items per page; 0 = no pagination)</small></label><input id="loop-pagesize" type="number" min="0" step="1" placeholder="0" style="width:100px"></div>
+      <div class="field"><label>Pagination Controls Machine <small style="color:var(--txt3)">(optional — machine to render page buttons into)</small></label>
+        <select id="loop-paginationid">
+          <option value="">— append inside target —</option>
+          ${allMachines.map(m => `<option value="${m.id}">${m.name} &lt;${m.tag}&gt;</option>`).join('')}
+        </select>
+      </div>
       <div class="field">
         <label>Template Builder</label>
         <div style="border:1px solid var(--brd);border-radius:3px;padding:8px;background:var(--bg2)">
@@ -2822,9 +2860,11 @@ const UI = {
     const clickValueField = document.getElementById('loop-clickvaluefield').value.trim();
     const template = document.getElementById('loop-template').value;
     const desc = document.getElementById('loop-desc').value.trim();
+    const pageSize = parseInt(document.getElementById('loop-pagesize').value, 10) || 0;
+    const paginationId = document.getElementById('loop-paginationid').value || '';
     if (!name) return Logger.error('Loop name required');
     if (!pipeName) return Logger.error('Loop source pipe required');
-    LoopSystem.create(name, { pipeName, targetId, template, dataField, clickEvent, clickView, clickValueField, description: desc });
+    LoopSystem.create(name, { pipeName, targetId, template, dataField, clickEvent, clickView, clickValueField, description: desc, pageSize, paginationId });
     document.getElementById('loop-name').value = '';
     document.getElementById('loop-datafield').value = '';
     document.getElementById('loop-clickevent').value = '';
@@ -2832,6 +2872,8 @@ const UI = {
     document.getElementById('loop-clickvaluefield').value = '';
     document.getElementById('loop-template').value = '';
     document.getElementById('loop-desc').value = '';
+    document.getElementById('loop-pagesize').value = '';
+    document.getElementById('loop-paginationid').value = '';
   },
   _loopFieldsForPipe(pipeName) {
     const fields = new Set(['_index', '_total']);
@@ -2933,6 +2975,13 @@ const UI = {
       <div class="field"><label>Click Event <small style="color:var(--txt3)">(optional — emitted on item click with full doc as payload)</small></label><input id="edit-loop-clickevent" placeholder="e.g. selectPhoto" value="${loop.clickEvent || ''}"></div>
       <div class="field"><label>Click → View <small style="color:var(--txt3)">(optional — navigate to this view on item click)</small></label><input id="edit-loop-clickview" placeholder="e.g. detail" value="${loop.clickView || ''}"></div>
       <div class="field"><label>Value Field <small style="color:var(--txt3)">(optional — field that becomes payload.value for wires)</small></label><input id="edit-loop-clickvaluefield" placeholder="e.g. PHOTO_URL" value="${loop.clickValueField || ''}"></div>
+      <div class="field"><label>Page Size <small style="color:var(--txt3)">(0 = no pagination)</small></label><input id="edit-loop-pagesize" type="number" min="0" step="1" value="${loop.pageSize || 0}" style="width:100px"></div>
+      <div class="field"><label>Pagination Controls Machine <small style="color:var(--txt3)">(optional — machine to render page buttons into)</small></label>
+        <select id="edit-loop-paginationid">
+          <option value="">— append inside target —</option>
+          ${allMachines.map(m => `<option value="${m.id}" ${m.id === loop.paginationId ? 'selected' : ''}>${m.name} &lt;${m.tag}&gt;</option>`).join('')}
+        </select>
+      </div>
       <div class="field">
         <label>Template Builder</label>
         <div style="border:1px solid var(--brd);border-radius:3px;padding:8px;background:var(--bg2)">
@@ -2983,9 +3032,21 @@ const UI = {
     loop.clickView = document.getElementById('edit-loop-clickview').value.trim();
     loop.clickValueField = document.getElementById('edit-loop-clickvaluefield').value.trim();
     loop.template = document.getElementById('edit-loop-template').value;
+    loop.pageSize = parseInt(document.getElementById('edit-loop-pagesize').value, 10) || 0;
+    loop.paginationId = document.getElementById('edit-loop-paginationid').value || '';
     this.closeModal({ target: document.getElementById('modal-overlay') });
     Logger.ok(`Loop "${name}" updated`);
     UI.renderLoops();
+    UI.renderInspector && UI.renderInspector();
+  },
+
+  _addLoopBinding(machineId) {
+    const m = MCE.machines[machineId];
+    if (!m) return;
+    let base = m.name + 'Loop', name = base, n = 2;
+    while (MCE.allNames().has(name)) name = base + n++;
+    LoopSystem.create(name, { pipeName: '', targetId: machineId, template: '', dataField: '', clickEvent: '', clickView: '', clickValueField: '', pageSize: 0, paginationId: '' });
+    UI.renderInspector();
   },
 
   // ---- TEMPLATES PANEL ----
@@ -3453,7 +3514,7 @@ const UI = {
     if (!blocks || !blocks.length) return '';
     const ea = s => (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const colorMap = { if: 'var(--info)', elseif: 'var(--warn)', else: 'var(--ok)', loop: '#a78bfa' };
-    const allActions = ['show','hide','toggle','fadeIn','fadeOut','fadeToBlack','addClass','removeClass','toggleClass','setText','setHTML','setValue','emit','navigate','pipeIn','pipeOut','pipeExec','runLogic','log','dbPull','dbPush','dbWrite','loopRender'];
+    const allActions = ['show','hide','toggle','fadeIn','fadeOut','fadeToBlack','addClass','removeClass','toggleClass','setText','setHTML','setValue','emit','navigate','pipeIn','pipeOut','pipeExec','runLogic','runCode','log','dbPull','dbPush','dbWrite','loopRender'];
     const treeIds = MachineSystem.flatOrder();
     const buildTargetOpts = selId => `<option value="" ${!selId?'selected':''}>self</option>` + treeIds.map(tid => { const tm = MCE.machines[tid]; return tm ? `<option value="${tid}" ${selId===tid?'selected':''}>${tm.name} &lt;${tm.tag}&gt;</option>` : ''; }).join('');
     const addBtn = (label, onclick) => `<button class="small" style="font-size:9px;padding:1px 6px;opacity:0.75" onclick="${onclick}">${label}</button>`;
@@ -3694,6 +3755,141 @@ const UI = {
     catch(e) { Logger.error('Context JSON error: ' + e.message); }
   },
 
+  // ---- CODE PANEL (per-machine free-form code port) ----
+  renderCodePanel() {
+    const el = document.getElementById('code-panel-content');
+    if (!el) return;
+    const id = MCE.selectedId;
+    const m = id ? MCE.machines[id] : null;
+    if (!m) { el.innerHTML = '<div class="empty-state">Select a machine to give it a code port</div>'; return; }
+    if (m.code === undefined) m.code = '';
+    const ea = s => String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const esc = s => String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
+    const chip = (label, snippet, title) =>
+      `<button class="small" style="font-size:9px;padding:2px 7px;margin:0 4px 4px 0" title="${ea(title || snippet)}" onclick="UI._codeInsert('${id}','${esc(snippet)}')">${ea(label)}</button>`;
+
+    const apiChips = [
+      chip('EventBus.emit', "EventBus.emit('eventName', {});", 'Fire an event'),
+      chip('DB.find', "DB.find('collection', {});", 'Read mock/preview DB rows'),
+      chip('PipeSystem.execute', "PipeSystem.execute('pipeName', {}, {});", 'POST / PUT / DELETE a live pipe'),
+      chip('PipeSystem.fetch', "PipeSystem.fetch('pipeName', {}, {});", 'GET a live pipe'),
+      chip('ViewSystem.navigate', "ViewSystem.navigate('viewName', {});", 'Switch views'),
+      chip('LogicSystem.run', `LogicSystem.run('${id}', {});`, 'Run a logic-block chain by machine id'),
+      chip('FilterSystem.apply', "FilterSystem.apply(value, 'UPPER');", 'Apply a template filter to a value'),
+      chip('vars[...]', "vars['varName']", 'Read or write a project variable'),
+      chip('el', 'el', "This machine's own DOM element"),
+      chip('ctx', 'ctx', 'The payload this code port was triggered with'),
+    ].join('');
+
+    const eventChips = Object.keys(MCE.events || {}).length
+      ? Object.keys(MCE.events).map(name => chip(name, `EventBus.emit('${name}', {});`, `Fire event "${name}"`)).join('')
+      : '<span style="color:var(--txt3);font-size:10px">no events defined yet</span>';
+
+    const varChips = Object.keys(MCE.vars || {}).length
+      ? Object.keys(MCE.vars).map(name => chip(name, `vars['${name}']`, `Project variable "${name}"`)).join('')
+      : '<span style="color:var(--txt3);font-size:10px">no vars defined yet</span>';
+
+    const liveVarRows = Object.keys(MCE.vars || {}).length
+      ? Object.entries(MCE.vars).map(([name, v]) => {
+          const val = (v && typeof v === 'object') ? String(v.value ?? '') : String(v ?? '');
+          const desc = (v && typeof v === 'object' && v.desc) ? v.desc : '';
+          const pub = (v && typeof v === 'object' && v.public) ? `<span style="color:var(--acc1);font-size:9px;margin-left:6px">[public]</span>` : '';
+          const insertCall = `UI._codeInsert('${id}','${esc(`vars['${name}']`)}')`;
+          return `<div style="display:flex;align-items:baseline;gap:6px;cursor:pointer;padding:1px 0" title="Click to insert vars['${ea(name)}']${desc ? ' — ' + ea(desc) : ''}" onclick="${insertCall}">
+            <span style="color:var(--acc1)">${ea(name)}</span><span style="color:var(--txt3)">=</span><span style="color:var(--ok)">"${ea(val)}"</span>${pub}
+            ${desc ? `<span style="color:var(--txt3);font-size:9px;margin-left:4px">// ${ea(desc)}</span>` : ''}
+          </div>`;
+        }).join('')
+      : `<div style="color:var(--txt3)">no vars defined yet — add one in the <b>Vars</b> tab</div>`;
+
+    const systemVarsBox = `
+      <div style="font-family:monospace;font-size:10px;background:var(--bg2);border:1px solid var(--brd2);border-radius:3px;padding:8px;line-height:1.9">
+        <div><span style="color:var(--acc1)">id</span> <span style="color:var(--txt3)">=</span> <span style="color:var(--ok)">"${ea(id)}"</span></div>
+        <div><span style="color:var(--acc1)">view</span> <span style="color:var(--txt3)">=</span> <span style="color:var(--ok)">"${ViewSystem._active || 'null'}"</span></div>
+        <div><span style="color:var(--acc1)">params</span> <span style="color:var(--txt3)">=</span> <span style="color:var(--ok)">${ea(JSON.stringify(ViewSystem._params))}</span></div>
+        <div style="margin-top:6px;color:var(--txt3);font-size:9px;text-transform:uppercase;letter-spacing:.5px">vars — every value readable/writable as vars['name']</div>
+        ${liveVarRows}
+        <div style="margin-top:6px"><span style="color:var(--acc1)">loops</span> <span style="color:var(--txt3)">=</span> <span style="color:var(--ok)">{${Object.keys(MCE.loops||{}).join(', ')||'…'}}</span></div>
+        <div><span style="color:var(--acc1)">DB</span> <span style="color:var(--txt3)">→</span> <span style="color:var(--ok)">find · findOne · insert · update · remove · clear</span> <span style="color:var(--txt3)">(${Object.keys(DB._store||{}).filter(k=>!k.startsWith('_')).join(', ')||'…'})</span></div>
+      </div>`;
+
+    const pipeChips = Object.keys(MCE.pipes || {}).length
+      ? Object.entries(MCE.pipes).map(([name, p]) => chip(name,
+          (p.method === 'GET' ? `PipeSystem.fetch('${name}', {}, {});` : `PipeSystem.execute('${name}', {}, {});`),
+          `${p.method || 'GET'} ${p.endpoint || ''}`)).join('')
+      : '<span style="color:var(--txt3);font-size:10px">no pipes defined yet</span>';
+
+    const collNames = [...new Set([...(LiveDBPanel._collections || []), ...Object.keys(DB._store || {}).filter(k => !k.startsWith('_'))])];
+    const collChips = collNames.length
+      ? collNames.map(name => chip(name, `DB.find('${name}', {});`, `Read collection "${name}"`)).join('')
+      : '<span style="color:var(--txt3);font-size:10px">no collections yet</span>';
+
+    el.innerHTML = `
+    <div class="panel-section">
+      <h4>Code Port: ${ea(m.name)}</h4>
+      <p style="color:var(--txt3);font-size:11px;margin-bottom:8px">
+        Raw JavaScript for this machine — no blocks, no manual wiring required. It runs once automatically when
+        the app mounts (Canvas quick-test excluded, but Live / Preview / Export all run it). Re-run it from
+        <em>any</em> wire, anywhere, by setting that wire's action to <code style="color:var(--acc1)">Run Code</code> —
+        leave its args blank to target this machine, or type another machine's id to run its port instead.
+      </p>
+      <textarea id="code-editor-${id}" rows="10" style="font-family:monospace;font-size:11px;width:100%;resize:vertical;background:var(--bg2);color:var(--txt1);border:1px solid var(--brd2);border-radius:3px;padding:8px"
+        placeholder="// e.g.&#10;el.style.transform = 'scale(1.05)';&#10;EventBus.emit('myEvent', { value: 1 });"
+        oninput="UI._setMachineCode('${id}', this.value)">${ea(m.code)}</textarea>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <button class="small primary" onclick="UI._runCodeWithCtx('${id}')">&#x25B6; Run Now</button>
+        <button class="small danger" style="margin-left:auto" onclick="UI._setMachineCode('${id}','');UI.renderCodePanel()">Clear</button>
+      </div>
+    </div>
+    <div class="panel-section">
+      <h4>ctx JSON <span style="font-size:9px;font-weight:normal;color:var(--txt3)">(for Run Now)</span></h4>
+      <textarea id="code-ctx" rows="2" placeholder='{"value":5}'></textarea>
+    </div>
+    <div class="panel-section">
+      <h4>Variables Available <span style="font-size:9px;font-weight:normal;color:var(--txt3)">(live values, right now)</span></h4>
+      <p style="color:var(--txt3);font-size:10px;margin-bottom:4px">Everything this code port can see — click a var to insert it.</p>
+      ${systemVarsBox}
+    </div>
+    <div class="panel-section">
+      <h4>Engine API</h4>
+      <p style="color:var(--txt3);font-size:10px;margin-bottom:4px">Click any chip to insert it at the cursor.</p>
+      <div>${apiChips}</div>
+    </div>
+    <div class="panel-section">
+      <h4>This Project's Events</h4>
+      <div>${eventChips}</div>
+    </div>
+    <div class="panel-section">
+      <h4>This Project's Vars</h4>
+      <div style="margin-bottom:6px">${varChips}</div>
+      <div style="font-family:monospace;font-size:10px;background:var(--bg2);border:1px solid var(--brd2);border-radius:3px;padding:8px;line-height:1.9">${liveVarRows}</div>
+    </div>
+    <div class="panel-section">
+      <h4>This Project's Pipes</h4>
+      <div>${pipeChips}</div>
+    </div>
+    <div class="panel-section">
+      <h4>DB Collections</h4>
+      <div>${collChips}</div>
+    </div>`;
+  },
+  _setMachineCode(id, value) {
+    const m = MCE.machines[id];
+    if (!m) return;
+    m.code = value;
+  },
+  _codeInsert(id, snippet) {
+    const ta = document.getElementById('code-editor-' + id);
+    if (!ta) return;
+    this._insertAtCursor(ta, snippet);
+    this._setMachineCode(id, ta.value);
+  },
+  _runCodeWithCtx(id) {
+    const raw = document.getElementById('code-ctx')?.value || '{}';
+    try { MachineSystem.executeCode(id, JSON.parse(raw)); }
+    catch(e) { Logger.error('Context JSON error: ' + e.message); }
+  },
+
   // ---- CANVAS ----
   renderCanvas() {
     const drop = document.getElementById('canvas-drop');
@@ -3763,6 +3959,8 @@ const UI = {
     const selfClosing = ['input','img','br','hr'].includes(m.tag);
     const cssStr = Object.entries(this._canvasCSS(m.css)).map(([k,v]) => `${k}:${v}`).join(';');
     const children = m.children.map(cid => this._renderMachineEl(cid)).join('');
+    const codeBadge = (m.code && m.code.trim())
+      ? ` <span title="Has a code port — see the Code tab" style="color:var(--acc1)">&#9889;</span>` : '';
     let _mtext = m.text || '';
     if (_mtext.indexOf('{{') !== -1) {
       Object.entries(MCE.vars || {}).forEach(([k, v]) => {
@@ -3779,7 +3977,7 @@ const UI = {
         <tbody><tr><td colspan="${tl.columns.length}" style="color:var(--txt3);font-size:11px;padding:8px;text-align:center;font-style:italic">${tl.pipeName ? `bound to "${tl.pipeName}" — rows render in live preview` : 'no pipe selected'}</td></tr></tbody>
       </table>`;
       return `<div class="m-wrapper" id="mw_${id}" data-id="${id}">
-        <div class="m-label">${m.name} &lt;table&gt;</div>
+        <div class="m-label">${m.name} &lt;table&gt;${codeBadge}</div>
         ${innerContent}
       </div>`;
     }
@@ -3801,7 +3999,7 @@ const UI = {
         _innerContent = `<audio data-machine-inner src="${_src}" controls style="${cssStr}"></audio>`;
       }
       return `<div class="m-wrapper" id="mw_${id}" data-id="${id}">
-        <div class="m-label">${m.name} &lt;${m.tag}&gt;</div>
+        <div class="m-label">${m.name} &lt;${m.tag}&gt;${codeBadge}</div>
         ${_innerContent}
       </div>`;
     }
@@ -3809,7 +4007,7 @@ const UI = {
       ? `<${m.tag} data-machine-inner style="${cssStr}">`
       : `<${m.tag} data-machine-inner style="${cssStr}">${_mtext}${children}</${m.tag}>`;
     return `<div class="m-wrapper" id="mw_${id}" data-id="${id}">
-      <div class="m-label">${m.name} &lt;${m.tag}&gt;</div>
+      <div class="m-label">${m.name} &lt;${m.tag}&gt;${codeBadge}</div>
       ${innerContent}
     </div>`;
   },
@@ -3834,6 +4032,7 @@ const UI = {
       <span class="dom-name">${m.name}</span>
       ${hasChildren ? `<span class="badge" style="margin-left:4px">${m.children.length}</span>` : ''}
       ${m.wires.length ? `<span class="badge" style="color:var(--acc1)">${m.wires.length} wires</span>` : ''}
+      ${(m.code && m.code.trim()) ? `<span class="badge" title="Has a code port" style="color:var(--acc1)">&#9889; code</span>` : ''}
     </div>${children}`;
   },
 
@@ -4039,9 +4238,9 @@ const UI = {
     const allEvents = Object.keys(MCE.events);
     const allPipes = Object.keys(MCE.pipes);
     const allViews = Object.keys(MCE.views);
-    const actions = ['show','hide','toggle','fadeIn','fadeOut','fadeToBlack','addClass','removeClass','toggleClass','setText','setHTML','setValue','emit','navigate','pipeIn','pipeOut','pipeExec','runLogic','log','dbPull','dbPush','dbWrite','loopRender'];
+    const actions = ['show','hide','toggle','fadeIn','fadeOut','fadeToBlack','addClass','removeClass','toggleClass','setText','setHTML','setValue','src','href','emit','navigate','pipeIn','pipeOut','pipeExec','runLogic','runCode','log','dbPull','dbPush','dbWrite','loopRender'];
     const varNames = Object.keys(MCE.vars);
-    const textActions = new Set(['setText','setHTML','setValue']);
+    const textActions = new Set(['setText','setHTML','setValue','src','href']);
     const stepLabel = txt => `<span style="color:var(--txt3);font-size:10px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;flex-shrink:0;width:48px;text-align:right">${txt}</span>`;
     const arrow = `<span style="color:var(--txt3);font-size:12px;flex-shrink:0">→</span>`;
     // Group wires by eventName for multi-target rows
@@ -4347,6 +4546,56 @@ const UI = {
       })()}
       <button class="small" onclick="MachineSystem.addPipeBinding('${m.id}','','setText','','')">+ Bind Pipe</button>
     </div>
+    ${(() => {
+      const _bLoops = Object.entries(MCE.loops).filter(([,l]) => l.targetId === m.id);
+      const _gPipes = Object.values(MCE.pipes).filter(p => p.method === 'GET');
+      const _lbl = txt => `<span style="color:var(--txt3);font-size:10px;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;flex-shrink:0;width:48px;text-align:right">${txt}</span>`;
+      const _arr = `<span style="color:var(--txt3);font-size:12px;flex-shrink:0">→</span>`;
+      return `<div class="inspector-section">
+        <h4>Template Bindings <span class="badge">${_bLoops.length}</span></h4>
+        <p style="color:var(--txt3);font-size:11px;margin-bottom:8px">Renders a template into this machine once per record from a GET pipe. Use <code style="color:var(--acc1)">{{field}}</code> tokens. Advanced options (click event, view, value field) are in the Loops tab.</p>
+        ${_bLoops.map(([_ln, _l]) => {
+          const _lnj = _ln.replace(/'/g, "\\'");
+          const _lF = UI._loopFieldsForPipe(_l.pipeName || '');
+          const _tid = 'lb-tpl-' + _ln.replace(/[^a-zA-Z0-9]/g, '-');
+          const _safeTpl = (_l.template||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/`/g,'&#96;');
+          const _ins = f => `(function(){var _t=document.getElementById('${_tid}');if(_t){var _s=_t.selectionStart!=null?_t.selectionStart:_t.value.length;_t.value=_t.value.slice(0,_s)+'{{${f}}}'+_t.value.slice(_t.selectionEnd!=null?_t.selectionEnd:_s);MCE.loops['${_lnj}'].template=_t.value;_t.focus()}})()`;
+          return `<div style="background:var(--bg3);border-radius:3px;padding:8px;margin-bottom:6px;border-left:2px solid #a78bfa">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-size:11px;font-weight:700;color:#a78bfa;font-family:monospace">${_ln}</span>
+              <div style="display:flex;gap:3px">
+                <button class="small" onclick="UI._testLoop('${_lnj}')">&#9654; Run</button>
+                <button class="small" onclick="UI._editLoop('${_lnj}')">&#9998;</button>
+                <button class="small danger" onclick="LoopSystem.delete('${_lnj}')">&#x2715;</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px">
+              ${_lbl('pipe')}${_arr}
+              <select style="flex:1;min-width:0" onchange="MCE.loops['${_lnj}'].pipeName=this.value;UI.renderInspector()">
+                <option value="" ${!_l.pipeName?'selected':''}>— GET pipe —</option>
+                ${_gPipes.map(p => `<option value="${p.name}" ${_l.pipeName===p.name?'selected':''}>${p.name}</option>`).join('')}
+              </select>
+            </div>
+            <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px">
+              ${_lbl('field')}${_arr}
+              <input style="flex:1;min-width:0" placeholder="array field (blank = each doc)" value="${(_l.dataField||'').replace(/"/g,'&quot;')}" oninput="MCE.loops['${_lnj}'].dataField=this.value">
+            </div>
+            <div style="display:flex;gap:4px;align-items:flex-start;margin-bottom:4px">
+              ${_lbl('tmpl')}${_arr}
+              <div style="flex:1;min-width:0">
+                <textarea id="${_tid}" rows="4" style="width:100%;font-family:monospace;font-size:11px;resize:vertical;margin-bottom:3px" placeholder="&lt;div&gt;{{field}}&lt;/div&gt;" oninput="MCE.loops['${_lnj}'].template=this.value">${_safeTpl}</textarea>
+                ${_lF.filter(f => f !== '_index' && f !== '_total').length ? `<div style="display:flex;gap:3px;flex-wrap:wrap">
+                  <span style="color:var(--txt3);font-size:9px;align-self:center;flex-shrink:0">insert:</span>
+                  ${_lF.filter(f => f !== '_index' && f !== '_total').map(f => `<button class="small" style="font-size:9px;padding:1px 5px" onclick="${_ins(f)}">{{${f}}}</button>`).join('')}
+                  <button class="small" style="font-size:9px;padding:1px 5px;color:var(--txt3)" onclick="${_ins('_index')}">{{_index}}</button>
+                </div>` : ''}
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+        <button class="small" onclick="UI._addLoopBinding('${m.id}')">+ Bind Template</button>
+      </div>`;
+    })()}
     <div class="inspector-section">
       <h4>View Binding</h4>
       <p style="color:var(--txt3);font-size:10px;margin-bottom:6px">Comma-separated view names. Machine only shows when one of these views is active. Leave empty to always show.</p>
@@ -4462,6 +4711,7 @@ const UI = {
     this.renderInspector();
     this.renderCSSPanel();
     this.renderLogicPanel();
+    this.renderCodePanel();
     Logger.warn('All machines cleared');
   },
 
@@ -4472,17 +4722,6 @@ const UI = {
     const css = this.buildExportCSS();
     const frame = document.getElementById('preview-frame');
     const script = this.buildExportScript();
-    frame.style.height = '100%';
-    frame.onload = function() {
-      try {
-        const doc = frame.contentDocument;
-        const h = Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight);
-        const minH = (frame.parentElement && frame.parentElement.clientHeight) || 0;
-        frame.style.height = Math.max(h, minH) + 'px';
-      } catch(e) {}
-    };
-    frame.srcdoc = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}html{margin:0;overflow-x:hidden}body{margin:0;overflow-x:hidden}</style></head><body>${bodyHTML}<script>${script}<\/script></body></html>`;
-    Logger.ok('Preview rendered');
     const _dynBindings = {};
     Object.entries(MCE.machines).forEach(([_mid, _mm]) => {
       if (_mm.pipeBindings && _mm.pipeBindings.length) _dynBindings[_mid] = _mm.pipeBindings;
@@ -4491,20 +4730,45 @@ const UI = {
     Object.values(MCE.machines).forEach(m => {
       (m.pipeBindings || []).forEach(pb => { if (pb.pipeName) _boundPipes.add(pb.pipeName); });
     });
-    _boundPipes.forEach(pipeName => {
-      const pipe = MCE.pipes[pipeName];
-      if (!pipe || pipe.method !== 'GET') return;
-      setTimeout(() => {
+    Object.values(MCE.loops || {}).forEach(loop => { if (loop.pipeName) _boundPipes.add(loop.pipeName); });
+    const _resizeFrame = () => {
+      try {
+        const doc = frame.contentDocument;
+        const h = Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight);
+        const minH = (frame.parentElement && frame.parentElement.clientHeight) || 0;
+        frame.style.height = Math.max(h, minH) + 'px';
+      } catch(e) {}
+    };
+    frame.style.height = '100%';
+    // Remove any previous resize listener before attaching a new one
+    if (frame._mceResizeHandler) window.removeEventListener('message', frame._mceResizeHandler);
+    frame._mceResizeHandler = function(e) {
+      if (e.source === frame.contentWindow && e.data && e.data.type === 'mce:resize') {
+        setTimeout(_resizeFrame, 150);
+      }
+    };
+    window.addEventListener('message', frame._mceResizeHandler);
+    frame.onload = function() {
+      _resizeFrame();
+      _boundPipes.forEach(pipeName => {
+        const pipe = MCE.pipes[pipeName];
+        if (!pipe || pipe.method !== 'GET') return;
         PipeSystem.fetch(pipeName).then(resp => {
           if (frame.contentWindow) {
             try { frame.contentWindow.postMessage({ type: 'mce:pipeData', pipeName, data: resp.data, bindings: _dynBindings }, '*'); } catch(e) {}
+            setTimeout(_resizeFrame, 300);
           }
         });
-      }, 400);
-    });
+      });
+    };
+    frame.srcdoc = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}html{margin:0;overflow-x:hidden}body{margin:0;overflow-x:hidden}</style></head><body>${bodyHTML}<script>${script}<\/script></body></html>`;
+    Logger.ok('Preview rendered');
   },
   buildExportCSS() {
-    return `*{box-sizing:border-box}body{margin:0;font-family:sans-serif}.nav-active{color:#fff!important;border-color:#a855f7!important;background:rgba(168,85,247,0.15)!important}.tab-active{background:#fff!important;color:#000!important;font-weight:bold!important}`;
+    const style = this.runtimeStyles[MCE.runtimeStyle || 'mono'] || this.runtimeStyles.mono;
+    const cssVars = ':root{' + Object.entries(style).map(([k,v]) => `--${k}:${v}`).join(';') + ';--font:\'JetBrains Mono\',monospace}';
+    const projectCSS = typeof MCE.css === 'string' ? MCE.css : '';
+    return cssVars + `*{box-sizing:border-box}body{margin:0;font-family:var(--font,sans-serif)}.nav-active{color:#fff!important;border-color:#a855f7!important;background:rgba(168,85,247,0.15)!important}.tab-active{background:#fff!important;color:#000!important;font-weight:bold!important}` + projectCSS;
   },
   buildExportScript() {
     const wireData = {};
@@ -4518,6 +4782,10 @@ const UI = {
     const bindingsData = {};
     Object.entries(MCE.machines).forEach(([id, m]) => {
       if (m.pipeBindings && m.pipeBindings.length > 0) bindingsData[id] = m.pipeBindings;
+    });
+    const codePortData = {};
+    Object.entries(MCE.machines).forEach(([id, m]) => {
+      if (m.code && m.code.trim()) codePortData[id] = m.code;
     });
     const transformData = {};
     Object.entries(MCE.machines).forEach(([id, m]) => {
@@ -4544,7 +4812,7 @@ const UI = {
     }
     const pipeMap = {};
     Object.values(MCE.pipes).forEach(p => {
-      pipeMap[p.name] = { method: p.method, collection: p.collection, live: p.live || false, endpoint: p.endpoint || '', urlTemplate: p.urlTemplate || '', bodyTemplate: p.bodyTemplate || {}, queryTemplate: p.queryTemplate || '' };
+      pipeMap[p.name] = { method: p.method, collection: p.collection, live: p.live || false, endpoint: p.endpoint || '', urlTemplate: p.urlTemplate || '', bodyTemplate: p.bodyTemplate || {}, queryTemplate: p.queryTemplate || '', sourceField: p.sourceField || '' };
     });
     const previewDB = {};
     Object.keys(DB._store).forEach(name => {
@@ -4628,6 +4896,29 @@ const UI = {
   };
   window.LogicSystem = LogicSystem;
 
+  // ---- CODE PORT (free-form per-machine JS) ----
+  var CODE_PORTS = ${JSON.stringify(codePortData)};
+  var CodePort = {
+    _cache: {},
+    run: function(id, ctx, el) {
+      var src = CODE_PORTS[id];
+      if (!src) return;
+      var cached = CodePort._cache[id];
+      var fn;
+      if (cached && cached.src === src) { fn = cached.fn; }
+      else {
+        try {
+          fn = new Function('ctx','id','el','EventBus','PipeSystem','DB','ViewSystem','LogicSystem','FilterSystem','MCE_VARS','vars','emit', src);
+          CodePort._cache[id] = { src: src, fn: fn };
+        } catch(e) { console.error('Code port syntax error on ' + id + ':', e); _pLog('CODE PORT syntax error on ' + id + ': ' + e.message); return; }
+      }
+      try {
+        fn(ctx || {}, id, el || document.querySelector('[data-mce-id="' + id + '"]'), EventBus, PipeSystem, DB, ViewSystem, LogicSystem, FilterSystem, MCE_VARS, MCE_VARS, function(name, payload) { EventBus.emit(name, payload); });
+      } catch(e) { console.error('Code port runtime error on ' + id + ':', e); _pLog('CODE PORT error on ' + id + ': ' + e.message); }
+    }
+  };
+  window.CodePort = CodePort;
+
   var FilterSystem = {
     filters: {
       UPPER:    function(v) { return v.toUpperCase(); },
@@ -4702,7 +4993,121 @@ const UI = {
       }).join('') : '<tr><td colspan="' + cfg.columns.length + '" style="text-align:center;color:#666;padding:12px">No data</td></tr>';
     });
   }
+  var _loopPageData = {};
+  var _loopPageNum  = {};
+
+  function _buildLoopItemHTML(loop, name, pageRecords, globalOffset, allCount) {
+    var _hasClick = loop.clickEvent || loop.clickView;
+    return pageRecords.map(function(doc, idx) {
+      var t = loop.template;
+      var vals = {};
+      if (doc !== null && doc !== undefined && typeof doc === 'object') {
+        Object.keys(doc).forEach(function(k) { vals[k] = doc[k] !== null && doc[k] !== undefined ? String(doc[k]) : ''; });
+      } else {
+        vals['value'] = doc !== null && doc !== undefined ? String(doc) : '';
+      }
+      vals['_index'] = String(globalOffset + idx + 1);
+      vals['_total'] = String(allCount);
+      t = t.replace(/\{\{([^}]+)\}\}/g, function(_, inner) {
+        var pipeIdx = inner.indexOf('|');
+        var key, filter, arg;
+        if (pipeIdx !== -1) {
+          key = inner.slice(0, pipeIdx).trim();
+          var rest = inner.slice(pipeIdx + 1).trim();
+          var colon = rest.indexOf(':');
+          filter = colon !== -1 ? rest.slice(0, colon).trim() : rest;
+          arg    = colon !== -1 ? rest.slice(colon + 1)       : undefined;
+        } else { key = inner.trim(); }
+        var raw = Object.prototype.hasOwnProperty.call(vals, key) ? vals[key] : (MCE_VARS[key] !== undefined ? String(MCE_VARS[key]) : '');
+        return filter ? FilterSystem.apply(raw, filter, arg) : raw;
+      });
+      if (_hasClick) {
+        t = '<div class="mce-loop-item" style="cursor:pointer" data-loop-name="' + name + '" data-loop-idx="' + (globalOffset + idx) + '">' + t + '</div>';
+      }
+      return t;
+    }).join('');
+  }
+
+  function _bindLoopClicks(target, name) {
+    if (target._mceLoopBound) return;
+    target._mceLoopBound = true;
+    target.addEventListener('click', function(e) {
+      var item = e.target.closest('[data-loop-name]');
+      if (!item) return;
+      var lname = item.getAttribute('data-loop-name');
+      var lidx  = parseInt(item.getAttribute('data-loop-idx'), 10);
+      var _d    = (window._MCE_LOOP_DATA && window._MCE_LOOP_DATA[lname]) || [];
+      var _doc  = _d[lidx] || {};
+      window._MCE_SELECTION = _doc;
+      var _loop = LOOPS[lname];
+      if (!_loop) return;
+      if (_loop.clickEvent) {
+        var _vf = _loop.clickValueField || 'value';
+        var _v  = _doc[_vf] !== undefined ? String(_doc[_vf])
+                  : (Object.values(_doc).filter(function(x){ return typeof x === 'string'; })[0] || '');
+        EventBus.emit(_loop.clickEvent, Object.assign({ value: _v }, _doc));
+      }
+      if (_loop.clickView) {
+        var _navP = _doc._id !== undefined ? { _id: String(_doc._id) }
+                  : (_doc.value !== undefined ? { value: String(_doc.value) } : { _index: String(lidx) });
+        ViewSystem.navigate(_loop.clickView, _navP);
+      }
+    });
+  }
+
   var LoopSystem = {
+    _renderPage: function(name) {
+      var loop = LOOPS[name];
+      if (!loop || !loop.targetId) return;
+      var records   = _loopPageData[name] || [];
+      var pageSize  = loop.pageSize || 0;
+      var totalPages = pageSize > 0 ? Math.max(1, Math.ceil(records.length / pageSize)) : 1;
+      var page = _loopPageNum[name] || 0;
+      page = Math.max(0, Math.min(page, totalPages - 1));
+      _loopPageNum[name] = page;
+      var pageRecords  = pageSize > 0 ? records.slice(page * pageSize, (page + 1) * pageSize) : records;
+      var globalOffset = pageSize > 0 ? page * pageSize : 0;
+
+      if (loop.clickEvent || loop.clickView) {
+        window._MCE_LOOP_DATA = window._MCE_LOOP_DATA || {};
+        window._MCE_LOOP_DATA[name] = records.map(function(doc) {
+          return typeof doc === 'object' && doc !== null ? doc : { value: String(doc || '') };
+        });
+      }
+
+      var itemHTML = _buildLoopItemHTML(loop, name, pageRecords, globalOffset, records.length);
+
+      var ctrlHtml = '';
+      if (pageSize > 0 && totalPages > 1) {
+        var _q = "'";
+        var btns = '<button onclick="LoopSystem.goPage(' + _q + name + _q + ',' + Math.max(0, page - 1) + ')"' + (page === 0 ? ' disabled' : '') + '>&laquo; Prev</button> ';
+        for (var pi = 0; pi < totalPages; pi++) {
+          btns += '<button onclick="LoopSystem.goPage(' + _q + name + _q + ',' + pi + ')"' + (pi === page ? ' style="font-weight:bold;text-decoration:underline"' : '') + '>' + (pi + 1) + '</button> ';
+        }
+        btns += '<button onclick="LoopSystem.goPage(' + _q + name + _q + ',' + Math.min(totalPages - 1, page + 1) + ')"' + (page === totalPages - 1 ? ' disabled' : '') + '>Next &raquo;</button>';
+        ctrlHtml = '<div class="mce-pagination" style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-top:8px">' + btns + '</div>';
+      }
+
+      var target = document.querySelector('[data-mce-id="' + loop.targetId + '"]');
+      if (target) {
+        if (loop.paginationId) {
+          target.innerHTML = itemHTML;
+          var ctrlTarget = document.querySelector('[data-mce-id="' + loop.paginationId + '"]');
+          if (ctrlTarget) ctrlTarget.innerHTML = ctrlHtml;
+        } else {
+          target.innerHTML = itemHTML + ctrlHtml;
+        }
+        if ((loop.clickEvent || loop.clickView)) _bindLoopClicks(target, name);
+      }
+
+      EventBus.emit('loop:' + name + ':rendered', { loop: name, count: pageRecords.length, total: records.length, page: page + 1, pages: totalPages });
+    },
+
+    goPage: function(name, n) {
+      _loopPageNum[name] = n;
+      LoopSystem._renderPage(name);
+    },
+
     render: function(name, data) {
       var loop = LOOPS[name];
       if (!loop || !loop.targetId) return;
@@ -4718,73 +5123,31 @@ const UI = {
       } else {
         records = Array.isArray(data) ? data : (data ? [data] : []);
       }
-      // Store records globally for click handlers
-      var _hasClick = loop.clickEvent || loop.clickView;
-      if (_hasClick) {
+
+      var pageSize = loop.pageSize || 0;
+      if (pageSize > 0) {
+        _loopPageData[name] = records;
+        _loopPageNum[name]  = 0;
+        LoopSystem._renderPage(name);
+        return;
+      }
+
+      // Non-paginated path
+      if (loop.clickEvent || loop.clickView) {
         window._MCE_LOOP_DATA = window._MCE_LOOP_DATA || {};
         window._MCE_LOOP_DATA[name] = records.map(function(doc) {
           return typeof doc === 'object' && doc !== null ? doc : { value: String(doc || '') };
         });
       }
-      var html = records.map(function(doc, idx) {
-        var t = loop.template;
-        var vals = {};
-        if (doc !== null && doc !== undefined && typeof doc === 'object') {
-          Object.keys(doc).forEach(function(k) { vals[k] = doc[k] !== null && doc[k] !== undefined ? String(doc[k]) : ''; });
-        } else {
-          vals['value'] = doc !== null && doc !== undefined ? String(doc) : '';
-        }
-        vals['_index'] = String(idx + 1);
-        vals['_total'] = String(records.length);
-        t = t.replace(/\{\{([^}]+)\}\}/g, function(_, inner) {
-          var pipe = inner.indexOf('|');
-          var key, filter, arg;
-          if (pipe !== -1) {
-            key = inner.slice(0, pipe).trim();
-            var rest = inner.slice(pipe + 1).trim();
-            var colon = rest.indexOf(':');
-            filter = colon !== -1 ? rest.slice(0, colon).trim() : rest;
-            arg    = colon !== -1 ? rest.slice(colon + 1)       : undefined;
-          } else { key = inner.trim(); }
-          var raw = Object.prototype.hasOwnProperty.call(vals, key) ? vals[key] : (MCE_VARS[key] !== undefined ? String(MCE_VARS[key]) : '');
-          return filter ? FilterSystem.apply(raw, filter, arg) : raw;
-        });
-        if (_hasClick) {
-          t = '<div class="mce-loop-item" style="cursor:pointer" data-loop-name="' + name + '" data-loop-idx="' + idx + '">' + t + '</div>';
-        }
-        return t;
-      }).join('');
+      var html = _buildLoopItemHTML(loop, name, records, 0, records.length);
       var target = document.querySelector('[data-mce-id="' + loop.targetId + '"]');
       if (target) {
         target.innerHTML = html;
-        if (_hasClick && !target._mceLoopBound) {
-          target._mceLoopBound = true;
-          target.addEventListener('click', function(e) {
-            var item = e.target.closest('[data-loop-name]');
-            if (!item) return;
-            var lname = item.getAttribute('data-loop-name');
-            var lidx  = parseInt(item.getAttribute('data-loop-idx'), 10);
-            var _d    = (window._MCE_LOOP_DATA && window._MCE_LOOP_DATA[lname]) || [];
-            var _doc  = _d[lidx] || {};
-            window._MCE_SELECTION = _doc;
-            var _loop = LOOPS[lname];
-            if (!_loop) return;
-            if (_loop.clickEvent) {
-              var _vf = _loop.clickValueField || 'value';
-              var _v  = _doc[_vf] !== undefined ? String(_doc[_vf])
-                        : (Object.values(_doc).filter(function(x){ return typeof x === 'string'; })[0] || '');
-              EventBus.emit(_loop.clickEvent, Object.assign({ value: _v }, _doc));
-            }
-            if (_loop.clickView) {
-              var _navP = _doc._id !== undefined ? { _id: String(_doc._id) }
-                        : (_doc.value !== undefined ? { value: String(_doc.value) } : { _index: String(lidx) });
-              ViewSystem.navigate(_loop.clickView, _navP);
-            }
-          });
-        }
+        if ((loop.clickEvent || loop.clickView)) _bindLoopClicks(target, name);
       }
       EventBus.emit('loop:' + name + ':rendered', { loop: name, count: records.length });
     },
+
     renderAll: function(pipeName, data) {
       Object.keys(LOOPS).forEach(function(n) {
         if (LOOPS[n].pipeName === pipeName) LoopSystem.render(n, data);
@@ -4808,13 +5171,16 @@ const UI = {
     navigate: function(viewName, params) {
       this._params = params || {};
       this._apply(viewName);
-      try {
-        var qs = new URLSearchParams(Object.assign({ view: viewName }, params || {}));
-        var _hw = (window.parent && window.parent !== window) ? window.parent : window;
-        _hw.history.pushState({ view: viewName, params: this._params }, '', '?' + qs.toString());
-      } catch(e) {}
+      if (!_inEditorFrame) {
+        try {
+          var qs = new URLSearchParams(Object.assign({ view: viewName }, params || {}));
+          var _hw = (window.parent && window.parent !== window) ? window.parent : window;
+          _hw.history.pushState({ view: viewName, params: this._params }, '', '?' + qs.toString());
+        } catch(e) {}
+      }
       EventBus.emit('view:' + viewName, this._params);
       EventBus.emit('view:changed', { view: viewName, params: this._params });
+      try { window.parent.postMessage({ type: 'mce:resize' }, '*'); } catch(e) {}
     },
     getParam: function(key) { return this._params[key] || null; },
     getParams: function() { return Object.assign({ view: this._active }, this._params); }
@@ -4825,8 +5191,10 @@ const UI = {
   // Apply initial view visibility immediately (DOM only — events fire after wire-up)
   var _initView = null, _initParams = {};
   var _parentWin = (window.parent && window.parent !== window) ? window.parent : window;
+  // In editor preview iframes, don't read/write the parent URL — other iframes contaminate it
+  var _inEditorFrame = !!(window.parent && window.parent !== window && typeof window.parent.UI !== 'undefined');
   (function() {
-    var sp = new URLSearchParams(_parentWin.location.search);
+    var sp = _inEditorFrame ? new URLSearchParams('') : new URLSearchParams(_parentWin.location.search);
     var vn = sp.get('view') || DEFAULT_VIEW;
     if (vn) {
       var p = {}; sp.forEach(function(v,k){ if (k!=='view') p[k]=v; });
@@ -4837,14 +5205,16 @@ const UI = {
       document.querySelectorAll('[data-view]').forEach(function(el){ el.style.display = ''; });
     }
   })();
-  _parentWin.addEventListener('popstate', function(e) {
-    if (e.state && e.state.view) {
-      ViewSystem._params = e.state.params || {};
-      ViewSystem._apply(e.state.view);
-      EventBus.emit('view:' + e.state.view, ViewSystem._params);
-      EventBus.emit('view:changed', { view: e.state.view, params: ViewSystem._params });
-    }
-  });
+  if (!_inEditorFrame) {
+    _parentWin.addEventListener('popstate', function(e) {
+      if (e.state && e.state.view) {
+        ViewSystem._params = e.state.params || {};
+        ViewSystem._apply(e.state.view);
+        EventBus.emit('view:' + e.state.view, ViewSystem._params);
+        EventBus.emit('view:changed', { view: e.state.view, params: ViewSystem._params });
+      }
+    });
+  }
 
   // DB snapshot seeded from editor state at preview build time
   var PREVIEW_DB = ${JSON.stringify(previewDB)};
@@ -4857,7 +5227,7 @@ const UI = {
   var _pLog = (window.parent && window.parent.Logger) ? function(msg) { try { window.parent.Logger.info('[iframe] ' + msg); } catch(x) {} } : function() {};
 
   function applyBindings(pipeName, data, dynamicBindings) {
-    var _pbTextActions = { 'setText': 1, 'setHTML': 1, 'setValue': 1, 'innerHTML': 1, 'textContent': 1, 'value': 1 };
+    var _pbTextActions = { 'setText': 1, 'setHTML': 1, 'setValue': 1, 'innerHTML': 1, 'textContent': 1, 'value': 1, 'src': 1, 'href': 1 };
     var _dataObj = Array.isArray(data) ? (data[0] || {}) : (data || {});
     var _activeBindings = (dynamicBindings && typeof dynamicBindings === 'object') ? dynamicBindings : BINDINGS;
     _pLog('applyBindings pipe="' + pipeName + '" dataKeys=' + Object.keys(_dataObj).join(',') + ' bindingMachines=' + Object.keys(_activeBindings).length);
@@ -4935,6 +5305,28 @@ const UI = {
         Object.keys(pipe.bodyTemplate).forEach(function(k) { body[k] = _iifeTok(pipe.bodyTemplate[k], runtimePayload || data || {}); });
         _pLog('pipeExec body resolved: ' + JSON.stringify(body));
       }
+      if (pipe && pipe.method === 'UPLOAD') {
+        if (_pubUser) return Promise.resolve({ status: 403, error: 'Read-only in public view' });
+        var _sfId = pipe.sourceField || '';
+        var _fileEl = _sfId ? document.querySelector('[data-mce-id="' + _sfId + '"]') : null;
+        if (!_fileEl || !_fileEl.files || !_fileEl.files.length) { _pLog('UPLOAD: no file selected in ' + _sfId); return Promise.resolve({ status: 400, error: 'No file selected' }); }
+        var _fd = new FormData();
+        Array.from(_fileEl.files).forEach(function(f) { _fd.append('files', f); });
+        var _uep = pipe.endpoint || '/api/files/upload';
+        _pLog('UPLOAD: posting to ' + _uep);
+        return fetch(_uep, { method: 'POST', credentials: 'include', body: _fd })
+          .then(function(r) {
+            return r.json().then(function(d) {
+              var _up = d.uploaded && d.uploaded[0];
+              var _sd = _up ? { url: _up.url, name: _up.name, size: _up.size, type: _up.type } : d;
+              _pLog('UPLOAD result url=' + (_up ? _up.url : 'none'));
+              applyBindings(name, _sd);
+              if (r.ok) EventBus.emit('pipe:' + name + ':written', { pipe: name, data: d, url: _up ? _up.url : '' });
+              return { status: r.status, data: _sd };
+            });
+          })
+          .catch(function(e) { _pLog('UPLOAD error: ' + e.message); return { status: 500, error: e.message }; });
+      }
       if (pipe && pipe.live) {
         if (_pubUser) {
           console.warn('[LiveAPI] Write operations not available on public profile pages');
@@ -4947,7 +5339,11 @@ const UI = {
           credentials: 'include',
           body: JSON.stringify(body)
         }).then(function(r) {
-          return r.json().then(function(d) { applyBindings(name, d); return { status: r.status, data: d }; });
+          return r.json().then(function(d) {
+            applyBindings(name, d);
+            if (r.ok) EventBus.emit('pipe:' + name + ':written', { pipe: name, data: d });
+            return { status: r.status, data: d };
+          });
         }).catch(function(e) { return { status: 500, error: e.message }; });
       }
       var _inserted = body;
@@ -4968,10 +5364,15 @@ const UI = {
           if (!coll.isArray && coll.single) Object.assign(coll.single, body);
           else if (coll.isArray) coll.docs = coll.docs.map(function(d) { return Object.assign({}, d, body); });
         } else if (pipe.method === 'DELETE') {
-          if (coll.isArray) coll.docs = []; else coll.single = null;
+          if (coll.isArray) {
+            var _delId = runtimePayload && runtimePayload.value !== undefined ? String(runtimePayload.value) : '';
+            if (!_delId && pipe.urlTemplate) { var _du = _iifeTok(pipe.urlTemplate, runtimePayload || {}); _delId = _du.split('/').filter(Boolean).pop(); }
+            if (_delId) { coll.docs = coll.docs.filter(function(d) { return String(d._id) !== _delId; }); } else { coll.docs = []; }
+          } else { coll.single = null; }
         }
       }
       applyBindings(name, _inserted);
+      EventBus.emit('pipe:' + name + ':written', { pipe: name, data: _inserted });
       return Promise.resolve({ status: 200, data: _inserted });
     },
     fetch: function(name, query, runtimePayload) {
@@ -4985,6 +5386,9 @@ const UI = {
         var ep = (pipe.urlTemplate ? _iifeTok(pipe.urlTemplate, runtimePayload || {}) : '') || pipe.endpoint || ('/api/db/' + (pipe.collection || name));
         if (_pubUser && ep.indexOf('/api/db/') === 0 && ep.indexOf('/public/') === -1) {
           ep = ep.replace('/api/db/', '/api/db/public/' + _pubUser + '/');
+        }
+        if (_pubUser && ep.indexOf('/api/files') === 0 && ep.indexOf('/public/') === -1) {
+          var _efp = ep.split('?'); ep = '/api/files/public/' + _pubUser + (_efp[1] ? '?' + _efp[1] : '');
         }
         var url = ep;
         if (query && Object.keys(query).length) url += '?' + new URLSearchParams(query).toString();
@@ -5205,6 +5609,8 @@ const UI = {
       case 'setText':     { var _mid = el.getAttribute('data-mce-id'); var _tin = _mid && TRANSFORMS[_mid] && TRANSFORMS[_mid].in; var _raw = args || ''; el.textContent = (_tin && _tin.filter) ? FilterSystem.apply(_raw, _tin.filter, _tin.arg || undefined) : _raw; break; }
       case 'setHTML':     { var _mid = el.getAttribute('data-mce-id'); var _tin = _mid && TRANSFORMS[_mid] && TRANSFORMS[_mid].in; var _raw = args || ''; el.innerHTML  = (_tin && _tin.filter) ? FilterSystem.apply(_raw, _tin.filter, _tin.arg || undefined) : _raw; break; }
       case 'setValue':    { var _mid = el.getAttribute('data-mce-id'); var _tin = _mid && TRANSFORMS[_mid] && TRANSFORMS[_mid].in; var _raw = args || ''; el.value       = (_tin && _tin.filter) ? FilterSystem.apply(_raw, _tin.filter, _tin.arg || undefined) : _raw; break; }
+      case 'src':         if (el) el.src  = args; break;
+      case 'href':        if (el) el.href = args; break;
       case 'emit':        if (args) EventBus.emit(args, {}); break;
       case 'navigate':
         if (args) {
@@ -5214,6 +5620,7 @@ const UI = {
         }
         break;
       case 'runLogic':    { var _rlId = (args && args.trim()) || el.getAttribute('data-mce-id'); if (_rlId) LogicSystem.run(_rlId, payload); break; }
+      case 'runCode':     { var _rcId = (args && args.trim()) || el.getAttribute('data-mce-id'); if (_rcId) CodePort.run(_rcId, payload, el); break; }
       case 'loopRender':  if (args) { var _lr = LOOPS[args]; if (_lr && _lr.pipeName) PipeSystem.fetch(_lr.pipeName, payload); else if (_lr) LoopSystem.render(args, []); } break;
       case 'pipeIn':      if (args) PipeSystem.execute(args, payload, payload); break;
       case 'pipeOut':     if (args) PipeSystem.fetch(args, {}, payload); break;
@@ -5230,20 +5637,7 @@ const UI = {
       case 'clearFields': clearFields(args); break;
     }
   }
-  // Script runs after all body HTML — wire up immediately, no DOMContentLoaded needed
-  Object.keys(WIRES).forEach(function(machineId) {
-    var selfEl = document.querySelector('[data-mce-id="' + machineId + '"]');
-    if (!selfEl) return;
-    WIRES[machineId].forEach(function(wire) {
-      (function(w) {
-        EventBus.on(w.eventName, function(payload) {
-          var el = w.targetId ? (document.querySelector('[data-mce-id="' + w.targetId + '"]') || selfEl) : selfEl;
-          applyAction(el, w.action, w.actionArgs, payload);
-        });
-      })(wire);
-    });
-  });
-  // Var wires — capture event payload or machine value into MCE_VARS
+  // Var wires fire first so MCE_VARS are set before wire action handlers read them
   Object.keys(VAR_WIRES).forEach(function(machineId) {
     VAR_WIRES[machineId].forEach(function(vw) {
       (function(v) {
@@ -5260,6 +5654,23 @@ const UI = {
         });
       })(vw);
     });
+  });
+  // Script runs after all body HTML — wire up immediately, no DOMContentLoaded needed
+  Object.keys(WIRES).forEach(function(machineId) {
+    var selfEl = document.querySelector('[data-mce-id="' + machineId + '"]');
+    if (!selfEl) return;
+    WIRES[machineId].forEach(function(wire) {
+      (function(w) {
+        EventBus.on(w.eventName, function(payload) {
+          var el = w.targetId ? (document.querySelector('[data-mce-id="' + w.targetId + '"]') || selfEl) : selfEl;
+          applyAction(el, w.action, w.actionArgs, payload);
+        });
+      })(wire);
+    });
+  });
+  // Run each machine's code port once at mount (re-triggerable any time via a wire's action: Run Code)
+  Object.keys(CODE_PORTS).forEach(function(machineId) {
+    CodePort.run(machineId, {}, document.querySelector('[data-mce-id="' + machineId + '"]'));
   });
   // Fire initial view events now that all wires are attached
   if (_initView) {
@@ -5354,6 +5765,7 @@ const UI = {
       loops: MCE.loops,
       vars: MCE.vars,
       logic: MCE.logic,
+      css: typeof MCE.css === 'string' ? MCE.css : '',
       runtimeStyle: MCE.runtimeStyle,
       templates: MCE.templates || {},
       dbCollections,
@@ -5397,6 +5809,7 @@ const UI = {
     MCE.logic = data.logic || {};
     MCE.loops = data.loops || {};
     MCE.templates = data.templates || {};
+    MCE.css = typeof data.css === 'string' ? data.css : '';
     MCE.runtimeStyle = data.runtimeStyle || 'clean';
     const _rawVars = data.vars || {};
     MCE.vars = Object.fromEntries(Object.entries(_rawVars).map(([k, v]) => {
@@ -5435,6 +5848,7 @@ const UI = {
       if (!m.inputTransform)  m.inputTransform  = { filter: '', arg: '' };
       if (!m.outputTransform) m.outputTransform = { filter: '', arg: '' };
       if (!m.varWires) m.varWires = [];
+      if (m.code === undefined) m.code = '';
       if (!m.attrs) m.attrs = {};
       if (!m.css) m.css = {};
       if (!m.children) m.children = [];
@@ -5466,6 +5880,7 @@ const UI = {
     this.renderDOMTree();
     this.renderInspector();
     this.renderLogicPanel();
+    this.renderCodePanel();
     this.renderCSSPanel();
     this.applyRuntimeStyle(MCE.runtimeStyle);
     // Auto-switch to Live tab if project has machines with complex viewport CSS
@@ -5490,6 +5905,7 @@ const UI = {
     MCE.templates = {};
     MCE.vars      = {};
     MCE.logic     = {};
+    MCE.css       = '';
     MCE._nextId   = 1;
     MCE.selectedId = null;
     ViewSystem._active = null;
@@ -5499,6 +5915,7 @@ const UI = {
     this.renderDOMTree();
     this.renderInspector();
     this.renderLogicPanel();
+    this.renderCodePanel();
     this.renderCSSPanel();
     this.renderEvents();
     this.renderPipes();

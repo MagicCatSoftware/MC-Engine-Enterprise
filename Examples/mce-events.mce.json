@@ -1,0 +1,190 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "Event Bus — one event, many wires" },
+  "_nextId": 20,
+  "runtimeStyle": "ocean",
+  "rootOrder": ["M1"],
+
+  "events": {
+    "modeDay":   { "name": "modeDay",   "payload": "{}" },
+    "modeDusk":  { "name": "modeDusk",  "payload": "{}" },
+    "modeNight": { "name": "modeNight", "payload": "{}" },
+    "alert":     { "name": "alert",     "payload": "{ value } — carries message text" }
+  },
+
+  "pipes": {},
+  "views": {},
+  "loops": {},
+  "vars": {},
+  "logic": {},
+  "dbCollections": [],
+
+  "machines": {
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2","M3","M4","M12","M17","M19"],
+      "css": {
+        "display": "flex", "flexDirection": "column", "gap": "28px",
+        "padding": "60px 40px", "maxWidth": "640px", "margin": "0 auto",
+        "fontFamily": "system-ui, sans-serif", "minHeight": "100vh"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2", "name": "title", "tag": "h1",
+      "text": "Event Bus",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#e2e8f0", "fontSize": "30px", "fontWeight": "900", "margin": "0", "letterSpacing": "-0.5px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M3": {
+      "id": "M3", "name": "hint", "tag": "p",
+      "text": "Each mode button emits one event. That single event triggers 4 wires on different machines simultaneously — updating the icon, the label, showing or hiding the sun badge, and logging which event fired. This is the core of MCEngine: one event → many reactions.",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#64748b", "fontSize": "13px", "lineHeight": "1.75", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4", "name": "mode_btns", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M5","M6","M7"],
+      "css": { "display": "flex", "gap": "10px", "flexWrap": "wrap" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M5": {
+      "id": "M5", "name": "btn_day", "tag": "button",
+      "text": "☀ Day",
+      "parentId": "M4", "children": [],
+      "css": {
+        "padding": "10px 22px", "background": "#fbbf24", "color": "#000",
+        "fontWeight": "700", "fontSize": "14px", "border": "none",
+        "borderRadius": "8px", "cursor": "pointer"
+      },
+      "attrs": {},
+      "emitOnClick": "modeDay",
+      "wires": [], "viewBinding": null
+    },
+
+    "M6": {
+      "id": "M6", "name": "btn_dusk", "tag": "button",
+      "text": "🌆 Dusk",
+      "parentId": "M4", "children": [],
+      "css": {
+        "padding": "10px 22px", "background": "#f97316", "color": "#fff",
+        "fontWeight": "700", "fontSize": "14px", "border": "none",
+        "borderRadius": "8px", "cursor": "pointer"
+      },
+      "attrs": {},
+      "emitOnClick": "modeDusk",
+      "wires": [], "viewBinding": null
+    },
+
+    "M7": {
+      "id": "M7", "name": "btn_night", "tag": "button",
+      "text": "🌙 Night",
+      "parentId": "M4", "children": [],
+      "css": {
+        "padding": "10px 22px", "background": "#1e1e3e", "color": "#a78bfa",
+        "fontWeight": "700", "fontSize": "14px", "border": "1px solid #3a3a5c",
+        "borderRadius": "8px", "cursor": "pointer"
+      },
+      "attrs": {},
+      "emitOnClick": "modeNight",
+      "wires": [], "viewBinding": null
+    },
+
+    "M12": {
+      "id": "M12", "name": "scene_card", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M13","M14","M15"],
+      "css": {
+        "padding": "32px", "borderRadius": "12px", "background": "#1a1a1a",
+        "border": "1px solid #2e2e2e", "display": "flex", "flexDirection": "column",
+        "gap": "10px"
+      },
+      "attrs": {},
+      "wires": [],
+      "viewBinding": null
+    },
+
+    "M13": {
+      "id": "M13", "name": "scene_icon", "tag": "div",
+      "text": "🌤",
+      "parentId": "M12", "children": [],
+      "css": { "fontSize": "64px", "textAlign": "center" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeDay",   "targetId": "", "action": "setText", "actionArgs": "☀️" },
+        { "eventName": "modeDusk",  "targetId": "", "action": "setText", "actionArgs": "🌆" },
+        { "eventName": "modeNight", "targetId": "", "action": "setText", "actionArgs": "🌙" }
+      ],
+      "viewBinding": null
+    },
+
+    "M14": {
+      "id": "M14", "name": "scene_label", "tag": "div",
+      "text": "Select a mode above",
+      "parentId": "M12", "children": [],
+      "css": { "color": "#64748b", "fontSize": "14px", "fontWeight": "700", "textAlign": "center" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeDay",   "targetId": "", "action": "setText", "actionArgs": "Bright Day" },
+        { "eventName": "modeDusk",  "targetId": "", "action": "setText", "actionArgs": "Golden Hour" },
+        { "eventName": "modeNight", "targetId": "", "action": "setText", "actionArgs": "Night Mode" }
+      ],
+      "viewBinding": null
+    },
+
+    "M15": {
+      "id": "M15", "name": "sun_indicator", "tag": "div",
+      "text": "SUN IS UP",
+      "parentId": "M12", "children": [],
+      "css": {
+        "display": "none", "padding": "4px 12px", "background": "#fbbf24", "color": "#000",
+        "borderRadius": "4px", "fontSize": "11px", "fontWeight": "700",
+        "textAlign": "center", "alignSelf": "center"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeDay",   "targetId": "", "action": "show", "actionArgs": "" },
+        { "eventName": "modeDusk",  "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "modeNight", "targetId": "", "action": "hide", "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M17": {
+      "id": "M17", "name": "status_log", "tag": "p",
+      "text": "No mode selected",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#334155", "fontSize": "11px", "fontFamily": "monospace", "margin": "0" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeDay",   "targetId": "", "action": "setText", "actionArgs": "Last event: modeDay → scene_icon:setText + scene_label:setText + sun_indicator:show + this log" },
+        { "eventName": "modeDusk",  "targetId": "", "action": "setText", "actionArgs": "Last event: modeDusk → scene_icon:setText + scene_label:setText + sun_indicator:hide + this log" },
+        { "eventName": "modeNight", "targetId": "", "action": "setText", "actionArgs": "Last event: modeNight → scene_icon:setText + scene_label:setText + sun_indicator:hide + this log" }
+      ],
+      "viewBinding": null
+    },
+
+    "M19": {
+      "id": "M19", "name": "wire_count", "tag": "div",
+      "text": "",
+      "parentId": "M1", "children": [],
+      "css": {
+        "padding": "14px 18px", "background": "#0d0d1a", "borderRadius": "8px",
+        "border": "1px solid #1e1e3e", "fontSize": "12px", "color": "#475569",
+        "lineHeight": "1.8", "fontFamily": "monospace"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeDay",   "targetId": "", "action": "setHTML", "actionArgs": "<b style=\"color:#fbbf24\">modeDay</b> → scene_icon:setText · scene_label:setText · sun_indicator:show · status_log:setText<br><b style=\"color:#a78bfa\">4 targets</b> · 4 wires · 1 emitter (btn_day)" },
+        { "eventName": "modeDusk",  "targetId": "", "action": "setHTML", "actionArgs": "<b style=\"color:#f97316\">modeDusk</b> → scene_icon:setText · scene_label:setText · sun_indicator:hide · status_log:setText<br><b style=\"color:#a78bfa\">4 targets</b> · 4 wires · 1 emitter (btn_dusk)" },
+        { "eventName": "modeNight", "targetId": "", "action": "setHTML", "actionArgs": "<b style=\"color:#a78bfa\">modeNight</b> → scene_icon:setText · scene_label:setText · sun_indicator:hide · status_log:setText<br><b style=\"color:#6366f1\">4 targets</b> · 4 wires · 1 emitter (btn_night)" }
+      ],
+      "viewBinding": null
+    }
+  }
+}

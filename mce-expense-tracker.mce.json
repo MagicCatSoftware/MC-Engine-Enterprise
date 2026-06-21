@@ -1,0 +1,325 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "Expense Tracker" },
+  "_nextId": 18,
+  "runtimeStyle": "ocean",
+  "rootOrder": ["M1"],
+
+  "events": {
+    "goList":   { "name": "goList",   "payload": "— navigate to expense list" },
+    "goAdd":    { "name": "goAdd",    "payload": "— open new expense form" },
+    "doAdd":    { "name": "doAdd",    "payload": "— emitted by Logic after validation passes" },
+    "doDelete": { "name": "doDelete", "payload": "{ value: _id } — delete an expense by id" },
+    "pipe:saveExpense:written":   { "name": "pipe:saveExpense:written",   "payload": "{ pipe, data } — POST succeeded; navigate back and refresh list" },
+    "pipe:deleteExpense:written": { "name": "pipe:deleteExpense:written", "payload": "{ pipe, data } — DELETE succeeded; refresh list" }
+  },
+
+  "pipes": {
+    "loadExpenses": {
+      "name": "loadExpenses",
+      "method": "GET",
+      "collection": "Expenses",
+      "endpoint": "/api/db/Expenses",
+      "live": false,
+      "description": "Fetch all expense records — feeds expenseLoop."
+    },
+    "saveExpense": {
+      "name": "saveExpense",
+      "method": "POST",
+      "collection": "Expenses",
+      "endpoint": "/api/db/Expenses",
+      "bodyTemplate": {
+        "amount":   "{{machine:M12}}",
+        "category": "{{machine:M13}}",
+        "note":     "{{machine:M14}}"
+      },
+      "live": false,
+      "description": "Insert a new expense — reads amount/category/note from the add-form machines."
+    },
+    "deleteExpense": {
+      "name": "deleteExpense",
+      "method": "DELETE",
+      "collection": "Expenses",
+      "endpoint": "/api/db/Expenses",
+      "urlTemplate": "/api/db/Expenses/{{payload:value}}",
+      "live": false,
+      "description": "Delete one expense by _id — payload.value is the _id from the loop card button."
+    }
+  },
+
+  "views": {
+    "list": { "name": "list", "title": "Expenses", "description": "Default — expense cards + budget cap label.", "params": [] },
+    "add":  { "name": "add",  "title": "Add Expense", "description": "Form with 4-branch Logic validation before saving.", "params": [] }
+  },
+
+  "loops": {
+    "expenseLoop": {
+      "name": "expenseLoop",
+      "pipeName": "loadExpenses",
+      "targetId": "M8",
+      "dataField": "",
+      "description": "One row per expense — delete button emits doDelete with the record _id.",
+      "template": "<div style=\"display:flex;align-items:center;gap:14px;padding:14px 18px;background:#0f172a;border:1px solid #1e1e3e;border-radius:10px;margin-bottom:10px\"><div style=\"flex:1;min-width:0\"><p style=\"margin:0;font-size:14px;font-weight:700;color:#e2e8f0\">{{category}}</p><p style=\"margin:3px 0 0;font-size:12px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis\">{{note}}</p></div><span style=\"font-size:20px;font-weight:900;color:#4ade80;white-space:nowrap;flex-shrink:0\">${{amount}}</span><button onclick=\"EventBus.emit('doDelete',{value:'{{_id}}'})\" style=\"background:transparent;border:1px solid #374151;color:#6b7280;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;flex-shrink:0\">✕</button></div>"
+    }
+  },
+
+  "vars": {
+    "budget":     { "value": "500", "desc": "Monthly budget cap — referenced in the Logic over-budget branch condition and displayed in the list header via wire." },
+    "lastAmount": { "value": "",    "desc": "Captured from the amount input by a varWire on doAdd — used in the post-save toast via wire actionArgs." }
+  },
+
+  "logic": {
+    "M15": {
+      "blocks": [
+        {
+          "type": "if",
+          "condition": "!ctx.amount || isNaN(Number(ctx.amount)) || Number(ctx.amount) <= 0",
+          "code": "",
+          "actions": [
+            { "targetId": "M16", "action": "show",    "actionArgs": "" },
+            { "targetId": "M16", "action": "setText", "actionArgs": "Enter a valid dollar amount (e.g. 25.00)." },
+            { "targetId": "M17", "action": "hide",    "actionArgs": "" }
+          ],
+          "children": []
+        },
+        {
+          "type": "elseif",
+          "condition": "!ctx.category",
+          "code": "",
+          "actions": [
+            { "targetId": "M16", "action": "show",    "actionArgs": "" },
+            { "targetId": "M16", "action": "setText", "actionArgs": "Pick a category (e.g. Groceries, Transport)." },
+            { "targetId": "M17", "action": "hide",    "actionArgs": "" }
+          ],
+          "children": []
+        },
+        {
+          "type": "elseif",
+          "condition": "Number(ctx.amount) > Number(vars.budget)",
+          "code": "EventBus.emit('doAdd', {});",
+          "actions": [
+            { "targetId": "M16", "action": "hide",    "actionArgs": "" },
+            { "targetId": "M17", "action": "show",    "actionArgs": "" },
+            { "targetId": "M17", "action": "setText", "actionArgs": "⚠ Amount exceeds your ${{budget}} monthly budget — saving anyway." }
+          ],
+          "children": []
+        },
+        {
+          "type": "else",
+          "condition": "",
+          "code": "EventBus.emit('doAdd', {});",
+          "actions": [
+            { "targetId": "M16", "action": "hide",    "actionArgs": "" },
+            { "targetId": "M17", "action": "hide",    "actionArgs": "" }
+          ],
+          "children": []
+        }
+      ]
+    }
+  },
+
+  "dbCollections": [
+    {
+      "name": "Expenses",
+      "isArray": true,
+      "seed": [
+        { "amount": "45.00",  "category": "Groceries",     "note": "Weekly food shop"       },
+        { "amount": "12.50",  "category": "Transport",      "note": "Commute (Mon–Fri)"      },
+        { "amount": "89.99",  "category": "Entertainment",  "note": "Concert tickets"        },
+        { "amount": "200.00", "category": "Rent",           "note": "1/4 monthly share"      }
+      ]
+    }
+  ],
+
+  "machines": {
+
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2", "M9"],
+      "css": { "minHeight": "100vh", "background": "#080812", "fontFamily": "system-ui, -apple-system, sans-serif" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [
+        { "eventName": "goList",                     "targetId": "", "action": "navigate", "actionArgs": "list"          },
+        { "eventName": "goAdd",                      "targetId": "", "action": "navigate", "actionArgs": "add"           },
+        { "eventName": "doAdd",                      "targetId": "", "action": "pipeExec", "actionArgs": "saveExpense"   },
+        { "eventName": "doDelete",                   "targetId": "", "action": "pipeExec", "actionArgs": "deleteExpense" },
+        { "eventName": "view:list",                  "targetId": "", "action": "pipeOut",  "actionArgs": "loadExpenses"  },
+        { "eventName": "pipe:saveExpense:written",   "targetId": "", "action": "navigate", "actionArgs": "list"          },
+        { "eventName": "pipe:saveExpense:written",   "targetId": "", "action": "pipeOut",  "actionArgs": "loadExpenses"  },
+        { "eventName": "pipe:deleteExpense:written", "targetId": "", "action": "pipeOut",  "actionArgs": "loadExpenses"  }
+      ],
+      "varWires": [
+        { "eventName": "doAdd", "varName": "lastAmount", "fromId": "M12" }
+      ],
+      "pipeBindings": []
+    },
+
+    "M2": {
+      "id": "M2", "name": "list_view", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M3", "M6", "M7", "M8"],
+      "css": { "padding": "48px 40px", "maxWidth": "640px", "margin": "0 auto", "display": "flex", "flexDirection": "column", "gap": "0" },
+      "attrs": { "data-mce-display": "flex" },
+      "viewBinding": "list",
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M3": {
+      "id": "M3", "name": "list_header", "tag": "div",
+      "text": "", "parentId": "M2", "children": ["M4", "M5"],
+      "css": { "display": "flex", "justifyContent": "space-between", "alignItems": "center", "marginBottom": "24px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M4": {
+      "id": "M4", "name": "list_title", "tag": "h1",
+      "text": "Expenses",
+      "parentId": "M3", "children": [],
+      "css": { "color": "#e2e8f0", "fontSize": "32px", "fontWeight": "900", "margin": "0", "letterSpacing": "-1px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M5": {
+      "id": "M5", "name": "add_btn", "tag": "button",
+      "text": "+ Add Expense",
+      "parentId": "M3", "children": [],
+      "css": { "padding": "10px 20px", "background": "#7c3aed", "color": "#fff", "border": "none", "borderRadius": "8px", "fontSize": "13px", "fontWeight": "700", "cursor": "pointer" },
+      "attrs": {},
+      "viewBinding": null,
+      "emitOnClick": "goAdd",
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M6": {
+      "id": "M6", "name": "budget_strip", "tag": "p",
+      "text": "",
+      "parentId": "M2", "children": [],
+      "css": { "margin": "0 0 20px", "padding": "10px 16px", "background": "#0f172a", "border": "1px solid #1e1e3e", "borderRadius": "8px", "color": "#64748b", "fontSize": "12px", "fontFamily": "monospace" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [
+        { "eventName": "view:list", "targetId": "", "action": "setText", "actionArgs": "Monthly budget cap: ${{budget}}" }
+      ],
+      "varWires": [], "pipeBindings": []
+    },
+
+    "M7": {
+      "id": "M7", "name": "save_toast", "tag": "p",
+      "text": "",
+      "parentId": "M2", "children": [],
+      "css": { "display": "none", "margin": "0 0 16px", "padding": "10px 16px", "background": "#052e16", "border": "1px solid #166534", "borderRadius": "8px", "color": "#4ade80", "fontSize": "13px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [
+        { "eventName": "view:list",                "targetId": "", "action": "hide",    "actionArgs": "" },
+        { "eventName": "pipe:saveExpense:written", "targetId": "", "action": "show",    "actionArgs": "" },
+        { "eventName": "pipe:saveExpense:written", "targetId": "", "action": "setText", "actionArgs": "✓ ${{lastAmount}} saved!" }
+      ],
+      "varWires": [], "pipeBindings": []
+    },
+
+    "M8": {
+      "id": "M8", "name": "expense_list", "tag": "div",
+      "text": "", "parentId": "M2", "children": [],
+      "css": { "display": "flex", "flexDirection": "column" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M9": {
+      "id": "M9", "name": "add_view", "tag": "div",
+      "text": "", "parentId": "M1",
+      "children": ["M10", "M11", "M12", "M13", "M14", "M15", "M16", "M17"],
+      "css": { "padding": "48px 40px", "maxWidth": "480px", "margin": "0 auto", "display": "flex", "flexDirection": "column", "gap": "14px" },
+      "attrs": { "data-mce-display": "flex" },
+      "viewBinding": "add",
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M10": {
+      "id": "M10", "name": "back_btn", "tag": "button",
+      "text": "← Back",
+      "parentId": "M9", "children": [],
+      "css": { "display": "inline-block", "alignSelf": "flex-start", "padding": "8px 16px", "background": "transparent", "color": "#a78bfa", "border": "1px solid #3a3a5c", "borderRadius": "6px", "fontSize": "13px", "fontWeight": "600", "cursor": "pointer" },
+      "attrs": {},
+      "viewBinding": null,
+      "emitOnClick": "goList",
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M11": {
+      "id": "M11", "name": "add_title", "tag": "h2",
+      "text": "New Expense",
+      "parentId": "M9", "children": [],
+      "css": { "color": "#e2e8f0", "fontSize": "26px", "fontWeight": "900", "margin": "0", "letterSpacing": "-0.5px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M12": {
+      "id": "M12", "name": "amount_input", "tag": "input",
+      "text": "", "parentId": "M9", "children": [],
+      "css": { "width": "100%", "padding": "10px 12px", "background": "#0f172a", "border": "1px solid #1e1e3e", "borderRadius": "6px", "color": "#e2e8f0", "fontSize": "16px", "boxSizing": "border-box", "fontFamily": "inherit" },
+      "attrs": { "type": "number", "placeholder": "Amount (e.g. 25.00)", "step": "0.01", "min": "0" },
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M13": {
+      "id": "M13", "name": "category_input", "tag": "input",
+      "text": "", "parentId": "M9", "children": [],
+      "css": { "width": "100%", "padding": "10px 12px", "background": "#0f172a", "border": "1px solid #1e1e3e", "borderRadius": "6px", "color": "#e2e8f0", "fontSize": "14px", "boxSizing": "border-box", "fontFamily": "inherit" },
+      "attrs": { "type": "text", "placeholder": "Category (e.g. Groceries, Transport)" },
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M14": {
+      "id": "M14", "name": "note_input", "tag": "input",
+      "text": "", "parentId": "M9", "children": [],
+      "css": { "width": "100%", "padding": "10px 12px", "background": "#0f172a", "border": "1px solid #1e1e3e", "borderRadius": "6px", "color": "#e2e8f0", "fontSize": "14px", "boxSizing": "border-box", "fontFamily": "inherit" },
+      "attrs": { "type": "text", "placeholder": "Note (optional)" },
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M15": {
+      "id": "M15", "name": "submit_btn", "tag": "button",
+      "text": "Save Expense",
+      "parentId": "M9", "children": [],
+      "css": { "padding": "12px 0", "background": "#7c3aed", "color": "#fff", "border": "none", "borderRadius": "8px", "fontSize": "14px", "fontWeight": "700", "cursor": "pointer", "width": "100%", "marginTop": "4px" },
+      "attrs": {
+        "onclick": "var _am=document.querySelector('[data-mce-id=M12]');var _cat=document.querySelector('[data-mce-id=M13]');var _nt=document.querySelector('[data-mce-id=M14]');var ctx={amount:(_am?_am.value:'').trim(),category:(_cat?_cat.value:'').trim(),note:(_nt?_nt.value:'').trim()};if(typeof LogicSystem!=='undefined')LogicSystem.run('M15',ctx);else if(typeof MachineSystem!=='undefined')MachineSystem.executeLogic('M15',ctx);"
+      },
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M16": {
+      "id": "M16", "name": "error_msg", "tag": "p",
+      "text": "",
+      "parentId": "M9", "children": [],
+      "css": { "display": "none", "margin": "0", "padding": "10px 14px", "background": "#1f0e0e", "border": "1px solid #7f1d1d", "borderRadius": "6px", "color": "#fca5a5", "fontSize": "13px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    },
+
+    "M17": {
+      "id": "M17", "name": "budget_warning", "tag": "p",
+      "text": "",
+      "parentId": "M9", "children": [],
+      "css": { "display": "none", "margin": "0", "padding": "10px 14px", "background": "#1c1005", "border": "1px solid #78350f", "borderRadius": "6px", "color": "#fcd34d", "fontSize": "13px" },
+      "attrs": {},
+      "viewBinding": null,
+      "wires": [], "varWires": [], "pipeBindings": []
+    }
+
+  }
+}

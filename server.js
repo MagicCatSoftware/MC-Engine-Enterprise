@@ -157,6 +157,171 @@ app.get('/api/engine/version', (req, res) => {
   res.json({ version: e.version, updated_at: e.updated_at });
 });
 
+// ── Component library catalogue ───────────────────────────────────────────────
+app.get('/api/machines', (req, res) => {
+  const machinesDir = path.join(__dirname, 'public', 'machines');
+  try {
+    const templates = fs.readdirSync(machinesDir)
+      .filter(f => f.endsWith('.json'))
+      .map(f => {
+        try {
+          const data = JSON.parse(fs.readFileSync(path.join(machinesDir, f), 'utf8'));
+          return { id: f.replace('.json', ''), name: data.name || f, icon: data.icon || '📦', description: data.description || '', category: data.category || 'General' };
+        } catch { return null; }
+      })
+      .filter(Boolean);
+    res.json(templates);
+  } catch { res.json([]); }
+});
+
+// ── Component library panel ───────────────────────────────────────────────────
+function libraryPanelHTML() {
+  return `
+<style>
+  #mce-lib-toggle{position:fixed;bottom:18px;left:18px;z-index:100000;width:38px;height:38px;border-radius:50%;background:#13131f;border:1px solid #444;color:#a78bfa;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 14px rgba(0,0,0,.5)}
+  #mce-lib-toggle:hover{background:#1e1e30;border-color:#a78bfa}
+  #mce-lib-panel{display:none;position:fixed;bottom:66px;left:18px;z-index:100000;width:264px;max-height:480px;background:#111;border:1px solid #2e2e3e;border-radius:8px;box-shadow:0 4px 28px rgba(0,0,0,.6);font-family:system-ui,sans-serif;font-size:12px;color:#ccc;flex-direction:column;overflow:hidden}
+  #mce-lib-panel.open{display:flex}
+  .mcl-header{padding:10px 12px;background:#1a1a2e;border-bottom:1px solid #2e2e3e;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#a78bfa}
+  .mcl-search{padding:7px 8px;border-bottom:1px solid #1a1a1a}
+  .mcl-search input{width:100%;padding:5px 8px;background:#0d0d1a;border:1px solid #2a2a3e;border-radius:4px;color:#e2e8f0;font-size:11px;outline:none}
+  .mcl-search input:focus{border-color:#a78bfa}
+  .mcl-list{flex:1;overflow-y:auto;padding:6px}
+  .mcl-cat{padding:4px 6px 2px;font-size:9px;text-transform:uppercase;letter-spacing:0.8px;color:#333;margin-top:4px}
+  .mcl-item{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:5px;border:1px solid #1a1a2a;margin-bottom:3px;background:#0d0d0d;cursor:grab;user-select:none;transition:border-color .12s,background .12s}
+  .mcl-item:hover{border-color:#a78bfa;background:#0e0e1e}
+  .mcl-item:active{cursor:grabbing}
+  .mcl-icon{font-size:20px;width:26px;text-align:center;flex-shrink:0}
+  .mcl-info{flex:1;min-width:0}
+  .mcl-name{font-size:12px;font-weight:600;color:#e2e8f0}
+  .mcl-desc{font-size:10px;color:#444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+  .mcl-empty{padding:20px;text-align:center;color:#444;font-size:11px}
+  #canvas-drop.mce-lib-over{border-color:#a78bfa!important;background:rgba(167,139,250,.04)!important}
+</style>
+<button id="mce-lib-toggle" title="Component Library">&#9707;</button>
+<div id="mce-lib-panel">
+  <div class="mcl-header">&#9707; Component Library</div>
+  <div class="mcl-search"><input id="mcl-q" type="text" placeholder="Filter..."></div>
+  <div class="mcl-list" id="mcl-list"><div class="mcl-empty">Loading...</div></div>
+</div>
+<script>
+(function() {
+  var _tpls = [];
+  var _dragId = null;
+
+  function insertTemplate(tpl) {
+    if (!tpl || !tpl.machines) return;
+    var p = 'c' + Date.now() + '_';
+    var map = {};
+    Object.keys(tpl.machines).forEach(function(k) { map[k] = p + k; });
+    Object.keys(tpl.machines).forEach(function(k) {
+      var src = tpl.machines[k];
+      var newId = map[k];
+      MCE.machines[newId] = {
+        id: newId, tag: src.type || src.tag || 'div', name: src.name || newId,
+        text: src.text || '', css: JSON.parse(JSON.stringify(src.css || {})),
+        attrs: src.attrs || {}, children: [],
+        parentId: src.parentId ? (map[src.parentId] || null) : null,
+        wires: JSON.parse(JSON.stringify(src.wires || [])),
+        varWires: src.varWires || [], pipeBindings: src.pipeBindings || [],
+        viewBinding: null, dbSource: null, emitOnInput: '', emitOnClick: '',
+        transferOnClick: { fromId: '', eventName: '' },
+        inputTransform: { filter: '', arg: '' }, outputTransform: { filter: '', arg: '' }
+      };
+    });
+    Object.keys(tpl.machines).forEach(function(k) {
+      var m = MCE.machines[map[k]];
+      if (m.parentId && MCE.machines[m.parentId]) {
+        MCE.machines[m.parentId].children.push(m.id);
+      } else {
+        MCE.rootOrder.push(m.id);
+      }
+    });
+    if (tpl.events) Object.assign(MCE.events, tpl.events);
+    if (tpl.pipes)  Object.assign(MCE.pipes,  tpl.pipes);
+    UI.renderCanvas();
+    if (UI.renderDOMTree) UI.renderDOMTree();
+    if (typeof Logger !== 'undefined') Logger.ok('Added: ' + (tpl.name || 'component'));
+    document.getElementById('mce-lib-panel').classList.remove('open');
+  }
+
+  function load(id) {
+    fetch('/machines/' + id + '.json')
+      .then(function(r) { return r.json(); })
+      .then(insertTemplate)
+      .catch(function(e) { console.error('Library load failed', e); });
+  }
+
+  function renderList(q) {
+    var list = document.getElementById('mcl-list');
+    var items = q ? _tpls.filter(function(t) {
+      var s = q.toLowerCase();
+      return (t.name||'').toLowerCase().indexOf(s) !== -1 || (t.description||'').toLowerCase().indexOf(s) !== -1 || (t.category||'').toLowerCase().indexOf(s) !== -1;
+    }) : _tpls;
+    if (!items.length) { list.innerHTML = '<div class="mcl-empty">No components found.</div>'; return; }
+    var cats = {}, catOrder = [];
+    items.forEach(function(t) {
+      var c = t.category || 'General';
+      if (!cats[c]) { cats[c] = []; catOrder.push(c); }
+      cats[c].push(t);
+    });
+    var html = '';
+    catOrder.forEach(function(c) {
+      html += '<div class="mcl-cat">' + c + '</div>';
+      cats[c].forEach(function(t) {
+        html += '<div class="mcl-item" draggable="true" data-id="' + t.id + '">' +
+          '<span class="mcl-icon">' + (t.icon || '&#9632;') + '</span>' +
+          '<div class="mcl-info"><div class="mcl-name">' + t.name + '</div><div class="mcl-desc">' + (t.description||'') + '</div></div>' +
+          '</div>';
+      });
+    });
+    list.innerHTML = html;
+    list.querySelectorAll('.mcl-item').forEach(function(el) {
+      el.addEventListener('dragstart', function(e) { _dragId = el.dataset.id; e.dataTransfer.effectAllowed = 'copy'; });
+      el.addEventListener('dragend',   function()  { _dragId = null; });
+      el.addEventListener('click',     function()  { load(el.dataset.id); });
+    });
+  }
+
+  document.addEventListener('dragover', function(e) {
+    if (!_dragId) return;
+    var canvas = document.getElementById('canvas-drop');
+    if (!canvas || !canvas.contains(e.target)) return;
+    e.preventDefault(); e.stopPropagation();
+    canvas.classList.add('mce-lib-over');
+  }, true);
+
+  document.addEventListener('dragleave', function(e) {
+    if (!_dragId) return;
+    var canvas = document.getElementById('canvas-drop');
+    if (!canvas) return;
+    if (!canvas.contains(e.relatedTarget)) canvas.classList.remove('mce-lib-over');
+  }, true);
+
+  document.addEventListener('drop', function(e) {
+    if (!_dragId) return;
+    var canvas = document.getElementById('canvas-drop');
+    if (!canvas || !canvas.contains(e.target)) return;
+    e.preventDefault(); e.stopPropagation();
+    canvas.classList.remove('mce-lib-over');
+    var id = _dragId; _dragId = null;
+    load(id);
+  }, true);
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('mcl-q').addEventListener('input', function() { renderList(this.value.trim()); });
+    document.getElementById('mce-lib-toggle').addEventListener('click', function() {
+      document.getElementById('mce-lib-panel').classList.toggle('open');
+    });
+    fetch('/api/machines')
+      .then(function(r) { return r.json(); })
+      .then(function(data) { _tpls = data; renderList(''); })
+      .catch(function() { document.getElementById('mcl-list').innerHTML = '<div class="mcl-empty">Failed to load.</div>'; });
+  });
+})();
+<\/script>`;
+}
+
 // ── Cloud panel (user-aware) ──────────────────────────────────────────────────
 function cloudPanelHTML() {
   return `
@@ -931,7 +1096,7 @@ window.MCE_PROFILE = {
 </script>`;
 
     const withHead = engine.html.replace('</head>', inject + '\n</head>');
-    const html = injectBeforeBodyEnd(withHead, cloudPanelHTML());
+    const html = injectBeforeBodyEnd(withHead, libraryPanelHTML() + cloudPanelHTML());
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
   } catch (e) { next(e); }
@@ -980,20 +1145,21 @@ ${owner.picture ? `<img src="${htmlEsc(owner.picture)}" alt="">` : ''}
     const chromeCss = `<style>
 #header,#left-panel,#right-panel,#log-panel,#canvas-toolbar,#canvas-view,#dom-view,.modal-overlay{display:none!important}
 #app,#main-layout,#center-panel,#canvas-views{height:100vh!important;width:100%!important;overflow:hidden}
-#preview-view{display:block!important;position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:99999}
-#preview-frame{width:100%!important;height:100%!important;border:none!important}
+#preview-view{display:block!important;position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;overflow-y:auto!important;z-index:99999}
+#preview-frame{width:100%!important;min-height:100vh!important;border:none!important;display:block!important}
 </style>`;
 
+    const isOwner = !!(req.user && req.user._id.toString() === owner._id.toString());
     const inject = `<script>
 window.MCE_PROFILE = {
   username: ${JSON.stringify(owner.username)},
   name:     ${JSON.stringify(owner.name || '')},
   picture:  ${JSON.stringify(owner.picture || '')},
-  isOwner:  false,
+  isOwner:  ${isOwner},
   data:     ${JSON.stringify(profile.data)}
 };
 window.MCE_LIVE_VARS = ${JSON.stringify(liveVars)};
-window.MCE_PUBLIC_USERNAME = ${JSON.stringify(owner.username)};
+window.MCE_PUBLIC_USERNAME = ${isOwner ? 'null' : JSON.stringify(owner.username)};
 </script>${chromeCss}`;
 
     // Auto-load project data and trigger the engine's built-in preview renderer

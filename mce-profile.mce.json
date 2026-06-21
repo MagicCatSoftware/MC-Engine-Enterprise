@@ -1,0 +1,6009 @@
+{
+ "version": "1.0.0",
+ "project": {
+  "name": "Adom Patchett — Profile"
+ },
+ "_nextId": 140,
+ "rootOrder": [
+  "M1"
+ ],
+ "runtimeStyle": "ocean",
+ "dbCollections": [
+  {
+   "name": "projects",
+   "isArray": true,
+   "seed": [
+    {
+     "title": "Nimbus CRM",
+     "category": "Web App",
+     "year": "2024",
+     "status": "live",
+     "tagline": "Customer pipeline tool for small teams",
+     "link": "https://example.com/nimbus",
+     "description": "A lightweight CRM with kanban pipelines, email sync, and real-time collaboration — built solo in six weeks."
+    },
+    {
+     "title": "PixelDrift",
+     "category": "Game",
+     "year": "2023",
+     "status": "live",
+     "tagline": "Physics sandbox built in WebGL",
+     "link": "https://example.com/pixeldrift",
+     "description": "A browser-based particle physics playground with custom shaders and a level editor."
+    },
+    {
+     "title": "VaultNote",
+     "category": "Mobile",
+     "year": "2023",
+     "status": "archived",
+     "tagline": "Encrypted notes for journalists",
+     "link": "https://example.com/vaultnote",
+     "description": "End-to-end encrypted note-taking app with biometric lock, built with React Native."
+    },
+    {
+     "title": "SignalForge",
+     "category": "AI/ML",
+     "year": "2024",
+     "status": "live",
+     "tagline": "Anomaly detection for IoT sensor streams",
+     "link": "https://example.com/signalforge",
+     "description": "Real-time anomaly detection pipeline processing 50k events/sec using streaming ML models."
+    },
+    {
+     "title": "Lattice CLI",
+     "category": "Dev Tool",
+     "year": "2022",
+     "status": "live",
+     "tagline": "Infra-as-code linter and formatter",
+     "link": "https://example.com/lattice",
+     "description": "A fast Rust-based linter for Terraform and Pulumi configs with auto-fix support."
+    },
+    {
+     "title": "Glasswing",
+     "category": "Design System",
+     "year": "2022",
+     "status": "archived",
+     "tagline": "Component library for fintech dashboards",
+     "link": "https://example.com/glasswing",
+     "description": "A themeable design system with 80+ accessible components, used across three internal products."
+    },
+    {
+     "title": "Driftwood",
+     "category": "AI/ML",
+     "year": "2025",
+     "status": "concept",
+     "tagline": "Generative ambient music engine",
+     "link": "https://example.com/driftwood",
+     "description": "Experimental generative audio engine that composes ambient soundscapes from weather data."
+    },
+    {
+     "title": "Quorum",
+     "category": "Web App",
+     "year": "2021",
+     "status": "archived",
+     "tagline": "Async decision-making tool for distributed teams",
+     "link": "https://example.com/quorum",
+     "description": "Lets remote teams reach consensus asynchronously with structured proposals and weighted voting."
+    }
+   ]
+  },
+  {
+   "name": "messages",
+   "isArray": true,
+   "seed": []
+  }
+ ],
+ "events": {
+  "goHome": {
+   "name": "goHome",
+   "payload": "{} — navigate to Home view"
+  },
+  "goAbout": {
+   "name": "goAbout",
+   "payload": "{} — navigate to About view"
+  },
+  "goProjects": {
+   "name": "goProjects",
+   "payload": "{} — navigate to Projects view"
+  },
+  "goContact": {
+   "name": "goContact",
+   "payload": "{} — navigate to Contact view"
+  },
+  "searchChanged": {
+   "name": "searchChanged",
+   "payload": "{ value } — fires pipeOut getProjects via root"
+  },
+  "projStatsLoaded": {
+   "name": "projStatsLoaded",
+   "payload": "{ total } — computed from live loop data"
+  },
+  "projectSelected": {
+   "name": "projectSelected",
+   "payload": "{ _id, title, category, year, status, tagline, link, description } — full record"
+  },
+  "closeModal": {
+   "name": "closeModal",
+   "payload": "{} — fade out detail modal"
+  },
+  "addNewProject": {
+   "name": "addNewProject",
+   "payload": "{} — formReset + openAddForm"
+  },
+  "openAddForm": {
+   "name": "openAddForm",
+   "payload": "{} — fade in add/edit panel"
+  },
+  "closeAddForm": {
+   "name": "closeAddForm",
+   "payload": "{} — fade out add/edit panel + formReset"
+  },
+  "formReset": {
+   "name": "formReset",
+   "payload": "{} — clear all add/edit fields + reset editId"
+  },
+  "editMode": {
+   "name": "editMode",
+   "payload": "{ title, category, year, status, tagline, link, description } — pre-fill panel for edit"
+  },
+  "validationFailed": {
+   "name": "validationFailed",
+   "payload": "{ value } — error message string"
+  },
+  "contactNameTyped": {
+   "name": "contactNameTyped",
+   "payload": "{ value } — live name for preview card"
+  },
+  "contactEmailTyped": {
+   "name": "contactEmailTyped",
+   "payload": "{ value } — live email for preview card"
+  },
+  "contactMsgTyped": {
+   "name": "contactMsgTyped",
+   "payload": "{ value } — live message for preview card"
+  },
+  "messageSent": {
+   "name": "messageSent",
+   "payload": "{} — postMessage written, clear contact form"
+  }
+ },
+ "views": {
+  "home": {
+   "name": "home",
+   "title": "Home",
+   "description": "Animated hero, typewriter tagline, count-up stats"
+  },
+  "about": {
+   "name": "about",
+   "title": "About",
+   "description": "Bio, animated skill bars, staggered experience timeline"
+  },
+  "projects": {
+   "name": "projects",
+   "title": "Projects",
+   "description": "Live searchable project gallery with full CRUD"
+  },
+  "contact": {
+   "name": "contact",
+   "title": "Contact",
+   "description": "Contact form with live preview card"
+  }
+ },
+ "pipes": {
+  "getProjects": {
+   "name": "getProjects",
+   "method": "GET",
+   "endpoint": "/api/db/projects",
+   "collection": "projects",
+   "queryTemplate": "{{value}}",
+   "schema": [
+    {
+     "key": "_id"
+    },
+    {
+     "key": "title"
+    },
+    {
+     "key": "category"
+    },
+    {
+     "key": "year"
+    },
+    {
+     "key": "status"
+    },
+    {
+     "key": "tagline"
+    },
+    {
+     "key": "link"
+    },
+    {
+     "key": "description"
+    }
+   ],
+   "delay": 200,
+   "live": true,
+   "description": "GET all projects — {{value}} from pipeOut payload = live search term"
+  },
+  "postProject": {
+   "name": "postProject",
+   "method": "POST",
+   "endpoint": "/api/db/projects",
+   "collection": "projects",
+   "bodyTemplate": {
+    "title": "{{title}}",
+    "category": "{{category}}",
+    "year": "{{year}}",
+    "status": "{{status}}",
+    "tagline": "{{tagline}}",
+    "link": "{{link}}",
+    "description": "{{description}}"
+   },
+   "schema": [
+    {
+     "key": "title"
+    },
+    {
+     "key": "category"
+    },
+    {
+     "key": "year"
+    },
+    {
+     "key": "status"
+    },
+    {
+     "key": "tagline"
+    },
+    {
+     "key": "link"
+    },
+    {
+     "key": "description"
+    }
+   ],
+   "delay": 300,
+   "live": true,
+   "description": "POST new project — bodyTemplate tokens resolved from runtimePayload in save logic"
+  },
+  "putProject": {
+   "name": "putProject",
+   "method": "PUT",
+   "endpoint": "/api/db/projects",
+   "urlTemplate": "/api/db/projects/{{editId}}",
+   "collection": "projects",
+   "bodyTemplate": {
+    "title": "{{title}}",
+    "category": "{{category}}",
+    "year": "{{year}}",
+    "status": "{{status}}",
+    "tagline": "{{tagline}}",
+    "link": "{{link}}",
+    "description": "{{description}}"
+   },
+   "schema": [
+    {
+     "key": "title"
+    },
+    {
+     "key": "category"
+    },
+    {
+     "key": "year"
+    },
+    {
+     "key": "status"
+    },
+    {
+     "key": "tagline"
+    },
+    {
+     "key": "link"
+    },
+    {
+     "key": "description"
+    }
+   ],
+   "delay": 300,
+   "live": true,
+   "description": "PUT update project — urlTemplate injects {{editId}} from runtimePayload"
+  },
+  "deleteProject": {
+   "name": "deleteProject",
+   "method": "DELETE",
+   "endpoint": "/api/db/projects",
+   "urlTemplate": "/api/db/projects/{{editId}}",
+   "collection": "projects",
+   "schema": [],
+   "delay": 300,
+   "live": true,
+   "description": "DELETE project by ID — urlTemplate injects {{editId}} from runtimePayload"
+  },
+  "postMessage": {
+   "name": "postMessage",
+   "method": "POST",
+   "endpoint": "/api/db/messages",
+   "collection": "messages",
+   "bodyTemplate": {
+    "name": "{{name}}",
+    "email": "{{email}}",
+    "message": "{{message}}"
+   },
+   "schema": [
+    {
+     "key": "name"
+    },
+    {
+     "key": "email"
+    },
+    {
+     "key": "message"
+    }
+   ],
+   "delay": 250,
+   "live": true,
+   "description": "POST contact form message — write-only collection"
+  }
+ },
+ "loops": {
+  "projectGallery": {
+   "name": "projectGallery",
+   "description": "Paginated project cards — 6/page, stagger fade-in via nth-child, click opens detail modal",
+   "pipeName": "getProjects",
+   "targetId": "M93",
+   "dataField": "",
+   "clickEvent": "projectSelected",
+   "clickValueField": "_id",
+   "pageSize": 6,
+   "paginationId": "M94",
+   "template": "<div class=\"project-card\" onclick=\"MCE_VARS['selectedId']='{{_id}}';MCE_VARS['selTitle']='{{title}}';MCE_VARS['selCategory']='{{category}}';MCE_VARS['selYear']='{{year}}';MCE_VARS['selStatus']='{{status}}';MCE_VARS['selTagline']='{{tagline}}';MCE_VARS['selLink']='{{link}}';MCE_VARS['selDesc']='{{description}}';EventBus.emit('projectSelected',{_id:'{{_id}}',title:'{{title}}',category:'{{category}}',year:'{{year}}',status:'{{status}}',tagline:'{{tagline}}',link:'{{link}}',description:'{{description}}'})\"><div style=\"display:flex;align-items:center;justify-content:space-between;gap:10px\"><span style=\"color:#ecfeff;font-size:14px;font-weight:700\">{{title|TITLE}}</span><span class=\"status-badge status-{{status}}\">{{status|UPPER}}</span></div><div style=\"color:#5d7e87;font-size:11px;margin-top:3px\">{{tagline|DEFAULT:No tagline yet}}</div><div style=\"color:#3a4a4f;font-size:10px;font-family:monospace;margin-top:5px\">{{category}} &middot; {{year}} &nbsp;&nbsp;{{_index}}/{{_total}}</div></div>"
+  }
+ },
+ "templates": {
+  "miniProjectBadge": {
+   "name": "miniProjectBadge",
+   "description": "Reusable status badge widget — colored pill showing project status",
+   "rootId": "TC1",
+   "machines": {
+    "TC1": {
+     "id": "TC1",
+     "tag": "span",
+     "text": "STATUS",
+     "children": [],
+     "css": {
+      "font-size": "9px",
+      "font-weight": "700",
+      "padding": "2px 7px",
+      "border-radius": "3px",
+      "background": "var(--bg3)",
+      "color": "var(--txt3)",
+      "letter-spacing": ".5px"
+     },
+     "attrs": {}
+    }
+   }
+  }
+ },
+ "vars": {
+  "editId": {
+   "value": "",
+   "desc": "ID of project being edited — empty = Add mode; set by modal Edit logic",
+   "public": false
+  },
+  "selectedId": {
+   "value": "",
+   "desc": "ID of last clicked project — set inline in loop template onclick",
+   "public": false
+  },
+  "selTitle": {
+   "value": "",
+   "desc": "Title of last-clicked project row",
+   "public": false
+  },
+  "selCategory": {
+   "value": "",
+   "desc": "Category of last-clicked project row",
+   "public": false
+  },
+  "selYear": {
+   "value": "",
+   "desc": "Year of last-clicked project row",
+   "public": false
+  },
+  "selStatus": {
+   "value": "concept",
+   "desc": "Status of last-clicked project row",
+   "public": false
+  },
+  "selTagline": {
+   "value": "",
+   "desc": "Tagline of last-clicked project row",
+   "public": false
+  },
+  "selLink": {
+   "value": "",
+   "desc": "Link of last-clicked project row",
+   "public": false
+  },
+  "selDesc": {
+   "value": "",
+   "desc": "Description of last-clicked project row",
+   "public": false
+  }
+ },
+ "css": ".nav-btn{background:transparent;border:1px solid #1f2a30;color:#7dd3fc;padding:5px 14px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;transition:all .15s}.nav-btn:hover{border-color:#22d3ee;color:#ecfeff}.nav-btn.nav-active{background:#0891b2;border-color:#22d3ee;color:#ecfeff}.action-btn{border:none;border-radius:6px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s,opacity .15s}.action-btn:hover{opacity:.88;transform:translateY(-1px)}.btn-primary{background:linear-gradient(135deg,#22d3ee,#0891b2);color:#04141a}.btn-ghost{background:transparent;border:1px solid #1f2a30;color:#7dd3fc}.btn-danger{background:transparent;border:1px solid #7f1d1d;color:#fca5a5}.form-input{background:#04141a;border:1px solid #15313a;border-radius:6px;color:#ecfeff;padding:9px 12px;font-size:13px;outline:none;width:100%;box-sizing:border-box;font-family:inherit;transition:border-color .15s;resize:vertical}.form-input:focus{border-color:#22d3ee}.badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 8px;background:#0a1b20;border:1px solid #15313a;border-radius:11px;font-size:10px;font-weight:700;font-family:monospace;color:#7dd3fc}.badge-new{background:rgba(34,211,238,.15);color:#67e8f9;border:1px solid rgba(34,211,238,.3);padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.5px}.badge-edit{background:rgba(250,204,21,.15);color:#facc15;border:1px solid rgba(250,204,21,.3);padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.5px}.hero{position:relative;overflow:hidden;border-radius:0 0 24px 24px}.float-shape{position:absolute;border-radius:50%;filter:blur(6px);opacity:.35;animation:floatShape 7s ease-in-out infinite;pointer-events:none}@keyframes floatShape{0%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-22px) rotate(10deg)}100%{transform:translateY(0) rotate(0deg)}}.avatar-glow{animation:pulseGlow 2.6s ease-out infinite;border-radius:50%}@keyframes pulseGlow{0%{box-shadow:0 0 0 0 rgba(34,211,238,.45)}70%{box-shadow:0 0 0 20px rgba(34,211,238,0)}100%{box-shadow:0 0 0 0 rgba(34,211,238,0)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}.fade-up{opacity:0;animation:fadeInUp .7s cubic-bezier(.16,1,.3,1) forwards}.type-line{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid #22d3ee;width:0;animation:typewriter 1.6s steps(40,end) forwards,blinkCaret .7s step-end infinite}@keyframes typewriter{from{width:0}to{width:100%}}@keyframes blinkCaret{50%{border-color:transparent}}.stat-card{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 10px;background:rgba(10,27,32,.6);border:1px solid #15313a;border-radius:10px;flex:1;gap:4px;text-align:center;opacity:0;animation:fadeInUp .6s ease forwards}.stat-num{font-size:26px;font-weight:900;color:#ecfeff;font-family:monospace}.stat-label{font-size:10px;color:#5d7e87;text-transform:uppercase;letter-spacing:1px}.skill-row{display:flex;align-items:center;gap:12px}.skill-name{flex:0 0 150px;color:#bae6fd;font-size:12px;font-weight:600}.skill-pct{flex:0 0 36px;text-align:right;color:#5d7e87;font-size:11px;font-family:monospace}.skill-track{flex:1;height:8px;border-radius:4px;background:#0a1b20;overflow:hidden}.skill-fill{height:8px;border-radius:4px;width:6%;background:linear-gradient(90deg,#0891b2,#67e8f9);transition:width 1.3s cubic-bezier(.16,1,.3,1)}.sk-1{width:95%!important}.sk-2{width:90%!important}.sk-3{width:88%!important}.sk-4{width:80%!important}.sk-5{width:85%!important}.sk-6{width:75%!important}.timeline-item{padding:14px 16px;background:rgba(10,27,32,.5);border:1px solid #15313a;border-left:3px solid #22d3ee;border-radius:0 8px 8px 0;opacity:0;animation:fadeInUp .6s ease forwards}.timeline-role{color:#ecfeff;font-size:13px;font-weight:700}.timeline-meta{color:#5d7e87;font-size:11px;font-family:monospace;margin-top:2px}.project-card{padding:14px 16px;border-bottom:1px solid #112025;cursor:pointer;transition:background .15s;opacity:0;animation:fadeInUp .5s ease forwards}.project-card:hover{background:#081519}.project-card:nth-child(1){animation-delay:.04s}.project-card:nth-child(2){animation-delay:.09s}.project-card:nth-child(3){animation-delay:.14s}.project-card:nth-child(4){animation-delay:.19s}.project-card:nth-child(5){animation-delay:.24s}.project-card:nth-child(6){animation-delay:.29s}.status-badge{font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:3px}.status-live{background:rgba(74,222,128,.15);color:#4ade80}.status-archived{background:rgba(148,163,184,.15);color:#94a3b8}.status-concept{background:rgba(250,204,21,.15);color:#facc15}.modal-backdrop{position:fixed;inset:0;background:rgba(2,8,10,.7);display:none;align-items:center;justify-content:center;z-index:50;backdrop-filter:blur(3px)}.modal-card{animation:modalIn .25s cubic-bezier(.16,1,.3,1) both;max-width:460px;width:90%;background:#0a1b20;border:1px solid #15313a;border-radius:12px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.5)}@keyframes modalIn{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}.preview-card{padding:16px;background:rgba(10,27,32,.6);border:1px solid #15313a;border-radius:10px;display:flex;gap:12px;align-items:flex-start}.preview-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#0891b2,#22d3ee);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#04141a;flex-shrink:0}.mce-pagination{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin:8px 0}.mce-pagination button{background:#0a1b20;border:1px solid #15313a;color:#5d7e87;border-radius:4px;padding:3px 9px;cursor:pointer;font-size:11px;font-family:monospace}.mce-pagination button:hover{background:#112025;color:#bae6fd}.mce-pagination button[disabled]{opacity:.25;cursor:default}",
+ "logic": {
+  "M137": {
+   "blocks": [
+    {
+     "type": "if",
+     "condition": "true",
+     "code": "var pairs=[['M25',8],['M28',7],['M31',24],['M34',999]];pairs.forEach(function(p){var el=document.querySelector('[data-mce-id=\"'+p[0]+'\"]');if(!el)return;var target=p[1];var start=Date.now();var dur=1100;(function tick(){var prog=Math.min(1,(Date.now()-start)/dur);var eased=1-Math.pow(1-prog,3);el.textContent=Math.round(target*eased);if(prog<1)requestAnimationFrame(tick);})();});",
+     "actions": [],
+     "children": []
+    }
+   ]
+  },
+  "M138": {
+   "blocks": [
+    {
+     "type": "if",
+     "condition": "true",
+     "code": "var items=(window._MCE_LOOP_DATA&&window._MCE_LOOP_DATA['projectGallery'])||DB.find('projects',{});var total=items.length;EventBus.emit('projStatsLoaded',{total:String(total)});",
+     "actions": [],
+     "children": []
+    }
+   ]
+  },
+  "M139": {
+   "blocks": [
+    {
+     "type": "if",
+     "condition": "true",
+     "code": "MCE_VARS['editId']='';MCE_VARS['selectedId']='';",
+     "actions": [],
+     "children": []
+    }
+   ]
+  },
+  "M108": {
+   "blocks": [
+    {
+     "type": "if",
+     "condition": "true",
+     "code": "var titleEl=document.querySelector('[data-mce-id=\"M100\"]');var catEl=document.querySelector('[data-mce-id=\"M101\"]');var yearEl=document.querySelector('[data-mce-id=\"M102\"]');var statusEl=document.querySelector('[data-mce-id=\"M103\"]');var taglineEl=document.querySelector('[data-mce-id=\"M104\"]');var linkEl=document.querySelector('[data-mce-id=\"M105\"]');var descEl=document.querySelector('[data-mce-id=\"M106\"]');var t=titleEl?titleEl.value.trim():'';var c=catEl?catEl.value.trim():'';var y=yearEl?yearEl.value.trim():'';var s=statusEl?(statusEl.value.trim()||'concept'):'concept';var tg=taglineEl?taglineEl.value.trim():'';var l=linkEl?linkEl.value.trim():'';var d=descEl?descEl.value.trim():'';var id=MCE_VARS['editId']||'';if(!t){EventBus.emit('validationFailed',{value:'Project title is required'});return;}var payload={title:t,category:c,year:y,status:s,tagline:tg,link:l,description:d};if(id){PipeSystem.execute('putProject',{},Object.assign({},payload,{editId:id}));}else{PipeSystem.execute('postProject',{},payload);}MCE_VARS['editId']='';EventBus.emit('closeAddForm',{});",
+     "actions": [],
+     "children": []
+    }
+   ]
+  },
+  "M109": {
+   "blocks": [
+    {
+     "type": "if",
+     "condition": "true",
+     "code": "var id=MCE_VARS['editId']||'';if(!id){EventBus.emit('validationFailed',{value:'No project selected for deletion'});return;}PipeSystem.execute('deleteProject',{},{editId:id});MCE_VARS['editId']='';EventBus.emit('closeAddForm',{});",
+     "actions": [],
+     "children": []
+    }
+   ]
+  },
+  "M119": {
+   "blocks": [
+    {
+     "type": "if",
+     "condition": "true",
+     "code": "var id=MCE_VARS['selectedId']||'';if(!id){EventBus.emit('validationFailed',{value:'No project selected'});return;}MCE_VARS['editId']=id;EventBus.emit('editMode',{title:MCE_VARS['selTitle']||'',category:MCE_VARS['selCategory']||'',year:MCE_VARS['selYear']||'',status:MCE_VARS['selStatus']||'concept',tagline:MCE_VARS['selTagline']||'',link:MCE_VARS['selLink']||'',description:MCE_VARS['selDesc']||''});EventBus.emit('closeModal',{});EventBus.emit('openAddForm',{});",
+     "actions": [],
+     "children": []
+    }
+   ]
+  },
+  "M130": {
+   "blocks": [
+    {
+     "type": "if",
+     "condition": "true",
+     "code": "var nameEl=document.querySelector('[data-mce-id=\"M127\"]');var emailEl=document.querySelector('[data-mce-id=\"M128\"]');var msgEl=document.querySelector('[data-mce-id=\"M129\"]');var n=nameEl?nameEl.value.trim():'';var e=emailEl?emailEl.value.trim():'';var m=msgEl?msgEl.value.trim():'';if(!n||!e||!m){EventBus.emit('validationFailed',{value:'Name, email, and message are all required'});return;}if(e.indexOf('@')===-1){EventBus.emit('validationFailed',{value:'Please enter a valid email address'});return;}PipeSystem.execute('postMessage',{},{name:n,email:e,message:m});EventBus.emit('messageSent',{});",
+     "actions": [],
+     "children": []
+    }
+   ]
+  }
+ },
+ "machines": {
+  "M1": {
+   "id": "M1",
+   "name": "app_root",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "flex-direction": "column",
+    "min-height": "100vh",
+    "font-family": "var(--font)",
+    "background": "var(--bg0)",
+    "color": "var(--txt1)"
+   },
+   "attrs": {},
+   "children": [
+    "M2",
+    "M8",
+    "M9",
+    "M10",
+    "M36",
+    "M85",
+    "M121",
+    "M111",
+    "M137",
+    "M138",
+    "M139"
+   ],
+   "parentId": null,
+   "wires": [
+    {
+     "eventName": "goHome",
+     "targetId": "",
+     "action": "navigate",
+     "actionArgs": "home"
+    },
+    {
+     "eventName": "goAbout",
+     "targetId": "",
+     "action": "navigate",
+     "actionArgs": "about"
+    },
+    {
+     "eventName": "goProjects",
+     "targetId": "",
+     "action": "navigate",
+     "actionArgs": "projects"
+    },
+    {
+     "eventName": "goContact",
+     "targetId": "",
+     "action": "navigate",
+     "actionArgs": "contact"
+    },
+    {
+     "eventName": "searchChanged",
+     "targetId": "",
+     "action": "pipeOut",
+     "actionArgs": "getProjects"
+    },
+    {
+     "eventName": "view:projects",
+     "targetId": "",
+     "action": "pipeOut",
+     "actionArgs": "getProjects"
+    },
+    {
+     "eventName": "addNewProject",
+     "targetId": "",
+     "action": "emit",
+     "actionArgs": "formReset"
+    },
+    {
+     "eventName": "addNewProject",
+     "targetId": "",
+     "action": "emit",
+     "actionArgs": "openAddForm"
+    },
+    {
+     "eventName": "closeAddForm",
+     "targetId": "",
+     "action": "emit",
+     "actionArgs": "formReset"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M2": {
+   "id": "M2",
+   "name": "nav",
+   "tag": "nav",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "align-items": "center",
+    "gap": "6px",
+    "padding": "12px 20px",
+    "background": "var(--bg1)",
+    "border-bottom": "1px solid var(--brd)",
+    "flex-shrink": "0",
+    "position": "sticky",
+    "top": "0",
+    "z-index": "40"
+   },
+   "attrs": {},
+   "children": [
+    "M3",
+    "M4",
+    "M5",
+    "M6",
+    "M7"
+   ],
+   "parentId": "M1",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M3": {
+   "id": "M3",
+   "name": "btn_home",
+   "tag": "button",
+   "text": "Home",
+   "css": {},
+   "attrs": {
+    "class": "nav-btn nav-active"
+   },
+   "children": [],
+   "parentId": "M2",
+   "wires": [
+    {
+     "eventName": "goHome",
+     "targetId": "",
+     "action": "addClass",
+     "actionArgs": "nav-active"
+    },
+    {
+     "eventName": "goAbout",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "nav-active"
+    },
+    {
+     "eventName": "goProjects",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "nav-active"
+    },
+    {
+     "eventName": "goContact",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "nav-active"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "goHome",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M4": {
+   "id": "M4",
+   "name": "btn_about",
+   "tag": "button",
+   "text": "About",
+   "css": {},
+   "attrs": {
+    "class": "nav-btn"
+   },
+   "children": [],
+   "parentId": "M2",
+   "wires": [
+    {
+     "eventName": "goAbout",
+     "targetId": "",
+     "action": "addClass",
+     "actionArgs": "nav-active"
+    },
+    {
+     "eventName": "goHome",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "nav-active"
+    },
+    {
+     "eventName": "goProjects",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "nav-active"
+    },
+    {
+     "eventName": "goContact",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "nav-active"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "goAbout",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M5": {
+   "id": "M5",
+   "name": "btn_projects",
+   "tag": "button",
+   "text": "Projects",
+   "css": {},
+   "attrs": {
+    "class": "nav-btn"
+   },
+   "children": [],
+   "parentId": "M2",
+   "wires": [
+    {
+     "eventName": "goProjects",
+     "targetId": "",
+     "action": "addClass",
+     "actionArgs": "nav-active"
+    },
+    {
+     "eventName": "goHome",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "nav-active"
+    },
+    {
+     "eventName": "goAbout",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "nav-active"
+    },
+    {
+     "eventName": "goContact",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "nav-active"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "goProjects",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M6": {
+   "id": "M6",
+   "name": "btn_contact",
+   "tag": "button",
+   "text": "Contact",
+   "css": {},
+   "attrs": {
+    "class": "nav-btn"
+   },
+   "children": [],
+   "parentId": "M2",
+   "wires": [
+    {
+     "eventName": "goContact",
+     "targetId": "",
+     "action": "addClass",
+     "actionArgs": "nav-active"
+    },
+    {
+     "eventName": "goHome",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "nav-active"
+    },
+    {
+     "eventName": "goAbout",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "nav-active"
+    },
+    {
+     "eventName": "goProjects",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "nav-active"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "goContact",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M7": {
+   "id": "M7",
+   "name": "nav_count",
+   "tag": "span",
+   "text": "—",
+   "css": {
+    "margin-left": "auto"
+   },
+   "attrs": {
+    "class": "badge"
+   },
+   "children": [],
+   "parentId": "M2",
+   "wires": [
+    {
+     "eventName": "projStatsLoaded",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "{{total}} projects"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M8": {
+   "id": "M8",
+   "name": "toast",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "none",
+    "padding": "10px 20px",
+    "background": "#06201f",
+    "border-bottom": "1px solid #0f4a44",
+    "color": "#4ade80",
+    "font-size": "13px",
+    "font-family": "monospace",
+    "flex-shrink": "0"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M1",
+   "wires": [
+    {
+     "eventName": "pipe:postProject:written",
+     "targetId": "",
+     "action": "fadeIn",
+     "actionArgs": ""
+    },
+    {
+     "eventName": "pipe:postProject:written",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "✓ Project added"
+    },
+    {
+     "eventName": "pipe:putProject:written",
+     "targetId": "",
+     "action": "fadeIn",
+     "actionArgs": ""
+    },
+    {
+     "eventName": "pipe:putProject:written",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "✓ Project updated"
+    },
+    {
+     "eventName": "pipe:deleteProject:written",
+     "targetId": "",
+     "action": "fadeIn",
+     "actionArgs": ""
+    },
+    {
+     "eventName": "pipe:deleteProject:written",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "✓ Project deleted"
+    },
+    {
+     "eventName": "messageSent",
+     "targetId": "",
+     "action": "fadeIn",
+     "actionArgs": ""
+    },
+    {
+     "eventName": "messageSent",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "✓ Message sent — thanks for reaching out!"
+    },
+    {
+     "eventName": "validationFailed",
+     "targetId": "",
+     "action": "fadeIn",
+     "actionArgs": ""
+    },
+    {
+     "eventName": "validationFailed",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "✗ {{value}}"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M9": {
+   "id": "M9",
+   "name": "refresh_trigger",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "none"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M1",
+   "wires": [
+    {
+     "eventName": "pipe:postProject:written",
+     "targetId": "",
+     "action": "pipeOut",
+     "actionArgs": "getProjects"
+    },
+    {
+     "eventName": "pipe:putProject:written",
+     "targetId": "",
+     "action": "pipeOut",
+     "actionArgs": "getProjects"
+    },
+    {
+     "eventName": "pipe:deleteProject:written",
+     "targetId": "",
+     "action": "pipeOut",
+     "actionArgs": "getProjects"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M10": {
+   "id": "M10",
+   "name": "view_home",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "28px",
+    "padding": "0 0 40px"
+   },
+   "attrs": {},
+   "children": [
+    "M11",
+    "M23"
+   ],
+   "parentId": "M1",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": "home",
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M11": {
+   "id": "M11",
+   "name": "hero",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "padding": "70px 24px 50px",
+    "display": "flex",
+    "flex-direction": "column",
+    "align-items": "center",
+    "gap": "16px",
+    "text-align": "center",
+    "background": "radial-gradient(circle at 50% -10%, rgba(34,211,238,.12), transparent 60%)"
+   },
+   "attrs": {
+    "class": "hero"
+   },
+   "children": [
+    "M12",
+    "M13",
+    "M14",
+    "M15",
+    "M16",
+    "M17",
+    "M19",
+    "M20"
+   ],
+   "parentId": "M10",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M12": {
+   "id": "M12",
+   "name": "shape1",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "width": "120px",
+    "height": "120px",
+    "top": "10%",
+    "left": "8%",
+    "background": "radial-gradient(circle,#22d3ee,transparent 70%)"
+   },
+   "attrs": {
+    "class": "float-shape"
+   },
+   "children": [],
+   "parentId": "M11",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M13": {
+   "id": "M13",
+   "name": "shape2",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "width": "160px",
+    "height": "160px",
+    "top": "30%",
+    "right": "6%",
+    "background": "radial-gradient(circle,#0891b2,transparent 70%)",
+    "animation-delay": "1.2s"
+   },
+   "attrs": {
+    "class": "float-shape"
+   },
+   "children": [],
+   "parentId": "M11",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M14": {
+   "id": "M14",
+   "name": "shape3",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "width": "90px",
+    "height": "90px",
+    "bottom": "5%",
+    "left": "40%",
+    "background": "radial-gradient(circle,#67e8f9,transparent 70%)",
+    "animation-delay": "2.4s"
+   },
+   "attrs": {
+    "class": "float-shape"
+   },
+   "children": [],
+   "parentId": "M11",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M15": {
+   "id": "M15",
+   "name": "avatar",
+   "tag": "div",
+   "text": "AP",
+   "css": {
+    "width": "84px",
+    "height": "84px",
+    "border-radius": "50%",
+    "background": "linear-gradient(135deg,#0891b2,#22d3ee)",
+    "display": "flex",
+    "align-items": "center",
+    "justify-content": "center",
+    "font-weight": "900",
+    "font-size": "26px",
+    "color": "#04141a",
+    "position": "relative",
+    "z-index": "2"
+   },
+   "attrs": {
+    "class": "avatar-glow"
+   },
+   "children": [],
+   "parentId": "M11",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M16": {
+   "id": "M16",
+   "name": "hero_name",
+   "tag": "h1",
+   "text": "Adom Patchett",
+   "css": {
+    "font-size": "34px",
+    "font-weight": "900",
+    "margin": "4px 0 0",
+    "letter-spacing": "-1px",
+    "position": "relative",
+    "z-index": "2",
+    "animation-delay": ".1s"
+   },
+   "attrs": {
+    "class": "fade-up"
+   },
+   "children": [],
+   "parentId": "M11",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M17": {
+   "id": "M17",
+   "name": "hero_tagline_wrap",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "position": "relative",
+    "z-index": "2"
+   },
+   "attrs": {},
+   "children": [
+    "M18"
+   ],
+   "parentId": "M11",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M18": {
+   "id": "M18",
+   "name": "hero_tagline",
+   "tag": "span",
+   "text": "Full-stack engineer &amp; builder of weird things",
+   "css": {
+    "color": "#67e8f9",
+    "font-size": "15px",
+    "font-family": "monospace"
+   },
+   "attrs": {
+    "class": "type-line"
+   },
+   "children": [],
+   "parentId": "M17",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M19": {
+   "id": "M19",
+   "name": "hero_sub",
+   "tag": "p",
+   "text": "I design and ship products end-to-end — from database schema to the last pixel of animation polish.",
+   "css": {
+    "color": "var(--txt3)",
+    "font-size": "14px",
+    "line-height": "1.6",
+    "max-width": "480px",
+    "margin": "6px 0 0",
+    "position": "relative",
+    "z-index": "2",
+    "animation-delay": ".2s"
+   },
+   "attrs": {
+    "class": "fade-up"
+   },
+   "children": [],
+   "parentId": "M11",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M20": {
+   "id": "M20",
+   "name": "hero_btns",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "gap": "10px",
+    "margin-top": "10px",
+    "position": "relative",
+    "z-index": "2",
+    "animation-delay": ".3s"
+   },
+   "attrs": {
+    "class": "fade-up"
+   },
+   "children": [
+    "M21",
+    "M22"
+   ],
+   "parentId": "M11",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M21": {
+   "id": "M21",
+   "name": "btn_view_work",
+   "tag": "button",
+   "text": "View Work",
+   "css": {},
+   "attrs": {
+    "class": "action-btn btn-primary"
+   },
+   "children": [],
+   "parentId": "M20",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "goProjects",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M22": {
+   "id": "M22",
+   "name": "btn_say_hi",
+   "tag": "button",
+   "text": "Say Hi",
+   "css": {},
+   "attrs": {
+    "class": "action-btn btn-ghost"
+   },
+   "children": [],
+   "parentId": "M20",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "goContact",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M23": {
+   "id": "M23",
+   "name": "stats_row",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "gap": "10px",
+    "padding": "0 24px",
+    "max-width": "720px",
+    "width": "100%",
+    "margin": "0 auto",
+    "box-sizing": "border-box"
+   },
+   "attrs": {},
+   "children": [
+    "M24",
+    "M27",
+    "M30",
+    "M33"
+   ],
+   "parentId": "M10",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M24": {
+   "id": "M24",
+   "name": "stat_projects",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "animation-delay": ".05s"
+   },
+   "attrs": {
+    "class": "stat-card"
+   },
+   "children": [
+    "M25",
+    "M26"
+   ],
+   "parentId": "M23",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M25": {
+   "id": "M25",
+   "name": "stat_num",
+   "tag": "span",
+   "text": "0",
+   "css": {},
+   "attrs": {
+    "class": "stat-num",
+    "data-target": "8"
+   },
+   "children": [],
+   "parentId": "M24",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M26": {
+   "id": "M26",
+   "name": "stat_label",
+   "tag": "span",
+   "text": "Projects",
+   "css": {},
+   "attrs": {
+    "class": "stat-label"
+   },
+   "children": [],
+   "parentId": "M24",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M27": {
+   "id": "M27",
+   "name": "stat_years",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "animation-delay": ".12s"
+   },
+   "attrs": {
+    "class": "stat-card"
+   },
+   "children": [
+    "M28",
+    "M29"
+   ],
+   "parentId": "M23",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M28": {
+   "id": "M28",
+   "name": "stat_num",
+   "tag": "span",
+   "text": "0",
+   "css": {},
+   "attrs": {
+    "class": "stat-num",
+    "data-target": "7"
+   },
+   "children": [],
+   "parentId": "M27",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M29": {
+   "id": "M29",
+   "name": "stat_label",
+   "tag": "span",
+   "text": "Years",
+   "css": {},
+   "attrs": {
+    "class": "stat-label"
+   },
+   "children": [],
+   "parentId": "M27",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M30": {
+   "id": "M30",
+   "name": "stat_clients",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "animation-delay": ".19s"
+   },
+   "attrs": {
+    "class": "stat-card"
+   },
+   "children": [
+    "M31",
+    "M32"
+   ],
+   "parentId": "M23",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M31": {
+   "id": "M31",
+   "name": "stat_num",
+   "tag": "span",
+   "text": "0",
+   "css": {},
+   "attrs": {
+    "class": "stat-num",
+    "data-target": "24"
+   },
+   "children": [],
+   "parentId": "M30",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M32": {
+   "id": "M32",
+   "name": "stat_label",
+   "tag": "span",
+   "text": "Clients",
+   "css": {},
+   "attrs": {
+    "class": "stat-label"
+   },
+   "children": [],
+   "parentId": "M30",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M33": {
+   "id": "M33",
+   "name": "stat_coffees",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "animation-delay": ".26s"
+   },
+   "attrs": {
+    "class": "stat-card"
+   },
+   "children": [
+    "M34",
+    "M35"
+   ],
+   "parentId": "M23",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M34": {
+   "id": "M34",
+   "name": "stat_num",
+   "tag": "span",
+   "text": "0",
+   "css": {},
+   "attrs": {
+    "class": "stat-num",
+    "data-target": "999"
+   },
+   "children": [],
+   "parentId": "M33",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M35": {
+   "id": "M35",
+   "name": "stat_label",
+   "tag": "span",
+   "text": "Coffees",
+   "css": {},
+   "attrs": {
+    "class": "stat-label"
+   },
+   "children": [],
+   "parentId": "M33",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M36": {
+   "id": "M36",
+   "name": "view_about",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "28px",
+    "padding": "32px 24px",
+    "max-width": "720px",
+    "width": "100%",
+    "margin": "0 auto",
+    "box-sizing": "border-box"
+   },
+   "attrs": {},
+   "children": [
+    "M37",
+    "M38",
+    "M39",
+    "M40",
+    "M71",
+    "M72"
+   ],
+   "parentId": "M1",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": "about",
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M37": {
+   "id": "M37",
+   "name": "about_title",
+   "tag": "h2",
+   "text": "About Me",
+   "css": {
+    "font-size": "24px",
+    "font-weight": "900",
+    "margin": "0"
+   },
+   "attrs": {
+    "class": "fade-up"
+   },
+   "children": [],
+   "parentId": "M36",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M38": {
+   "id": "M38",
+   "name": "about_bio",
+   "tag": "p",
+   "text": "I've spent the last seven years moving between frontend, backend, and the messy space in between — APIs that lie, animations that jank, databases that grow sideways. I like fixing all three in the same afternoon.",
+   "css": {
+    "color": "var(--txt2)",
+    "font-size": "14px",
+    "line-height": "1.7",
+    "margin": "0",
+    "animation-delay": ".08s"
+   },
+   "attrs": {
+    "class": "fade-up"
+   },
+   "children": [],
+   "parentId": "M36",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M39": {
+   "id": "M39",
+   "name": "skills_title",
+   "tag": "h3",
+   "text": "Skills",
+   "css": {
+    "font-size": "16px",
+    "font-weight": "800",
+    "margin": "10px 0 0",
+    "color": "var(--txt2)"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M36",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M40": {
+   "id": "M40",
+   "name": "skills_section",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "10px"
+   },
+   "attrs": {},
+   "children": [
+    "M41",
+    "M46",
+    "M51",
+    "M56",
+    "M61",
+    "M66"
+   ],
+   "parentId": "M36",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M41": {
+   "id": "M41",
+   "name": "skill_row",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-row"
+   },
+   "children": [
+    "M42",
+    "M43",
+    "M45"
+   ],
+   "parentId": "M40",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M42": {
+   "id": "M42",
+   "name": "skill_name",
+   "tag": "span",
+   "text": "JavaScript / TypeScript",
+   "css": {},
+   "attrs": {
+    "class": "skill-name"
+   },
+   "children": [],
+   "parentId": "M41",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M43": {
+   "id": "M43",
+   "name": "skill_track",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-track"
+   },
+   "children": [
+    "M44"
+   ],
+   "parentId": "M41",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M44": {
+   "id": "M44",
+   "name": "skill_fill",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-fill"
+   },
+   "children": [],
+   "parentId": "M43",
+   "wires": [
+    {
+     "eventName": "view:about",
+     "targetId": "",
+     "action": "addClass",
+     "actionArgs": "sk-1"
+    },
+    {
+     "eventName": "view:home",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-1"
+    },
+    {
+     "eventName": "view:projects",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-1"
+    },
+    {
+     "eventName": "view:contact",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-1"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M45": {
+   "id": "M45",
+   "name": "skill_pct",
+   "tag": "span",
+   "text": "95%",
+   "css": {},
+   "attrs": {
+    "class": "skill-pct"
+   },
+   "children": [],
+   "parentId": "M41",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M46": {
+   "id": "M46",
+   "name": "skill_row",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-row"
+   },
+   "children": [
+    "M47",
+    "M48",
+    "M50"
+   ],
+   "parentId": "M40",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M47": {
+   "id": "M47",
+   "name": "skill_name",
+   "tag": "span",
+   "text": "Node.js / APIs",
+   "css": {},
+   "attrs": {
+    "class": "skill-name"
+   },
+   "children": [],
+   "parentId": "M46",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M48": {
+   "id": "M48",
+   "name": "skill_track",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-track"
+   },
+   "children": [
+    "M49"
+   ],
+   "parentId": "M46",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M49": {
+   "id": "M49",
+   "name": "skill_fill",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-fill"
+   },
+   "children": [],
+   "parentId": "M48",
+   "wires": [
+    {
+     "eventName": "view:about",
+     "targetId": "",
+     "action": "addClass",
+     "actionArgs": "sk-2"
+    },
+    {
+     "eventName": "view:home",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-2"
+    },
+    {
+     "eventName": "view:projects",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-2"
+    },
+    {
+     "eventName": "view:contact",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-2"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M50": {
+   "id": "M50",
+   "name": "skill_pct",
+   "tag": "span",
+   "text": "90%",
+   "css": {},
+   "attrs": {
+    "class": "skill-pct"
+   },
+   "children": [],
+   "parentId": "M46",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M51": {
+   "id": "M51",
+   "name": "skill_row",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-row"
+   },
+   "children": [
+    "M52",
+    "M53",
+    "M55"
+   ],
+   "parentId": "M40",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M52": {
+   "id": "M52",
+   "name": "skill_name",
+   "tag": "span",
+   "text": "React / Frontend",
+   "css": {},
+   "attrs": {
+    "class": "skill-name"
+   },
+   "children": [],
+   "parentId": "M51",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M53": {
+   "id": "M53",
+   "name": "skill_track",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-track"
+   },
+   "children": [
+    "M54"
+   ],
+   "parentId": "M51",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M54": {
+   "id": "M54",
+   "name": "skill_fill",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-fill"
+   },
+   "children": [],
+   "parentId": "M53",
+   "wires": [
+    {
+     "eventName": "view:about",
+     "targetId": "",
+     "action": "addClass",
+     "actionArgs": "sk-3"
+    },
+    {
+     "eventName": "view:home",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-3"
+    },
+    {
+     "eventName": "view:projects",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-3"
+    },
+    {
+     "eventName": "view:contact",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-3"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M55": {
+   "id": "M55",
+   "name": "skill_pct",
+   "tag": "span",
+   "text": "88%",
+   "css": {},
+   "attrs": {
+    "class": "skill-pct"
+   },
+   "children": [],
+   "parentId": "M51",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M56": {
+   "id": "M56",
+   "name": "skill_row",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-row"
+   },
+   "children": [
+    "M57",
+    "M58",
+    "M60"
+   ],
+   "parentId": "M40",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M57": {
+   "id": "M57",
+   "name": "skill_name",
+   "tag": "span",
+   "text": "Python / Data",
+   "css": {},
+   "attrs": {
+    "class": "skill-name"
+   },
+   "children": [],
+   "parentId": "M56",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M58": {
+   "id": "M58",
+   "name": "skill_track",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-track"
+   },
+   "children": [
+    "M59"
+   ],
+   "parentId": "M56",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M59": {
+   "id": "M59",
+   "name": "skill_fill",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-fill"
+   },
+   "children": [],
+   "parentId": "M58",
+   "wires": [
+    {
+     "eventName": "view:about",
+     "targetId": "",
+     "action": "addClass",
+     "actionArgs": "sk-4"
+    },
+    {
+     "eventName": "view:home",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-4"
+    },
+    {
+     "eventName": "view:projects",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-4"
+    },
+    {
+     "eventName": "view:contact",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-4"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M60": {
+   "id": "M60",
+   "name": "skill_pct",
+   "tag": "span",
+   "text": "80%",
+   "css": {},
+   "attrs": {
+    "class": "skill-pct"
+   },
+   "children": [],
+   "parentId": "M56",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M61": {
+   "id": "M61",
+   "name": "skill_row",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-row"
+   },
+   "children": [
+    "M62",
+    "M63",
+    "M65"
+   ],
+   "parentId": "M40",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M62": {
+   "id": "M62",
+   "name": "skill_name",
+   "tag": "span",
+   "text": "System Design",
+   "css": {},
+   "attrs": {
+    "class": "skill-name"
+   },
+   "children": [],
+   "parentId": "M61",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M63": {
+   "id": "M63",
+   "name": "skill_track",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-track"
+   },
+   "children": [
+    "M64"
+   ],
+   "parentId": "M61",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M64": {
+   "id": "M64",
+   "name": "skill_fill",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-fill"
+   },
+   "children": [],
+   "parentId": "M63",
+   "wires": [
+    {
+     "eventName": "view:about",
+     "targetId": "",
+     "action": "addClass",
+     "actionArgs": "sk-5"
+    },
+    {
+     "eventName": "view:home",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-5"
+    },
+    {
+     "eventName": "view:projects",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-5"
+    },
+    {
+     "eventName": "view:contact",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-5"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M65": {
+   "id": "M65",
+   "name": "skill_pct",
+   "tag": "span",
+   "text": "85%",
+   "css": {},
+   "attrs": {
+    "class": "skill-pct"
+   },
+   "children": [],
+   "parentId": "M61",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M66": {
+   "id": "M66",
+   "name": "skill_row",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-row"
+   },
+   "children": [
+    "M67",
+    "M68",
+    "M70"
+   ],
+   "parentId": "M40",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M67": {
+   "id": "M67",
+   "name": "skill_name",
+   "tag": "span",
+   "text": "Cloud / DevOps",
+   "css": {},
+   "attrs": {
+    "class": "skill-name"
+   },
+   "children": [],
+   "parentId": "M66",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M68": {
+   "id": "M68",
+   "name": "skill_track",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-track"
+   },
+   "children": [
+    "M69"
+   ],
+   "parentId": "M66",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M69": {
+   "id": "M69",
+   "name": "skill_fill",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "skill-fill"
+   },
+   "children": [],
+   "parentId": "M68",
+   "wires": [
+    {
+     "eventName": "view:about",
+     "targetId": "",
+     "action": "addClass",
+     "actionArgs": "sk-6"
+    },
+    {
+     "eventName": "view:home",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-6"
+    },
+    {
+     "eventName": "view:projects",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-6"
+    },
+    {
+     "eventName": "view:contact",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "sk-6"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M70": {
+   "id": "M70",
+   "name": "skill_pct",
+   "tag": "span",
+   "text": "75%",
+   "css": {},
+   "attrs": {
+    "class": "skill-pct"
+   },
+   "children": [],
+   "parentId": "M66",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M71": {
+   "id": "M71",
+   "name": "timeline_title",
+   "tag": "h3",
+   "text": "Experience",
+   "css": {
+    "font-size": "16px",
+    "font-weight": "800",
+    "margin": "10px 0 0",
+    "color": "var(--txt2)"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M36",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M72": {
+   "id": "M72",
+   "name": "timeline_section",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "8px"
+   },
+   "attrs": {},
+   "children": [
+    "M73",
+    "M76",
+    "M79",
+    "M82"
+   ],
+   "parentId": "M36",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M73": {
+   "id": "M73",
+   "name": "tl_item",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "animation-delay": ".05s"
+   },
+   "attrs": {
+    "class": "timeline-item"
+   },
+   "children": [
+    "M74",
+    "M75"
+   ],
+   "parentId": "M72",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M74": {
+   "id": "M74",
+   "name": "tl_role",
+   "tag": "div",
+   "text": "Senior Software Engineer @ Brightline Labs",
+   "css": {},
+   "attrs": {
+    "class": "timeline-role"
+   },
+   "children": [],
+   "parentId": "M73",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M75": {
+   "id": "M75",
+   "name": "tl_meta",
+   "tag": "div",
+   "text": "2023 — Now · Leading platform architecture for a 40-person eng org",
+   "css": {},
+   "attrs": {
+    "class": "timeline-meta"
+   },
+   "children": [],
+   "parentId": "M73",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M76": {
+   "id": "M76",
+   "name": "tl_item",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "animation-delay": ".15s"
+   },
+   "attrs": {
+    "class": "timeline-item"
+   },
+   "children": [
+    "M77",
+    "M78"
+   ],
+   "parentId": "M72",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M77": {
+   "id": "M77",
+   "name": "tl_role",
+   "tag": "div",
+   "text": "Software Engineer @ Northwind Digital",
+   "css": {},
+   "attrs": {
+    "class": "timeline-role"
+   },
+   "children": [],
+   "parentId": "M76",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M78": {
+   "id": "M78",
+   "name": "tl_meta",
+   "tag": "div",
+   "text": "2021 – 2023 · Shipped customer-facing web apps end to end",
+   "css": {},
+   "attrs": {
+    "class": "timeline-meta"
+   },
+   "children": [],
+   "parentId": "M76",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M79": {
+   "id": "M79",
+   "name": "tl_item",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "animation-delay": ".25s"
+   },
+   "attrs": {
+    "class": "timeline-item"
+   },
+   "children": [
+    "M80",
+    "M81"
+   ],
+   "parentId": "M72",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M80": {
+   "id": "M80",
+   "name": "tl_role",
+   "tag": "div",
+   "text": "Frontend Developer @ Kestrel Studio",
+   "css": {},
+   "attrs": {
+    "class": "timeline-role"
+   },
+   "children": [],
+   "parentId": "M79",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M81": {
+   "id": "M81",
+   "name": "tl_meta",
+   "tag": "div",
+   "text": "2019 – 2021 · Built design systems and motion-heavy marketing sites",
+   "css": {},
+   "attrs": {
+    "class": "timeline-meta"
+   },
+   "children": [],
+   "parentId": "M79",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M82": {
+   "id": "M82",
+   "name": "tl_item",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "animation-delay": ".35s"
+   },
+   "attrs": {
+    "class": "timeline-item"
+   },
+   "children": [
+    "M83",
+    "M84"
+   ],
+   "parentId": "M72",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M83": {
+   "id": "M83",
+   "name": "tl_role",
+   "tag": "div",
+   "text": "Freelance Developer",
+   "css": {},
+   "attrs": {
+    "class": "timeline-role"
+   },
+   "children": [],
+   "parentId": "M82",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M84": {
+   "id": "M84",
+   "name": "tl_meta",
+   "tag": "div",
+   "text": "2017 – 2019 · Worked with 15+ small businesses on web presence and tooling",
+   "css": {},
+   "attrs": {
+    "class": "timeline-meta"
+   },
+   "children": [],
+   "parentId": "M82",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M85": {
+   "id": "M85",
+   "name": "view_projects",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "16px",
+    "padding": "24px",
+    "max-width": "720px",
+    "width": "100%",
+    "margin": "0 auto",
+    "box-sizing": "border-box"
+   },
+   "attrs": {},
+   "children": [
+    "M86",
+    "M90",
+    "M93",
+    "M94",
+    "M95"
+   ],
+   "parentId": "M1",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": "projects",
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M86": {
+   "id": "M86",
+   "name": "proj_hdr",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "align-items": "center",
+    "gap": "10px",
+    "border-bottom": "1px solid var(--brd)",
+    "padding-bottom": "14px",
+    "flex-wrap": "wrap"
+   },
+   "attrs": {},
+   "children": [
+    "M87",
+    "M88",
+    "M89"
+   ],
+   "parentId": "M85",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M87": {
+   "id": "M87",
+   "name": "proj_title",
+   "tag": "h2",
+   "text": "Projects",
+   "css": {
+    "font-size": "20px",
+    "font-weight": "900",
+    "margin": "0"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M86",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M88": {
+   "id": "M88",
+   "name": "proj_count",
+   "tag": "span",
+   "text": "— projects",
+   "css": {},
+   "attrs": {
+    "class": "badge"
+   },
+   "children": [],
+   "parentId": "M86",
+   "wires": [
+    {
+     "eventName": "projStatsLoaded",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "{{total}} projects"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M89": {
+   "id": "M89",
+   "name": "btn_add_project",
+   "tag": "button",
+   "text": "+ Add Project",
+   "css": {},
+   "attrs": {
+    "class": "action-btn btn-primary",
+    "style": "margin-left:auto"
+   },
+   "children": [],
+   "parentId": "M86",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "addNewProject",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M90": {
+   "id": "M90",
+   "name": "search_row",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "gap": "8px"
+   },
+   "attrs": {},
+   "children": [
+    "M91",
+    "M92"
+   ],
+   "parentId": "M85",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M91": {
+   "id": "M91",
+   "name": "search_input",
+   "tag": "input",
+   "text": "",
+   "css": {
+    "flex": "1"
+   },
+   "attrs": {
+    "placeholder": "Search projects...",
+    "type": "search",
+    "class": "form-input",
+    "autocomplete": "off"
+   },
+   "children": [],
+   "parentId": "M90",
+   "wires": [
+    {
+     "eventName": "formReset",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": ""
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "searchChanged",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M92": {
+   "id": "M92",
+   "name": "search_btn",
+   "tag": "button",
+   "text": "Search",
+   "css": {},
+   "attrs": {
+    "class": "action-btn btn-primary"
+   },
+   "children": [],
+   "parentId": "M90",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "M91",
+    "eventName": "searchChanged"
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M93": {
+   "id": "M93",
+   "name": "project_gallery",
+   "tag": "div",
+   "text": "<p style=\"color:#3a4a4f;font-size:12px;padding:12px 0\">Loading projects…</p>",
+   "css": {
+    "border": "1px solid var(--brd)",
+    "border-radius": "8px",
+    "overflow": "hidden",
+    "min-height": "60px"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M85",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [
+    {
+     "pipeName": "getProjects",
+     "action": "log"
+    }
+   ],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M94": {
+   "id": "M94",
+   "name": "pagination",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {},
+   "children": [],
+   "parentId": "M85",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M95": {
+   "id": "M95",
+   "name": "add_edit_panel",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "none",
+    "padding": "18px",
+    "background": "var(--bg1)",
+    "border": "1px solid var(--brd)",
+    "border-radius": "10px"
+   },
+   "attrs": {},
+   "children": [
+    "M96",
+    "M99",
+    "M107"
+   ],
+   "parentId": "M85",
+   "wires": [
+    {
+     "eventName": "openAddForm",
+     "targetId": "",
+     "action": "fadeIn",
+     "actionArgs": ""
+    },
+    {
+     "eventName": "closeAddForm",
+     "targetId": "",
+     "action": "fadeOut",
+     "actionArgs": ""
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M96": {
+   "id": "M96",
+   "name": "panel_hdr",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "align-items": "center",
+    "gap": "12px",
+    "border-bottom": "1px solid var(--brd)",
+    "padding-bottom": "12px",
+    "margin-bottom": "12px"
+   },
+   "attrs": {},
+   "children": [
+    "M97",
+    "M98"
+   ],
+   "parentId": "M95",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M97": {
+   "id": "M97",
+   "name": "panel_heading",
+   "tag": "h3",
+   "text": "Add Project",
+   "css": {
+    "font-size": "16px",
+    "font-weight": "900",
+    "margin": "0",
+    "flex": "1"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M96",
+   "wires": [
+    {
+     "eventName": "formReset",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "Add Project"
+    },
+    {
+     "eventName": "editMode",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "Edit Project"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M98": {
+   "id": "M98",
+   "name": "panel_badge",
+   "tag": "span",
+   "text": "NEW",
+   "css": {},
+   "attrs": {
+    "class": "badge-new"
+   },
+   "children": [],
+   "parentId": "M96",
+   "wires": [
+    {
+     "eventName": "formReset",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "NEW"
+    },
+    {
+     "eventName": "formReset",
+     "targetId": "",
+     "action": "addClass",
+     "actionArgs": "badge-new"
+    },
+    {
+     "eventName": "formReset",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "badge-edit"
+    },
+    {
+     "eventName": "editMode",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "EDITING"
+    },
+    {
+     "eventName": "editMode",
+     "targetId": "",
+     "action": "addClass",
+     "actionArgs": "badge-edit"
+    },
+    {
+     "eventName": "editMode",
+     "targetId": "",
+     "action": "removeClass",
+     "actionArgs": "badge-new"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M99": {
+   "id": "M99",
+   "name": "panel_fields",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "10px"
+   },
+   "attrs": {},
+   "children": [
+    "M100",
+    "M101",
+    "M102",
+    "M103",
+    "M104",
+    "M105",
+    "M106"
+   ],
+   "parentId": "M95",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M100": {
+   "id": "M100",
+   "name": "f_title",
+   "tag": "input",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "placeholder": "Project title...",
+    "class": "form-input",
+    "type": "text",
+    "autocomplete": "off"
+   },
+   "children": [],
+   "parentId": "M99",
+   "wires": [
+    {
+     "eventName": "formReset",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": ""
+    },
+    {
+     "eventName": "editMode",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": "{{title}}"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M101": {
+   "id": "M101",
+   "name": "f_category",
+   "tag": "input",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "placeholder": "Category (Web App, AI/ML, Game...)",
+    "class": "form-input",
+    "type": "text",
+    "autocomplete": "off"
+   },
+   "children": [],
+   "parentId": "M99",
+   "wires": [
+    {
+     "eventName": "formReset",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": ""
+    },
+    {
+     "eventName": "editMode",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": "{{category}}"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M102": {
+   "id": "M102",
+   "name": "f_year",
+   "tag": "input",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "placeholder": "Year (e.g. 2024)",
+    "class": "form-input",
+    "type": "text",
+    "autocomplete": "off"
+   },
+   "children": [],
+   "parentId": "M99",
+   "wires": [
+    {
+     "eventName": "formReset",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": ""
+    },
+    {
+     "eventName": "editMode",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": "{{year}}"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M103": {
+   "id": "M103",
+   "name": "f_status",
+   "tag": "input",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "placeholder": "live / archived / concept",
+    "class": "form-input",
+    "type": "text",
+    "autocomplete": "off"
+   },
+   "children": [],
+   "parentId": "M99",
+   "wires": [
+    {
+     "eventName": "formReset",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": "concept"
+    },
+    {
+     "eventName": "editMode",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": "{{status}}"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M104": {
+   "id": "M104",
+   "name": "f_tagline",
+   "tag": "input",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "placeholder": "One-line tagline...",
+    "class": "form-input",
+    "type": "text",
+    "autocomplete": "off"
+   },
+   "children": [],
+   "parentId": "M99",
+   "wires": [
+    {
+     "eventName": "formReset",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": ""
+    },
+    {
+     "eventName": "editMode",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": "{{tagline}}"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M105": {
+   "id": "M105",
+   "name": "f_link",
+   "tag": "input",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "placeholder": "https://...",
+    "class": "form-input",
+    "type": "text",
+    "autocomplete": "off"
+   },
+   "children": [],
+   "parentId": "M99",
+   "wires": [
+    {
+     "eventName": "formReset",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": ""
+    },
+    {
+     "eventName": "editMode",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": "{{link}}"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M106": {
+   "id": "M106",
+   "name": "f_description",
+   "tag": "textarea",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "placeholder": "Full description...",
+    "rows": "3",
+    "class": "form-input"
+   },
+   "children": [],
+   "parentId": "M99",
+   "wires": [
+    {
+     "eventName": "formReset",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": ""
+    },
+    {
+     "eventName": "editMode",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": "{{description}}"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M107": {
+   "id": "M107",
+   "name": "panel_footer",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "gap": "10px",
+    "border-top": "1px solid var(--brd)",
+    "padding-top": "14px",
+    "margin-top": "14px",
+    "flex-wrap": "wrap"
+   },
+   "attrs": {},
+   "children": [
+    "M108",
+    "M109",
+    "M110"
+   ],
+   "parentId": "M95",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M108": {
+   "id": "M108",
+   "name": "save_project_btn",
+   "tag": "button",
+   "text": "Save Project",
+   "css": {},
+   "attrs": {
+    "class": "action-btn btn-primary",
+    "onclick": "LogicSystem.run('M108',{})"
+   },
+   "children": [],
+   "parentId": "M107",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M109": {
+   "id": "M109",
+   "name": "delete_project_btn",
+   "tag": "button",
+   "text": "Delete",
+   "css": {
+    "display": "none"
+   },
+   "attrs": {
+    "class": "action-btn btn-danger",
+    "onclick": "LogicSystem.run('M109',{})"
+   },
+   "children": [],
+   "parentId": "M107",
+   "wires": [
+    {
+     "eventName": "formReset",
+     "targetId": "",
+     "action": "hide",
+     "actionArgs": ""
+    },
+    {
+     "eventName": "editMode",
+     "targetId": "",
+     "action": "show",
+     "actionArgs": ""
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M110": {
+   "id": "M110",
+   "name": "cancel_btn",
+   "tag": "button",
+   "text": "Cancel",
+   "css": {},
+   "attrs": {
+    "class": "action-btn btn-ghost"
+   },
+   "children": [],
+   "parentId": "M107",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "closeAddForm",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M111": {
+   "id": "M111",
+   "name": "modal_backdrop",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "modal-backdrop"
+   },
+   "children": [
+    "M112"
+   ],
+   "parentId": "M1",
+   "wires": [
+    {
+     "eventName": "projectSelected",
+     "targetId": "",
+     "action": "fadeIn",
+     "actionArgs": ""
+    },
+    {
+     "eventName": "closeModal",
+     "targetId": "",
+     "action": "fadeOut",
+     "actionArgs": ""
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M112": {
+   "id": "M112",
+   "name": "modal_card",
+   "tag": "div",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "class": "modal-card"
+   },
+   "children": [
+    "M113",
+    "M114",
+    "M115",
+    "M116",
+    "M117",
+    "M118"
+   ],
+   "parentId": "M111",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M113": {
+   "id": "M113",
+   "name": "modal_title",
+   "tag": "h3",
+   "text": "",
+   "css": {
+    "font-size": "19px",
+    "font-weight": "900",
+    "margin": "0 0 6px"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M112",
+   "wires": [
+    {
+     "eventName": "projectSelected",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "{{title}}"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M114": {
+   "id": "M114",
+   "name": "modal_meta",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "align-items": "center",
+    "gap": "8px",
+    "margin-bottom": "10px",
+    "font-family": "monospace",
+    "font-size": "11px",
+    "color": "#5d7e87"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M112",
+   "wires": [
+    {
+     "eventName": "projectSelected",
+     "targetId": "",
+     "action": "setHTML",
+     "actionArgs": "<span class=\"status-badge status-{{status}}\">{{status}}</span> &nbsp;{{category}} &middot; {{year}}"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M115": {
+   "id": "M115",
+   "name": "modal_tagline",
+   "tag": "p",
+   "text": "",
+   "css": {
+    "color": "#67e8f9",
+    "font-size": "13px",
+    "font-style": "italic",
+    "margin": "0 0 10px"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M112",
+   "wires": [
+    {
+     "eventName": "projectSelected",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "{{tagline}}"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M116": {
+   "id": "M116",
+   "name": "modal_desc",
+   "tag": "p",
+   "text": "",
+   "css": {
+    "color": "var(--txt2)",
+    "font-size": "13px",
+    "line-height": "1.6",
+    "margin": "0 0 14px"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M112",
+   "wires": [
+    {
+     "eventName": "projectSelected",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "{{description}}"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M117": {
+   "id": "M117",
+   "name": "modal_link_wrap",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "margin-bottom": "16px"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M112",
+   "wires": [
+    {
+     "eventName": "projectSelected",
+     "targetId": "",
+     "action": "setHTML",
+     "actionArgs": "<a href=\"{{link}}\" target=\"_blank\" rel=\"noopener\" class=\"action-btn btn-primary\" style=\"display:inline-block;text-decoration:none\">View Project →</a>"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M118": {
+   "id": "M118",
+   "name": "modal_btns",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "gap": "8px",
+    "border-top": "1px solid var(--brd)",
+    "padding-top": "14px"
+   },
+   "attrs": {},
+   "children": [
+    "M119",
+    "M120"
+   ],
+   "parentId": "M112",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M119": {
+   "id": "M119",
+   "name": "modal_edit_btn",
+   "tag": "button",
+   "text": "Edit →",
+   "css": {},
+   "attrs": {
+    "class": "action-btn btn-primary",
+    "onclick": "LogicSystem.run('M119',{})"
+   },
+   "children": [],
+   "parentId": "M118",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M120": {
+   "id": "M120",
+   "name": "modal_close_btn",
+   "tag": "button",
+   "text": "✕ Close",
+   "css": {},
+   "attrs": {
+    "class": "action-btn btn-ghost"
+   },
+   "children": [],
+   "parentId": "M118",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "closeModal",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M121": {
+   "id": "M121",
+   "name": "view_contact",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "20px",
+    "padding": "32px 24px",
+    "max-width": "720px",
+    "width": "100%",
+    "margin": "0 auto",
+    "box-sizing": "border-box"
+   },
+   "attrs": {},
+   "children": [
+    "M122",
+    "M125"
+   ],
+   "parentId": "M1",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": "contact",
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M122": {
+   "id": "M122",
+   "name": "contact_hdr",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "4px"
+   },
+   "attrs": {},
+   "children": [
+    "M123",
+    "M124"
+   ],
+   "parentId": "M121",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M123": {
+   "id": "M123",
+   "name": "contact_title",
+   "tag": "h2",
+   "text": "Get In Touch",
+   "css": {
+    "font-size": "24px",
+    "font-weight": "900",
+    "margin": "0"
+   },
+   "attrs": {
+    "class": "fade-up"
+   },
+   "children": [],
+   "parentId": "M122",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M124": {
+   "id": "M124",
+   "name": "contact_sub",
+   "tag": "p",
+   "text": "Got a project, a question, or just want to talk shop? Drop a note below.",
+   "css": {
+    "color": "var(--txt3)",
+    "font-size": "13px",
+    "margin": "0",
+    "animation-delay": ".08s"
+   },
+   "attrs": {
+    "class": "fade-up"
+   },
+   "children": [],
+   "parentId": "M122",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M125": {
+   "id": "M125",
+   "name": "contact_grid",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "gap": "16px",
+    "flex-wrap": "wrap"
+   },
+   "attrs": {},
+   "children": [
+    "M126",
+    "M131"
+   ],
+   "parentId": "M121",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M126": {
+   "id": "M126",
+   "name": "contact_form_col",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "10px",
+    "flex": "1",
+    "min-width": "260px"
+   },
+   "attrs": {},
+   "children": [
+    "M127",
+    "M128",
+    "M129",
+    "M130"
+   ],
+   "parentId": "M125",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M127": {
+   "id": "M127",
+   "name": "c_name",
+   "tag": "input",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "placeholder": "Your name",
+    "type": "text",
+    "class": "form-input",
+    "autocomplete": "off"
+   },
+   "children": [],
+   "parentId": "M126",
+   "wires": [
+    {
+     "eventName": "messageSent",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": ""
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "contactNameTyped",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M128": {
+   "id": "M128",
+   "name": "c_email",
+   "tag": "input",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "placeholder": "Your email",
+    "type": "email",
+    "class": "form-input",
+    "autocomplete": "off"
+   },
+   "children": [],
+   "parentId": "M126",
+   "wires": [
+    {
+     "eventName": "messageSent",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": ""
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "contactEmailTyped",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M129": {
+   "id": "M129",
+   "name": "c_message",
+   "tag": "textarea",
+   "text": "",
+   "css": {},
+   "attrs": {
+    "placeholder": "Your message...",
+    "rows": "5",
+    "class": "form-input"
+   },
+   "children": [],
+   "parentId": "M126",
+   "wires": [
+    {
+     "eventName": "messageSent",
+     "targetId": "",
+     "action": "setValue",
+     "actionArgs": ""
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "contactMsgTyped",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M130": {
+   "id": "M130",
+   "name": "send_btn",
+   "tag": "button",
+   "text": "Send Message",
+   "css": {},
+   "attrs": {
+    "class": "action-btn btn-primary",
+    "onclick": "LogicSystem.run('M130',{})"
+   },
+   "children": [],
+   "parentId": "M126",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M131": {
+   "id": "M131",
+   "name": "preview_col",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "flex": "1",
+    "min-width": "240px"
+   },
+   "attrs": {
+    "class": "preview-card"
+   },
+   "children": [
+    "M132",
+    "M133"
+   ],
+   "parentId": "M125",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M132": {
+   "id": "M132",
+   "name": "preview_avatar",
+   "tag": "div",
+   "text": "—",
+   "css": {},
+   "attrs": {
+    "class": "preview-avatar"
+   },
+   "children": [],
+   "parentId": "M131",
+   "wires": [
+    {
+     "eventName": "contactNameTyped",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "{{THIS.VALUE}}"
+    },
+    {
+     "eventName": "messageSent",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "—"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "INITIALS",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M133": {
+   "id": "M133",
+   "name": "preview_text_col",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "3px",
+    "flex": "1",
+    "min-width": "0"
+   },
+   "attrs": {},
+   "children": [
+    "M134",
+    "M135",
+    "M136"
+   ],
+   "parentId": "M131",
+   "wires": [],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M134": {
+   "id": "M134",
+   "name": "preview_name",
+   "tag": "span",
+   "text": "Someone",
+   "css": {
+    "color": "var(--txt1)",
+    "font-size": "13px",
+    "font-weight": "700"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M133",
+   "wires": [
+    {
+     "eventName": "contactNameTyped",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "{{THIS.VALUE}}"
+    },
+    {
+     "eventName": "messageSent",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "Someone"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M135": {
+   "id": "M135",
+   "name": "preview_email",
+   "tag": "span",
+   "text": "—",
+   "css": {
+    "color": "#5d7e87",
+    "font-size": "11px",
+    "font-family": "monospace"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M133",
+   "wires": [
+    {
+     "eventName": "contactEmailTyped",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "{{THIS.VALUE}}"
+    },
+    {
+     "eventName": "messageSent",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "—"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M136": {
+   "id": "M136",
+   "name": "preview_message",
+   "tag": "p",
+   "text": "Your message preview shows up here as you type.",
+   "css": {
+    "color": "var(--txt3)",
+    "font-size": "12px",
+    "line-height": "1.5",
+    "margin": "6px 0 0"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M133",
+   "wires": [
+    {
+     "eventName": "contactMsgTyped",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "{{THIS.VALUE}}"
+    },
+    {
+     "eventName": "messageSent",
+     "targetId": "",
+     "action": "setText",
+     "actionArgs": "Your message preview shows up here as you type."
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M137": {
+   "id": "M137",
+   "name": "countup_runner",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "none"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M1",
+   "wires": [
+    {
+     "eventName": "view:home",
+     "targetId": "",
+     "action": "runLogic",
+     "actionArgs": "M137"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M138": {
+   "id": "M138",
+   "name": "projstats_runner",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "none"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M1",
+   "wires": [
+    {
+     "eventName": "loop:projectGallery:rendered",
+     "targetId": "",
+     "action": "runLogic",
+     "actionArgs": "M138"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  },
+  "M139": {
+   "id": "M139",
+   "name": "resetpanel_runner",
+   "tag": "div",
+   "text": "",
+   "css": {
+    "display": "none"
+   },
+   "attrs": {},
+   "children": [],
+   "parentId": "M1",
+   "wires": [
+    {
+     "eventName": "formReset",
+     "targetId": "",
+     "action": "runLogic",
+     "actionArgs": "M139"
+    }
+   ],
+   "varWires": [],
+   "pipeBindings": [],
+   "viewBinding": null,
+   "dbSource": null,
+   "emitOnInput": "",
+   "emitOnClick": "",
+   "transferOnClick": {
+    "fromId": "",
+    "eventName": ""
+   },
+   "inputTransform": {
+    "filter": "",
+    "arg": ""
+   },
+   "outputTransform": {
+    "filter": "",
+    "arg": ""
+   }
+  }
+ }
+}

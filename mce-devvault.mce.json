@@ -1,0 +1,1198 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "DevVault — Repository Tracker" },
+  "_nextId": 60,
+  "rootOrder": ["M1"],
+  "runtimeStyle": "mono",
+
+  "dbCollections": [
+    {
+      "name": "repos",
+      "isArray": true,
+      "seed": [
+        { "name": "AlgoVault",  "language": "Python",     "stars": 847,  "status": "active",   "author": "Kai Chen",    "description": "Curated algorithms and data structures with visual explanations" },
+        { "name": "PixelForge", "language": "Rust",       "stars": 3201, "status": "active",   "author": "Maya Rossi",  "description": "High-performance image processing library with zero-copy pipelines" },
+        { "name": "FlowSQL",    "language": "Go",         "stars": 1124, "status": "active",   "author": "James Park",  "description": "Type-safe query builder with automatic migration support" },
+        { "name": "NeuralKit",  "language": "Python",     "stars": 9432, "status": "active",   "author": "Priya Shah",  "description": "Lightweight deep learning framework for rapid experimentation" },
+        { "name": "EchoGraph",  "language": "TypeScript", "stars": 512,  "status": "archived", "author": "Tom Wells",   "description": "Declarative graph visualization library for the browser" },
+        { "name": "SwiftCache", "language": "Go",         "stars": 2788, "status": "active",   "author": "Ana Lima",    "description": "Distributed LRU cache with pluggable backends and TTL support" },
+        { "name": "HexParser",  "language": "Rust",       "stars": 334,  "status": "archived", "author": "Leo Muller", "description": "Zero-allocation binary protocol parser using declarative macros" },
+        { "name": "DataStream", "language": "JavaScript", "stars": 1876, "status": "active",   "author": "Zoe Kim",     "description": "Reactive data pipeline library built on observable streams" },
+        { "name": "CloudBench", "language": "Python",     "stars": 677,  "status": "archived", "author": "Raj Gupta",   "description": "Automated cloud cost benchmarking across AWS, GCP, and Azure" },
+        { "name": "TerminalUI", "language": "Go",         "stars": 4156, "status": "active",   "author": "Sara Fox",    "description": "Rich terminal UI toolkit with layout engine and theme support" }
+      ]
+    }
+  ],
+
+  "events": {
+    "goDashboard":      { "name": "goDashboard",      "payload": "{} — navigate to Dashboard view" },
+    "goExplore":        { "name": "goExplore",         "payload": "{} — navigate to Explore view" },
+    "goForm":           { "name": "goForm",            "payload": "{} — navigate to Form + emit formReset" },
+    "goDashLoad":       { "name": "goDashLoad",        "payload": "{} — pipeOut getRepos and compute stats" },
+    "formReset":        { "name": "formReset",         "payload": "{} — clear all form fields + reset editId" },
+    "editMode":         { "name": "editMode",          "payload": "{ name, language, stars, status, author, description } — pre-fill form for edit" },
+    "validationFailed": { "name": "validationFailed",  "payload": "{ value } — error message string" },
+    "statsLoaded":      { "name": "statsLoaded",       "payload": "{ total, active, archived, topLang } — computed from DB.find" },
+    "repoSelected":     { "name": "repoSelected",      "payload": "{ _id, name, language, stars, status, author, description } — full record" },
+    "editClicked":      { "name": "editClicked",       "payload": "{} — populate form from selectedId, navigate form" },
+    "closeDetail":      { "name": "closeDetail",       "payload": "{} — hide detail body, show hint" },
+    "toggleCompact":    { "name": "toggleCompact",     "payload": "{} — toggleClass compact on repo list" },
+    "nameTyped":        { "name": "nameTyped",         "payload": "{ value } — live name for preview panel" },
+    "langTyped":        { "name": "langTyped",         "payload": "{ value } — live language for preview panel" },
+    "searchChanged":    { "name": "searchChanged",     "payload": "{ value } — fires pipeOut getRepos via M1" }
+  },
+
+  "views": {
+    "dashboard": { "name": "dashboard", "title": "Dashboard",  "description": "Stats, load data, and live event log" },
+    "explore":   { "name": "explore",   "title": "Explore",    "description": "Search, paginated list, and detail panel" },
+    "form":      { "name": "form",      "title": "Form",       "description": "Add or edit a repository — full CRUD form" }
+  },
+
+  "pipes": {
+    "getRepos": {
+      "name": "getRepos",
+      "method": "GET",
+      "endpoint": "/api/db/repos",
+      "collection": "repos",
+      "queryTemplate": "{{value}}",
+      "schema": [
+        { "key": "_id" }, { "key": "name" }, { "key": "language" },
+        { "key": "stars" }, { "key": "status" }, { "key": "author" }, { "key": "description" }
+      ],
+      "delay": 200,
+      "live": true,
+      "description": "GET all repos — {{value}} from pipeOut payload = live search term"
+    },
+    "postRepo": {
+      "name": "postRepo",
+      "method": "POST",
+      "endpoint": "/api/db/repos",
+      "collection": "repos",
+      "bodyTemplate": {
+        "name":        "{{name}}",
+        "language":    "{{language}}",
+        "stars":       "{{stars}}",
+        "status":      "{{status}}",
+        "author":      "{{author}}",
+        "description": "{{description}}"
+      },
+      "schema": [
+        { "key": "name" }, { "key": "language" }, { "key": "stars" },
+        { "key": "status" }, { "key": "author" }, { "key": "description" }
+      ],
+      "delay": 300,
+      "live": true,
+      "description": "POST new repo — bodyTemplate tokens resolved from runtimePayload in saveLogic"
+    },
+    "putRepo": {
+      "name": "putRepo",
+      "method": "PUT",
+      "endpoint": "/api/db/repos",
+      "urlTemplate": "/api/db/repos/{{editId}}",
+      "collection": "repos",
+      "bodyTemplate": {
+        "name":        "{{name}}",
+        "language":    "{{language}}",
+        "stars":       "{{stars}}",
+        "status":      "{{status}}",
+        "author":      "{{author}}",
+        "description": "{{description}}"
+      },
+      "schema": [
+        { "key": "name" }, { "key": "language" }, { "key": "stars" },
+        { "key": "status" }, { "key": "author" }, { "key": "description" }
+      ],
+      "delay": 300,
+      "live": true,
+      "description": "PUT update repo — urlTemplate injects {{editId}} from runtimePayload"
+    },
+    "deleteRepo": {
+      "name": "deleteRepo",
+      "method": "DELETE",
+      "endpoint": "/api/db/repos",
+      "urlTemplate": "/api/db/repos/{{editId}}",
+      "collection": "repos",
+      "schema": [],
+      "delay": 300,
+      "live": true,
+      "description": "DELETE repo by ID — urlTemplate injects {{editId}} from runtimePayload"
+    }
+  },
+
+  "loops": {
+    "repoList": {
+      "name": "repoList",
+      "description": "Paginated repo cards — 4/page, all template filters (INITIALS TITLE DEFAULT UPPER), click emits repoSelected",
+      "pipeName": "getRepos",
+      "targetId": "M29",
+      "dataField": "",
+      "clickEvent": "repoSelected",
+      "clickValueField": "_id",
+      "pageSize": 4,
+      "paginationId": "M30",
+      "template": "<div class=\"repo-row\" style=\"display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid #1a1a1a;box-sizing:border-box\" onclick=\"MCE_VARS['selectedId']='{{_id}}';MCE_VARS['selName']='{{name}}';MCE_VARS['selLang']='{{language}}';MCE_VARS['selStars']='{{stars}}';MCE_VARS['selStatus']='{{status}}';MCE_VARS['selAuthor']='{{author}}';MCE_VARS['selDesc']='{{description}}';EventBus.emit('repoSelected',{_id:'{{_id}}',name:'{{name}}',language:'{{language}}',stars:'{{stars}}',status:'{{status}}',author:'{{author}}',description:'{{description}}'})\"><div class=\"repo-avatar\">{{name|INITIALS}}</div><div style=\"flex:1;min-width:0\"><div class=\"repo-name\">{{name|TITLE}}</div><div class=\"repo-desc\">{{description|DEFAULT:No description yet}}</div></div><div style=\"display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0\"><span class=\"lang-badge lang-{{language}}\">{{language|UPPER}}</span><span class=\"repo-meta\">&#9733;{{stars}} &nbsp;{{_index}}/{{_total}}</span></div></div>"
+    }
+  },
+
+  "templates": {
+    "repoCard": {
+      "name": "repoCard",
+      "description": "Reusable repo card widget — avatar initials, name, description, and language badge",
+      "rootId": "TC1",
+      "machines": {
+        "TC1": {
+          "id": "TC1", "tag": "div", "text": "", "children": ["TC2","TC3","TC6"],
+          "css": { "display": "flex", "align-items": "center", "gap": "12px", "padding": "13px 16px", "border": "1px solid var(--brd)", "border-radius": "8px", "cursor": "pointer", "box-sizing": "border-box" },
+          "attrs": {}
+        },
+        "TC2": {
+          "id": "TC2", "tag": "div", "text": "RN", "children": [],
+          "css": { "width": "38px", "height": "38px", "border-radius": "50%", "background": "var(--bg2)", "display": "flex", "align-items": "center", "justify-content": "center", "font-weight": "700", "font-size": "13px", "color": "var(--txt1)", "flex-shrink": "0", "letter-spacing": "-1px" },
+          "attrs": {}
+        },
+        "TC3": {
+          "id": "TC3", "tag": "div", "text": "", "children": ["TC4","TC5"],
+          "css": { "display": "flex", "flex-direction": "column", "gap": "3px", "flex": "1", "min-width": "0" },
+          "attrs": {}
+        },
+        "TC4": {
+          "id": "TC4", "tag": "span", "text": "Repository Name", "children": [],
+          "css": { "color": "var(--txt1)", "font-size": "14px", "font-weight": "600", "white-space": "nowrap", "overflow": "hidden", "text-overflow": "ellipsis" },
+          "attrs": {}
+        },
+        "TC5": {
+          "id": "TC5", "tag": "span", "text": "Short description here", "children": [],
+          "css": { "color": "var(--txt3)", "font-size": "11px", "white-space": "nowrap", "overflow": "hidden", "text-overflow": "ellipsis" },
+          "attrs": {}
+        },
+        "TC6": {
+          "id": "TC6", "tag": "span", "text": "LANG", "children": [],
+          "css": { "font-size": "9px", "font-weight": "700", "padding": "2px 7px", "border-radius": "3px", "background": "var(--bg3)", "color": "var(--txt3)", "flex-shrink": "0", "letter-spacing": ".5px" },
+          "attrs": {}
+        }
+      }
+    }
+  },
+
+  "vars": {
+    "searchTerm": { "value": "",        "desc": "Live search query — appended as ?q= to getRepos queryTemplate",              "public": false },
+    "editId":     { "value": "",        "desc": "ID of repo being edited — empty = Add mode; set by selectRepoLogic (M37)",   "public": false },
+    "selectedId": { "value": "",        "desc": "ID of last clicked repo — set inline in loop template onclick before emit",  "public": false },
+    "formName":   { "value": "",        "desc": "Name input — captured via nameTyped varWire on M44",                         "public": false },
+    "formLang":   { "value": "",        "desc": "Language input — captured via langTyped varWire on M45",                     "public": false },
+    "formStars":  { "value": "0",       "desc": "Stars input — captured via starsTyped varWire on M46",                       "public": false },
+    "formStatus": { "value": "active",  "desc": "Status input — active | archived, captured via statusTyped varWire on M47",  "public": false },
+    "formAuthor": { "value": "",        "desc": "Author input — captured via authorTyped varWire on M48",                     "public": false },
+    "formDesc":   { "value": "",        "desc": "Description textarea — captured via descTyped varWire on M49",               "public": false },
+    "selName":    { "value": "",        "desc": "Name of last-clicked repo row — set by loop template onclick",                "public": false },
+    "selLang":    { "value": "",        "desc": "Language of last-clicked repo row",                                           "public": false },
+    "selStars":   { "value": "0",       "desc": "Stars of last-clicked repo row",                                              "public": false },
+    "selStatus":  { "value": "active",  "desc": "Status of last-clicked repo row",                                             "public": false },
+    "selAuthor":  { "value": "",        "desc": "Author of last-clicked repo row",                                             "public": false },
+    "selDesc":    { "value": "",        "desc": "Description of last-clicked repo row",                                        "public": false }
+  },
+
+  "css": ".nav-btn{background:transparent;border:1px solid #2a2a2a;color:#666;padding:5px 14px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;transition:all .15s}.nav-btn:hover{border-color:#444;color:#bbb}.nav-btn.nav-active{background:#5f4fe8;border-color:#5f4fe8;color:#fff}.badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 8px;background:#111;border:1px solid #1e1e1e;border-radius:11px;font-size:10px;font-weight:700;font-family:monospace;color:#555}.stat-card{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 10px;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;flex:1;gap:4px;text-align:center}.stat-num{font-size:26px;font-weight:900;color:#fff;font-family:monospace}.stat-label{font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px}.repo-row:hover{background:#0d0d0d !important}.repo-avatar{width:38px;height:38px;border-radius:50%;background:#111;border:1px solid #2a2a2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0;letter-spacing:-1px}.repo-name{color:#fff;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.repo-desc{color:#3a3a3a;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;transition:opacity .15s}.lang-badge{font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:3px}.lang-Python{background:rgba(53,114,165,.2);color:#4e94d1}.lang-Rust{background:rgba(222,122,81,.2);color:#e07548}.lang-Go{background:rgba(0,173,216,.15);color:#00add8}.lang-TypeScript{background:rgba(49,120,198,.2);color:#3178c6}.lang-JavaScript{background:rgba(247,223,30,.1);color:#b8a900}.repo-meta{font-size:10px;color:#333;font-family:monospace}.badge-new{background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.3);padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.5px}.badge-edit{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.3);padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.5px}.form-input{background:#050505;border:1px solid #1a1a1a;border-radius:6px;color:#fff;padding:9px 12px;font-size:13px;outline:none;width:100%;box-sizing:border-box;font-family:inherit;transition:border-color .15s;resize:vertical}.form-input:focus{border-color:#5f4fe8}.action-btn{border:none;border-radius:6px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s}.action-btn:hover{opacity:.85}.btn-primary{background:#5f4fe8;color:#fff}.btn-danger{background:transparent;border:1px solid #7f1d1d;color:#fca5a5}.btn-ghost{background:transparent;border:1px solid #2a2a2a;color:#666}.compact .repo-desc{display:none !important}.mce-pagination{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin:8px 0}.mce-pagination button{background:#0d0d0d;border:1px solid #1a1a1a;color:#444;border-radius:4px;padding:3px 9px;cursor:pointer;font-size:11px;font-family:monospace}.mce-pagination button:hover{background:#111;color:#aaa}.mce-pagination button[disabled]{opacity:.25;cursor:default}",
+
+  "logic": {
+    "M37": {
+      "blocks": [
+        {
+          "type": "if",
+          "condition": "true",
+          "code": "var id=MCE_VARS['selectedId']||'';if(!id){EventBus.emit('validationFailed',{value:'No repository selected — click a repo row first'});return;}MCE_VARS['editId']=id;EventBus.emit('editMode',{name:MCE_VARS['selName']||'',language:MCE_VARS['selLang']||'',stars:MCE_VARS['selStars']||'0',status:MCE_VARS['selStatus']||'active',author:MCE_VARS['selAuthor']||'',description:MCE_VARS['selDesc']||''});ViewSystem.navigate('form',{});",
+          "actions": [],
+          "children": []
+        }
+      ]
+    },
+    "M55": {
+      "blocks": [
+        {
+          "type": "if",
+          "condition": "true",
+          "code": "var nameEl=document.querySelector('[data-mce-id=\"M44\"]');var langEl=document.querySelector('[data-mce-id=\"M45\"]');var starsEl=document.querySelector('[data-mce-id=\"M46\"]');var statusEl=document.querySelector('[data-mce-id=\"M47\"]');var authorEl=document.querySelector('[data-mce-id=\"M48\"]');var descEl=document.querySelector('[data-mce-id=\"M49\"]');var n=nameEl?nameEl.value.trim():'';var l=langEl?langEl.value.trim():'';var s=starsEl?parseInt(starsEl.value)||0:0;var st=statusEl?statusEl.value.trim()||'active':'active';var a=authorEl?authorEl.value.trim():'';var d=descEl?descEl.value.trim():'';var id=MCE_VARS['editId']||'';if(!n){EventBus.emit('validationFailed',{value:'Repository name is required'});return;}var payload={name:n,language:l,stars:s,status:st,author:a,description:d};if(id){PipeSystem.execute('putRepo',{},Object.assign({},payload,{editId:id}));}else{PipeSystem.execute('postRepo',{},payload);}MCE_VARS['editId']='';ViewSystem.navigate('explore',{});",
+          "actions": [],
+          "children": []
+        }
+      ]
+    },
+    "M56": {
+      "blocks": [
+        {
+          "type": "if",
+          "condition": "true",
+          "code": "var id=MCE_VARS['editId']||'';if(!id){EventBus.emit('validationFailed',{value:'No repo selected for deletion'});return;}PipeSystem.execute('deleteRepo',{},{editId:id});MCE_VARS['editId']='';ViewSystem.navigate('explore',{});",
+          "actions": [],
+          "children": []
+        }
+      ]
+    },
+    "M58": {
+      "blocks": [
+        {
+          "type": "if",
+          "condition": "true",
+          "code": "var repos=(window._MCE_LOOP_DATA&&window._MCE_LOOP_DATA['repoList'])||DB.find('repos',{});var total=repos.length;var active=repos.filter(function(r){return r.status==='active';}).length;var archived=repos.filter(function(r){return r.status==='archived';}).length;var lc={};repos.forEach(function(r){if(r.language){lc[r.language]=(lc[r.language]||0)+1;}});var topLang=Object.keys(lc).sort(function(a,b){return lc[b]-lc[a];})[0]||'--';EventBus.emit('statsLoaded',{total:String(total),active:String(active),archived:String(archived),topLang:topLang});",
+          "actions": [],
+          "children": []
+        }
+      ]
+    },
+    "M59": {
+      "blocks": [
+        {
+          "type": "if",
+          "condition": "true",
+          "code": "MCE_VARS['editId']='';MCE_VARS['formName']='';MCE_VARS['formLang']='';MCE_VARS['formStars']='';MCE_VARS['formStatus']='';MCE_VARS['formAuthor']='';MCE_VARS['formDesc']='';",
+          "actions": [],
+          "children": []
+        }
+      ]
+    }
+  },
+
+  "machines": {
+
+    "M1": {
+      "id": "M1", "name": "app_root", "tag": "div", "text": "",
+      "css": { "display": "flex", "flex-direction": "column", "min-height": "100vh", "font-family": "var(--font)", "background": "var(--bg0)", "color": "var(--txt1)" },
+      "attrs": {},
+      "children": ["M2","M7","M8","M9","M21","M39","M58","M59"],
+      "parentId": null,
+      "wires": [
+        { "eventName": "goDashboard",   "targetId": "", "action": "navigate", "actionArgs": "dashboard" },
+        { "eventName": "goExplore",     "targetId": "", "action": "navigate", "actionArgs": "explore" },
+        { "eventName": "goForm",        "targetId": "", "action": "navigate", "actionArgs": "form" },
+        { "eventName": "goForm",        "targetId": "", "action": "emit",     "actionArgs": "formReset" },
+        { "eventName": "searchChanged", "targetId": "", "action": "pipeOut",  "actionArgs": "getRepos" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M2": {
+      "id": "M2", "name": "nav", "tag": "nav", "text": "",
+      "css": { "display": "flex", "align-items": "center", "gap": "6px", "padding": "12px 20px", "background": "var(--bg1)", "border-bottom": "1px solid var(--brd)", "flex-shrink": "0" },
+      "attrs": {},
+      "children": ["M3","M4","M5","M6"],
+      "parentId": "M1",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M3": {
+      "id": "M3", "name": "btn_dash", "tag": "button", "text": "Dashboard",
+      "css": {}, "attrs": { "class": "nav-btn nav-active" },
+      "children": [], "parentId": "M2",
+      "wires": [
+        { "eventName": "goDashboard", "targetId": "", "action": "addClass",    "actionArgs": "nav-active" },
+        { "eventName": "goExplore",   "targetId": "", "action": "removeClass", "actionArgs": "nav-active" },
+        { "eventName": "goForm",      "targetId": "", "action": "removeClass", "actionArgs": "nav-active" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "goDashboard",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M4": {
+      "id": "M4", "name": "btn_explore", "tag": "button", "text": "Explore",
+      "css": {}, "attrs": { "class": "nav-btn" },
+      "children": [], "parentId": "M2",
+      "wires": [
+        { "eventName": "goExplore",   "targetId": "", "action": "addClass",    "actionArgs": "nav-active" },
+        { "eventName": "goDashboard", "targetId": "", "action": "removeClass", "actionArgs": "nav-active" },
+        { "eventName": "goForm",      "targetId": "", "action": "removeClass", "actionArgs": "nav-active" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "goExplore",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M5": {
+      "id": "M5", "name": "btn_form", "tag": "button", "text": "Add Repo",
+      "css": {}, "attrs": { "class": "nav-btn" },
+      "children": [], "parentId": "M2",
+      "wires": [
+        { "eventName": "goForm",      "targetId": "", "action": "addClass",    "actionArgs": "nav-active" },
+        { "eventName": "goDashboard", "targetId": "", "action": "removeClass", "actionArgs": "nav-active" },
+        { "eventName": "goExplore",   "targetId": "", "action": "removeClass", "actionArgs": "nav-active" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "goForm",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M6": {
+      "id": "M6", "name": "nav_count", "tag": "span", "text": "—",
+      "css": { "margin-left": "auto" }, "attrs": { "class": "badge" },
+      "children": [], "parentId": "M2",
+      "wires": [
+        { "eventName": "statsLoaded", "targetId": "", "action": "setText", "actionArgs": "{{total}}" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M7": {
+      "id": "M7", "name": "toast", "tag": "div", "text": "",
+      "css": { "display": "none", "padding": "10px 20px", "background": "#0e1f0e", "border-bottom": "1px solid #1a4a1a", "color": "#4ade80", "font-size": "13px", "font-family": "monospace", "flex-shrink": "0" },
+      "attrs": {},
+      "children": [], "parentId": "M1",
+      "wires": [
+        { "eventName": "pipe:postRepo:written",   "targetId": "", "action": "fadeIn",  "actionArgs": "" },
+        { "eventName": "pipe:postRepo:written",   "targetId": "", "action": "setText", "actionArgs": "✓ Repository added successfully" },
+        { "eventName": "pipe:putRepo:written",    "targetId": "", "action": "fadeIn",  "actionArgs": "" },
+        { "eventName": "pipe:putRepo:written",    "targetId": "", "action": "setText", "actionArgs": "✓ Repository updated" },
+        { "eventName": "pipe:deleteRepo:written", "targetId": "", "action": "fadeIn",  "actionArgs": "" },
+        { "eventName": "pipe:deleteRepo:written", "targetId": "", "action": "setText", "actionArgs": "✓ Repository deleted" },
+        { "eventName": "validationFailed",        "targetId": "", "action": "fadeIn",  "actionArgs": "" },
+        { "eventName": "validationFailed",        "targetId": "", "action": "setText", "actionArgs": "✗ {{value}}" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M8": {
+      "id": "M8", "name": "refresh_trigger", "tag": "div", "text": "",
+      "css": { "display": "none" }, "attrs": {},
+      "children": [], "parentId": "M1",
+      "wires": [
+        { "eventName": "pipe:postRepo:written",   "targetId": "", "action": "pipeOut", "actionArgs": "getRepos" },
+        { "eventName": "pipe:putRepo:written",    "targetId": "", "action": "pipeOut", "actionArgs": "getRepos" },
+        { "eventName": "pipe:deleteRepo:written", "targetId": "", "action": "pipeOut", "actionArgs": "getRepos" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M9": {
+      "id": "M9", "name": "view_dashboard", "tag": "div", "text": "",
+      "css": { "display": "flex", "flex-direction": "column", "gap": "20px", "padding": "24px", "max-width": "720px", "width": "100%", "margin": "0 auto", "box-sizing": "border-box" },
+      "attrs": {},
+      "children": ["M10","M11","M12","M17","M20"],
+      "parentId": "M1",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": "dashboard", "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M10": {
+      "id": "M10", "name": "dash_title", "tag": "h1", "text": "DevVault",
+      "css": { "color": "var(--txt1)", "font-size": "28px", "font-weight": "900", "margin": "0", "letter-spacing": "-1px" },
+      "attrs": {},
+      "children": [], "parentId": "M9",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M11": {
+      "id": "M11", "name": "dash_sub", "tag": "p",
+      "text": "Open-source repository tracker — load data to see all MCEngine features in action",
+      "css": { "color": "var(--txt3)", "font-size": "13px", "margin": "0", "line-height": "1.5" },
+      "attrs": {},
+      "children": [], "parentId": "M9",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M12": {
+      "id": "M12", "name": "stats_row", "tag": "div", "text": "",
+      "css": { "display": "flex", "gap": "10px" },
+      "attrs": {},
+      "children": ["M13","M14","M15","M16"],
+      "parentId": "M9",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M13": {
+      "id": "M13", "name": "s_total", "tag": "div",
+      "text": "<span class=\"stat-num\">—</span><br><span class=\"stat-label\">Total</span>",
+      "css": {}, "attrs": { "class": "stat-card" },
+      "children": [], "parentId": "M12",
+      "wires": [
+        { "eventName": "statsLoaded", "targetId": "", "action": "setHTML", "actionArgs": "<span class=\"stat-num\">{{total}}</span><br><span class=\"stat-label\">Total</span>" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M14": {
+      "id": "M14", "name": "s_active", "tag": "div",
+      "text": "<span class=\"stat-num\">—</span><br><span class=\"stat-label\">Active</span>",
+      "css": {}, "attrs": { "class": "stat-card" },
+      "children": [], "parentId": "M12",
+      "wires": [
+        { "eventName": "statsLoaded", "targetId": "", "action": "setHTML", "actionArgs": "<span class=\"stat-num\">{{active}}</span><br><span class=\"stat-label\">Active</span>" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M15": {
+      "id": "M15", "name": "s_archived", "tag": "div",
+      "text": "<span class=\"stat-num\">—</span><br><span class=\"stat-label\">Archived</span>",
+      "css": {}, "attrs": { "class": "stat-card" },
+      "children": [], "parentId": "M12",
+      "wires": [
+        { "eventName": "statsLoaded", "targetId": "", "action": "setHTML", "actionArgs": "<span class=\"stat-num\">{{archived}}</span><br><span class=\"stat-label\">Archived</span>" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M16": {
+      "id": "M16", "name": "s_lang", "tag": "div",
+      "text": "<span class=\"stat-num\" style=\"font-size:18px\">—</span><br><span class=\"stat-label\">Top Language</span>",
+      "css": {}, "attrs": { "class": "stat-card" },
+      "children": [], "parentId": "M12",
+      "wires": [
+        { "eventName": "statsLoaded", "targetId": "", "action": "setHTML", "actionArgs": "<span class=\"stat-num\" style=\"font-size:18px\">{{topLang}}</span><br><span class=\"stat-label\">Top Language</span>" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M17": {
+      "id": "M17", "name": "dash_btns", "tag": "div", "text": "",
+      "css": { "display": "flex", "gap": "10px", "flex-wrap": "wrap" },
+      "attrs": {},
+      "children": ["M18","M19"],
+      "parentId": "M9",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M18": {
+      "id": "M18", "name": "load_btn", "tag": "button", "text": "Load Data",
+      "css": {}, "attrs": { "class": "action-btn btn-primary" },
+      "children": [], "parentId": "M17",
+      "wires": [
+        { "eventName": "goDashLoad", "targetId": "", "action": "pipeOut", "actionArgs": "getRepos" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "goDashLoad",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M19": {
+      "id": "M19", "name": "new_btn", "tag": "button", "text": "Add Repository",
+      "css": {}, "attrs": { "class": "action-btn btn-ghost" },
+      "children": [], "parentId": "M17",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "goForm",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M20": {
+      "id": "M20", "name": "event_log", "tag": "div",
+      "text": "Waiting for events — click Load Data to begin",
+      "css": { "padding": "12px 14px", "background": "var(--bg1)", "border": "1px solid var(--brd)", "border-radius": "6px", "color": "#38bdf8", "font-size": "12px", "font-family": "monospace", "min-height": "40px" },
+      "attrs": {},
+      "children": [], "parentId": "M9",
+      "wires": [
+        { "eventName": "goDashLoad",              "targetId": "", "action": "setText", "actionArgs": "→ goDashLoad — pipeOut:getRepos fired, loading..." },
+        { "eventName": "statsLoaded",             "targetId": "", "action": "setText", "actionArgs": "✓ statsLoaded — total:{{total}}  active:{{active}}  archived:{{archived}}  top:{{topLang}}" },
+        { "eventName": "repoSelected",            "targetId": "", "action": "setText", "actionArgs": "→ repoSelected — {{name}} ({{language}} ★{{stars}})" },
+        { "eventName": "editMode",                "targetId": "", "action": "setText", "actionArgs": "→ editMode — editing «{{name}}», editId captured" },
+        { "eventName": "formReset",               "targetId": "", "action": "setText", "actionArgs": "→ formReset — form cleared, editId reset to ''" },
+        { "eventName": "validationFailed",        "targetId": "", "action": "setText", "actionArgs": "✗ validationFailed — {{value}}" },
+        { "eventName": "pipe:postRepo:written",   "targetId": "", "action": "setText", "actionArgs": "✓ pipe:postRepo:written — new repo saved to collection" },
+        { "eventName": "pipe:putRepo:written",    "targetId": "", "action": "setText", "actionArgs": "✓ pipe:putRepo:written — repo record updated" },
+        { "eventName": "pipe:deleteRepo:written", "targetId": "", "action": "setText", "actionArgs": "✓ pipe:deleteRepo:written — repo removed from collection" },
+        { "eventName": "searchChanged",           "targetId": "", "action": "setText", "actionArgs": "→ searchChanged — query: \"{{value}}\" — pipeOut getRepos fired" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M21": {
+      "id": "M21", "name": "view_explore", "tag": "div", "text": "",
+      "css": { "display": "flex", "flex-direction": "column", "gap": "16px", "padding": "24px", "max-width": "720px", "width": "100%", "margin": "0 auto", "box-sizing": "border-box" },
+      "attrs": {},
+      "children": ["M22","M26","M29","M30","M31"],
+      "parentId": "M1",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": "explore", "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M22": {
+      "id": "M22", "name": "exp_hdr", "tag": "div", "text": "",
+      "css": { "display": "flex", "align-items": "center", "gap": "10px", "border-bottom": "1px solid var(--brd)", "padding-bottom": "14px", "flex-wrap": "wrap" },
+      "attrs": {},
+      "children": ["M23","M24","M25"],
+      "parentId": "M21",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M23": {
+      "id": "M23", "name": "exp_title", "tag": "h2", "text": "Repositories",
+      "css": { "color": "var(--txt1)", "font-size": "20px", "font-weight": "900", "margin": "0" },
+      "attrs": {},
+      "children": [], "parentId": "M22",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M24": {
+      "id": "M24", "name": "exp_count", "tag": "span", "text": "— repos",
+      "css": {}, "attrs": { "class": "badge" },
+      "children": [], "parentId": "M22",
+      "wires": [
+        { "eventName": "statsLoaded", "targetId": "", "action": "setText", "actionArgs": "{{total}} repos" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M25": {
+      "id": "M25", "name": "compact_toggle", "tag": "button", "text": "Compact",
+      "css": { "margin-left": "auto", "font-size": "11px", "padding": "4px 10px" }, "attrs": { "class": "action-btn btn-ghost" },
+      "children": [], "parentId": "M22",
+      "wires": [
+        { "eventName": "toggleCompact", "targetId": "M29", "action": "toggleClass", "actionArgs": "compact" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "toggleCompact",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M26": {
+      "id": "M26", "name": "search_row", "tag": "div", "text": "",
+      "css": { "display": "flex", "gap": "8px" },
+      "attrs": {},
+      "children": ["M27","M28"],
+      "parentId": "M21",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M27": {
+      "id": "M27", "name": "search_input", "tag": "input", "text": "",
+      "css": { "flex": "1" },
+      "attrs": { "placeholder": "Search repositories...", "type": "search", "class": "form-input", "autocomplete": "off" },
+      "children": [], "parentId": "M26",
+      "wires": [
+        { "eventName": "formReset", "targetId": "", "action": "setValue", "actionArgs": "" }
+      ],
+      "varWires": [
+        { "eventName": "searchChanged", "varName": "searchTerm", "fromId": "" }
+      ],
+      "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "searchChanged", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M28": {
+      "id": "M28", "name": "search_btn", "tag": "button", "text": "Search",
+      "css": {}, "attrs": { "class": "action-btn btn-primary" },
+      "children": [], "parentId": "M26",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "M27", "eventName": "searchChanged" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M29": {
+      "id": "M29", "name": "repo_list", "tag": "div",
+      "text": "<p style=\"color:#333;font-size:12px;padding:12px 0\">Load data via Dashboard, or type in the search box above.</p>",
+      "css": { "border": "1px solid var(--brd)", "border-radius": "8px", "overflow": "hidden", "min-height": "60px" },
+      "attrs": {},
+      "children": [], "parentId": "M21",
+      "wires": [], "varWires": [],
+      "pipeBindings": [{ "pipeName": "getRepos", "action": "log" }],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M30": {
+      "id": "M30", "name": "pagination", "tag": "div", "text": "",
+      "css": {}, "attrs": {},
+      "children": [], "parentId": "M21",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M31": {
+      "id": "M31", "name": "detail_area", "tag": "div", "text": "",
+      "css": { "padding": "16px", "background": "var(--bg1)", "border": "1px solid var(--brd)", "border-radius": "8px" },
+      "attrs": {},
+      "children": ["M32","M33","M34","M35","M36"],
+      "parentId": "M21",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M32": {
+      "id": "M32", "name": "detail_hint", "tag": "p",
+      "text": "← select a repository from the list to inspect",
+      "css": { "color": "#333", "font-size": "12px", "margin": "0", "font-style": "italic" },
+      "attrs": {},
+      "children": [], "parentId": "M31",
+      "wires": [
+        { "eventName": "repoSelected", "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "closeDetail",  "targetId": "", "action": "show", "actionArgs": "" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M33": {
+      "id": "M33", "name": "detail_title", "tag": "h3", "text": "",
+      "css": { "display": "none", "color": "var(--txt1)", "font-size": "18px", "font-weight": "900", "margin": "0 0 6px" },
+      "attrs": {},
+      "children": [], "parentId": "M31",
+      "wires": [
+        { "eventName": "repoSelected", "targetId": "", "action": "show",    "actionArgs": "" },
+        { "eventName": "repoSelected", "targetId": "", "action": "setText", "actionArgs": "{{name}}" },
+        { "eventName": "closeDetail",  "targetId": "", "action": "hide",    "actionArgs": "" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M34": {
+      "id": "M34", "name": "detail_meta", "tag": "div", "text": "",
+      "css": { "display": "none", "font-family": "monospace", "font-size": "11px", "color": "#555", "margin-bottom": "8px" },
+      "attrs": {},
+      "children": [], "parentId": "M31",
+      "wires": [
+        { "eventName": "repoSelected", "targetId": "", "action": "show",    "actionArgs": "" },
+        { "eventName": "repoSelected", "targetId": "", "action": "setHTML", "actionArgs": "<span class=\"lang-badge lang-{{language}}\">{{language}}</span> &nbsp;&#9733; {{stars}} &nbsp;&middot;&nbsp; {{status}}" },
+        { "eventName": "closeDetail",  "targetId": "", "action": "hide",    "actionArgs": "" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M35": {
+      "id": "M35", "name": "detail_desc", "tag": "p", "text": "",
+      "css": { "display": "none", "color": "var(--txt2)", "font-size": "13px", "line-height": "1.5", "margin": "0 0 14px" },
+      "attrs": {},
+      "children": [], "parentId": "M31",
+      "wires": [
+        { "eventName": "repoSelected", "targetId": "", "action": "show",    "actionArgs": "" },
+        { "eventName": "repoSelected", "targetId": "", "action": "setText", "actionArgs": "{{description}}" },
+        { "eventName": "closeDetail",  "targetId": "", "action": "hide",    "actionArgs": "" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M36": {
+      "id": "M36", "name": "detail_btns", "tag": "div", "text": "",
+      "css": { "display": "none", "flex-direction": "row", "gap": "8px" },
+      "attrs": {},
+      "children": ["M37","M38"],
+      "parentId": "M31",
+      "wires": [
+        { "eventName": "repoSelected", "targetId": "", "action": "show", "actionArgs": "" },
+        { "eventName": "closeDetail",  "targetId": "", "action": "hide", "actionArgs": "" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M37": {
+      "id": "M37", "name": "edit_btn", "tag": "button", "text": "Edit →",
+      "css": {}, "attrs": { "class": "action-btn btn-primary", "onclick": "LogicSystem.run('M37',{})" },
+      "children": [], "parentId": "M36",
+      "wires": [],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M38": {
+      "id": "M38", "name": "close_btn", "tag": "button", "text": "✕ Close",
+      "css": {}, "attrs": { "class": "action-btn btn-ghost" },
+      "children": [], "parentId": "M36",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "closeDetail",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M39": {
+      "id": "M39", "name": "view_form", "tag": "div", "text": "",
+      "css": { "display": "flex", "flex-direction": "column", "gap": "20px", "padding": "24px", "max-width": "520px", "width": "100%", "margin": "0 auto", "box-sizing": "border-box" },
+      "attrs": {},
+      "children": ["M40","M43","M50","M54"],
+      "parentId": "M1",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": "form", "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M40": {
+      "id": "M40", "name": "form_hdr", "tag": "div", "text": "",
+      "css": { "display": "flex", "align-items": "center", "gap": "12px", "border-bottom": "1px solid var(--brd)", "padding-bottom": "14px" },
+      "attrs": {},
+      "children": ["M41","M42"],
+      "parentId": "M39",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M41": {
+      "id": "M41", "name": "form_heading", "tag": "h2", "text": "Add Repository",
+      "css": { "color": "var(--txt1)", "font-size": "20px", "font-weight": "900", "margin": "0", "flex": "1" },
+      "attrs": {},
+      "children": [], "parentId": "M40",
+      "wires": [
+        { "eventName": "formReset", "targetId": "", "action": "setText", "actionArgs": "Add Repository" },
+        { "eventName": "editMode",  "targetId": "", "action": "setText", "actionArgs": "Edit Repository" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M42": {
+      "id": "M42", "name": "form_badge", "tag": "span", "text": "NEW",
+      "css": {}, "attrs": { "class": "badge-new" },
+      "children": [], "parentId": "M40",
+      "wires": [
+        { "eventName": "formReset", "targetId": "", "action": "setText",      "actionArgs": "NEW" },
+        { "eventName": "formReset", "targetId": "", "action": "addClass",     "actionArgs": "badge-new" },
+        { "eventName": "formReset", "targetId": "", "action": "removeClass",  "actionArgs": "badge-edit" },
+        { "eventName": "editMode",  "targetId": "", "action": "setText",      "actionArgs": "EDITING" },
+        { "eventName": "editMode",  "targetId": "", "action": "addClass",     "actionArgs": "badge-edit" },
+        { "eventName": "editMode",  "targetId": "", "action": "removeClass",  "actionArgs": "badge-new" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M43": {
+      "id": "M43", "name": "form_fields", "tag": "div", "text": "",
+      "css": { "display": "flex", "flex-direction": "column", "gap": "10px" },
+      "attrs": {},
+      "children": ["M44","M45","M46","M47","M48","M49"],
+      "parentId": "M39",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M44": {
+      "id": "M44", "name": "f_name", "tag": "input", "text": "",
+      "css": {}, "attrs": { "placeholder": "Repository name...", "type": "text", "class": "form-input", "autocomplete": "off" },
+      "children": [], "parentId": "M43",
+      "wires": [
+        { "eventName": "formReset", "targetId": "", "action": "setValue", "actionArgs": "" },
+        { "eventName": "editMode",  "targetId": "", "action": "setValue", "actionArgs": "{{name}}" }
+      ],
+      "varWires": [
+        { "eventName": "nameTyped", "varName": "formName", "fromId": "" }
+      ],
+      "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "nameTyped", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M45": {
+      "id": "M45", "name": "f_lang", "tag": "input", "text": "",
+      "css": {}, "attrs": { "placeholder": "Language (Python, Rust, Go...)", "type": "text", "class": "form-input", "autocomplete": "off" },
+      "children": [], "parentId": "M43",
+      "wires": [
+        { "eventName": "formReset", "targetId": "", "action": "setValue", "actionArgs": "" },
+        { "eventName": "editMode",  "targetId": "", "action": "setValue", "actionArgs": "{{language}}" }
+      ],
+      "varWires": [
+        { "eventName": "langTyped", "varName": "formLang", "fromId": "" }
+      ],
+      "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "langTyped", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M46": {
+      "id": "M46", "name": "f_stars", "tag": "input", "text": "",
+      "css": {}, "attrs": { "placeholder": "Stars (e.g. 1000)", "type": "number", "class": "form-input", "min": "0" },
+      "children": [], "parentId": "M43",
+      "wires": [
+        { "eventName": "formReset", "targetId": "", "action": "setValue", "actionArgs": "" },
+        { "eventName": "editMode",  "targetId": "", "action": "setValue", "actionArgs": "{{stars}}" }
+      ],
+      "varWires": [
+        { "eventName": "starsTyped", "varName": "formStars", "fromId": "" }
+      ],
+      "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "starsTyped", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M47": {
+      "id": "M47", "name": "f_status", "tag": "input", "text": "",
+      "css": {}, "attrs": { "placeholder": "active or archived", "type": "text", "class": "form-input", "autocomplete": "off" },
+      "children": [], "parentId": "M43",
+      "wires": [
+        { "eventName": "formReset", "targetId": "", "action": "setValue", "actionArgs": "active" },
+        { "eventName": "editMode",  "targetId": "", "action": "setValue", "actionArgs": "{{status}}" }
+      ],
+      "varWires": [
+        { "eventName": "statusTyped", "varName": "formStatus", "fromId": "" }
+      ],
+      "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "statusTyped", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M48": {
+      "id": "M48", "name": "f_author", "tag": "input", "text": "",
+      "css": {}, "attrs": { "placeholder": "Author name...", "type": "text", "class": "form-input", "autocomplete": "off" },
+      "children": [], "parentId": "M43",
+      "wires": [
+        { "eventName": "formReset", "targetId": "", "action": "setValue", "actionArgs": "" },
+        { "eventName": "editMode",  "targetId": "", "action": "setValue", "actionArgs": "{{author}}" }
+      ],
+      "varWires": [
+        { "eventName": "authorTyped", "varName": "formAuthor", "fromId": "" }
+      ],
+      "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "authorTyped", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M49": {
+      "id": "M49", "name": "f_desc", "tag": "textarea", "text": "",
+      "css": {}, "attrs": { "placeholder": "Short description...", "rows": "3", "class": "form-input" },
+      "children": [], "parentId": "M43",
+      "wires": [
+        { "eventName": "formReset", "targetId": "", "action": "setValue", "actionArgs": "" },
+        { "eventName": "editMode",  "targetId": "", "action": "setValue", "actionArgs": "{{description}}" }
+      ],
+      "varWires": [
+        { "eventName": "descTyped", "varName": "formDesc", "fromId": "" }
+      ],
+      "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "descTyped", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M50": {
+      "id": "M50", "name": "preview_box", "tag": "div", "text": "",
+      "css": { "display": "flex", "align-items": "center", "gap": "12px", "padding": "12px 14px", "background": "var(--bg1)", "border": "1px solid var(--brd)", "border-radius": "6px" },
+      "attrs": {},
+      "children": ["M51","M52","M53"],
+      "parentId": "M39",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M51": {
+      "id": "M51", "name": "preview_label", "tag": "span", "text": "Preview →",
+      "css": { "color": "#444", "font-size": "10px", "text-transform": "uppercase", "letter-spacing": "1px", "flex-shrink": "0" },
+      "attrs": {},
+      "children": [], "parentId": "M50",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M52": {
+      "id": "M52", "name": "preview_name", "tag": "span", "text": "—",
+      "css": { "color": "var(--txt1)", "font-size": "13px", "font-weight": "600", "flex": "1" },
+      "attrs": {},
+      "children": [], "parentId": "M50",
+      "wires": [
+        { "eventName": "nameTyped",  "targetId": "", "action": "setText", "actionArgs": "{{THIS.VALUE}}" },
+        { "eventName": "formReset",  "targetId": "", "action": "setText", "actionArgs": "—" },
+        { "eventName": "editMode",   "targetId": "", "action": "setText", "actionArgs": "{{name}}" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M53": {
+      "id": "M53", "name": "preview_lang", "tag": "span", "text": "—",
+      "css": { "font-size": "9px", "font-weight": "700", "padding": "2px 7px", "border-radius": "3px", "background": "#111", "color": "#555", "flex-shrink": "0", "letter-spacing": ".5px" },
+      "attrs": {},
+      "children": [], "parentId": "M50",
+      "wires": [
+        { "eventName": "langTyped",  "targetId": "", "action": "setText", "actionArgs": "{{THIS.VALUE}}" },
+        { "eventName": "formReset",  "targetId": "", "action": "setText", "actionArgs": "—" },
+        { "eventName": "editMode",   "targetId": "", "action": "setText", "actionArgs": "{{language}}" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "UPPER", "arg": "" }
+    },
+
+    "M54": {
+      "id": "M54", "name": "form_footer", "tag": "div", "text": "",
+      "css": { "display": "flex", "gap": "10px", "border-top": "1px solid var(--brd)", "padding-top": "14px", "flex-wrap": "wrap" },
+      "attrs": {},
+      "children": ["M55","M56","M57"],
+      "parentId": "M39",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M55": {
+      "id": "M55", "name": "save_btn", "tag": "button", "text": "Save Repository",
+      "css": {}, "attrs": { "class": "action-btn btn-primary", "onclick": "LogicSystem.run('M55',{})" },
+      "children": [], "parentId": "M54",
+      "wires": [],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M56": {
+      "id": "M56", "name": "delete_btn", "tag": "button", "text": "Delete",
+      "css": { "display": "none" }, "attrs": { "class": "action-btn btn-danger", "onclick": "LogicSystem.run('M56',{})" },
+      "children": [], "parentId": "M54",
+      "wires": [
+        { "eventName": "formReset", "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "editMode",  "targetId": "", "action": "show", "actionArgs": "" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M57": {
+      "id": "M57", "name": "cancel_btn", "tag": "button", "text": "Cancel",
+      "css": {}, "attrs": { "class": "action-btn btn-ghost" },
+      "children": [], "parentId": "M54",
+      "wires": [], "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "goExplore",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M58": {
+      "id": "M58", "name": "stats_runner", "tag": "div", "text": "",
+      "css": { "display": "none" }, "attrs": {},
+      "children": [], "parentId": "M1",
+      "wires": [
+        { "eventName": "loop:repoList:rendered", "targetId": "", "action": "runLogic", "actionArgs": "M58" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    },
+
+    "M59": {
+      "id": "M59", "name": "reset_runner", "tag": "div", "text": "",
+      "css": { "display": "none" }, "attrs": {},
+      "children": [], "parentId": "M1",
+      "wires": [
+        { "eventName": "formReset", "targetId": "", "action": "runLogic", "actionArgs": "M59" }
+      ],
+      "varWires": [], "pipeBindings": [],
+      "viewBinding": null, "dbSource": null,
+      "emitOnInput": "", "emitOnClick": "",
+      "transferOnClick": { "fromId": "", "eventName": "" },
+      "inputTransform":  { "filter": "", "arg": "" },
+      "outputTransform": { "filter": "", "arg": "" }
+    }
+
+  }
+}

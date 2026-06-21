@@ -1,0 +1,198 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "Photo Gallery — list to detail" },
+  "_nextId": 30,
+  "runtimeStyle": "ocean",
+  "rootOrder": ["M1"],
+
+  "events": {
+    "selectPhoto": { "name": "selectPhoto", "payload": "{ value, url, title, caption, _id } — full doc of clicked photo" },
+    "goGallery":   { "name": "goGallery",   "payload": "{} — navigate back to the gallery view" }
+  },
+
+  "pipes": {
+    "getPhotos": {
+      "name": "getPhotos",
+      "method": "GET",
+      "collection": "photos",
+      "endpoint": "/api/db/photos",
+      "delay": 0,
+      "live": false
+    }
+  },
+
+  "views": {
+    "gallery": { "name": "gallery", "title": "Gallery", "description": "Photo grid view", "params": [] },
+    "photo":   { "name": "photo",   "title": "Photo",   "description": "Single photo detail", "params": ["_id"] }
+  },
+
+  "loops": {
+    "photoGrid": {
+      "name": "photoGrid",
+      "pipeName": "getPhotos",
+      "targetId": "M10",
+      "dataField": "",
+      "clickEvent": "selectPhoto",
+      "clickView": "photo",
+      "clickValueField": "url",
+      "description": "Click any card → emits selectPhoto + navigates to photo view with ?_id in URL",
+      "template": "<div style=\"overflow:hidden;border-radius:10px;background:#111827;border:1px solid #1e1e3e\"><img src=\"{{url}}\" style=\"width:100%;aspect-ratio:1;object-fit:cover;display:block\" loading=\"lazy\"/><div style=\"padding:10px 12px\"><div style=\"color:#e2e8f0;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis\">{{title}}</div><div style=\"color:#475569;font-size:11px;margin-top:2px\">{{caption}}</div></div></div>"
+    }
+  },
+
+  "vars": {},
+  "logic": {},
+
+  "dbCollections": [
+    {
+      "name": "photos",
+      "isArray": true,
+      "seed": [
+        { "url": "https://magiccatengine.com/media/6a1979decb515bdb9196f94b/05_1780263489291.jpg", "title": "Photo 1", "caption": "A stunning shot" },
+        { "url": "https://magiccatengine.com/media/6a1979decb515bdb9196f94b/04_1780263489289.jpg", "title": "Photo 2", "caption": "Golden light" },
+        { "url": "https://magiccatengine.com/media/6a1979decb515bdb9196f94b/03_1780263489284.jpg", "title": "Photo 3", "caption": "Perfect composition" },
+        { "url": "https://magiccatengine.com/media/6a1979decb515bdb9196f94b/02_1780263489280.jpg", "title": "Photo 4", "caption": "Captured in motion" },
+        { "url": "https://magiccatengine.com/media/6a1979decb515bdb9196f94b/02_1780263489280.jpg", "title": "Photo 5", "caption": "Still life" }
+      ]
+    }
+  ],
+
+  "machines": {
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2", "M20"],
+      "css": {
+        "minHeight": "100vh",
+        "background": "#080812",
+        "fontFamily": "system-ui, sans-serif"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "view:gallery", "targetId": "", "action": "pipeOut",  "actionArgs": "getPhotos" },
+        { "eventName": "goGallery",    "targetId": "", "action": "navigate", "actionArgs": "gallery"   }
+      ],
+      "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2", "name": "gallery_view", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M3", "M4", "M10"],
+      "css": {
+        "padding": "48px 40px",
+        "maxWidth": "1200px",
+        "margin": "0 auto"
+      },
+      "attrs": {}, "wires": [],
+      "viewBinding": "gallery"
+    },
+
+    "M3": {
+      "id": "M3", "name": "gallery_title", "tag": "h1",
+      "text": "Gallery",
+      "parentId": "M2", "children": [],
+      "css": { "color": "#e2e8f0", "fontSize": "36px", "fontWeight": "900", "margin": "0 0 6px 0", "letterSpacing": "-1px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4", "name": "gallery_hint", "tag": "p",
+      "text": "Click any photo to view it full size.",
+      "parentId": "M2", "children": [],
+      "css": { "color": "#475569", "fontSize": "13px", "margin": "0 0 28px 0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M10": {
+      "id": "M10", "name": "photo_grid", "tag": "div",
+      "text": "", "parentId": "M2", "children": [],
+      "css": {
+        "display": "grid",
+        "gridTemplateColumns": "repeat(auto-fill, minmax(200px, 1fr))",
+        "gap": "12px"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M20": {
+      "id": "M20", "name": "photo_view", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M21", "M22", "M23", "M24"],
+      "css": {
+        "padding": "40px",
+        "maxWidth": "860px",
+        "margin": "0 auto",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "20px",
+        "minHeight": "100vh"
+      },
+      "attrs": {}, "wires": [],
+      "viewBinding": "photo"
+    },
+
+    "M21": {
+      "id": "M21", "name": "back_btn", "tag": "button",
+      "text": "← Back to Gallery",
+      "parentId": "M20", "children": [],
+      "css": {
+        "display": "inline-block",
+        "padding": "8px 18px",
+        "background": "transparent",
+        "color": "#a78bfa",
+        "border": "1px solid #3a3a5c",
+        "borderRadius": "6px",
+        "fontSize": "13px",
+        "fontWeight": "600",
+        "cursor": "pointer",
+        "alignSelf": "flex-start"
+      },
+      "attrs": {},
+      "emitOnClick": "goGallery",
+      "wires": [], "viewBinding": null
+    },
+
+    "M22": {
+      "id": "M22", "name": "photo_display", "tag": "div",
+      "text": "",
+      "parentId": "M20", "children": [],
+      "css": {
+        "width": "100%",
+        "borderRadius": "12px",
+        "overflow": "hidden",
+        "background": "#111827",
+        "minHeight": "300px",
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "selectPhoto", "targetId": "", "action": "setHTML", "actionArgs": "<img src=\"{{url}}\" style=\"width:100%;max-height:75vh;object-fit:contain;display:block\" />" }
+      ],
+      "viewBinding": null
+    },
+
+    "M23": {
+      "id": "M23", "name": "photo_title", "tag": "h2",
+      "text": "",
+      "parentId": "M20", "children": [],
+      "css": { "color": "#e2e8f0", "fontSize": "24px", "fontWeight": "800", "margin": "0", "letterSpacing": "-0.5px" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "selectPhoto", "targetId": "", "action": "setText", "actionArgs": "{{title}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M24": {
+      "id": "M24", "name": "photo_caption", "tag": "p",
+      "text": "",
+      "parentId": "M20", "children": [],
+      "css": { "color": "#64748b", "fontSize": "15px", "lineHeight": "1.7", "margin": "0" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "selectPhoto", "targetId": "", "action": "setText", "actionArgs": "{{caption}}" }
+      ],
+      "viewBinding": null
+    }
+  }
+}

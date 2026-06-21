@@ -3,6 +3,7 @@ const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
 const { requireLogin } = require('../middleware/auth');
+const User    = require('../models/User');
 
 const router     = express.Router();
 const MEDIA_ROOT = path.join(__dirname, '..', 'public', 'media');
@@ -45,11 +46,10 @@ const upload = multer({
   fileFilter: (req, file, cb) => cb(null, ALLOWED_MIME.has(file.mimetype)),
 });
 
-// List files
-router.get('/', requireLogin, (req, res) => {
-  const dir = userDir(req.user._id);
+function listDir(userId, typeFilter) {
+  const dir = userDir(userId);
   try {
-    const files = fs.readdirSync(dir)
+    let files = fs.readdirSync(dir)
       .filter(n => !n.startsWith('.'))
       .map(name => {
         const fp   = path.join(dir, name);
@@ -57,14 +57,29 @@ router.get('/', requireLogin, (req, res) => {
         return {
           name,
           size:      stat.size,
-          url:       `/media/${req.user._id}/${encodeURIComponent(name)}`,
+          url:       `/media/${userId}/${encodeURIComponent(name)}`,
           type:      typeFromExt(path.extname(name)),
           createdAt: stat.birthtimeMs,
         };
       })
       .sort((a, b) => b.createdAt - a.createdAt);
-    res.json(files);
-  } catch (e) { res.json([]); }
+    if (typeFilter) files = files.filter(f => f.type === typeFilter);
+    return files;
+  } catch (e) { return []; }
+}
+
+// Public read-only — list image files for a user by username
+router.get('/public/:username', async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.params.username.toLowerCase() }, '_id');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(listDir(user._id, req.query.type || 'image'));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// List files
+router.get('/', requireLogin, (req, res) => {
+  res.json(listDir(req.user._id, req.query.type || null));
 });
 
 // Upload (up to 20 files per request)
