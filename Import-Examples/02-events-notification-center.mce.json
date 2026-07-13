@@ -1,0 +1,159 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "MCEngine — Events: Notification Center" },
+  "_nextId": 14,
+  "rootOrder": ["M1"],
+  "css": ".lit { background:#fff !important; box-shadow:0 0 14px #fff; }",
+
+  "events": {
+    "infoNotify":    { "name": "infoNotify",    "payload": "{} — emitted by the Info button via emitOnClick" },
+    "successNotify": { "name": "successNotify", "payload": "{} — emitted by the Success button via emitOnClick" },
+    "errorNotify":   { "name": "errorNotify",   "payload": "{} — emitted by the Error button via emitOnClick" },
+    "dismissNotify": { "name": "dismissNotify", "payload": "{} — emitted by the Dismiss button, clears toast + status dot" },
+    "searchTyped":   { "name": "searchTyped",   "payload": "{ value } — emitted on every keystroke via emitOnInput" }
+  },
+
+  "pipes": {}, "views": {}, "vars": {}, "logic": {}, "loops": {}, "templates": {}, "dbCollections": [],
+
+  "machines": {
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2", "M3", "M4", "M9", "M10", "M11", "M12", "M13"],
+      "css": {
+        "display": "flex", "flexDirection": "column", "gap": "24px",
+        "padding": "40px 24px", "maxWidth": "640px", "width": "100%",
+        "margin": "0 auto", "fontFamily": "system-ui, sans-serif",
+        "background": "#000", "minHeight": "100vh", "boxSizing": "border-box"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "infoNotify",    "targetId": "M11", "action": "addClass",    "actionArgs": "lit" },
+        { "eventName": "successNotify", "targetId": "M11", "action": "addClass",    "actionArgs": "lit" },
+        { "eventName": "errorNotify",   "targetId": "M11", "action": "addClass",    "actionArgs": "lit" },
+        { "eventName": "dismissNotify", "targetId": "M11", "action": "removeClass", "actionArgs": "lit" }
+      ],
+      "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2", "name": "title", "tag": "h1",
+      "text": "MCEngine — Events",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#fff", "fontSize": "28px", "fontWeight": "900", "margin": "0", "letterSpacing": "-0.5px", "borderBottom": "1px solid #fff", "paddingBottom": "16px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M3": {
+      "id": "M3", "name": "subtitle", "tag": "p",
+      "text": "One event, many listeners. Each button below emits a single named event; every machine that declares a wire for that event name reacts in the same tick — a toast, a status dot (cross-machine targetId), and a running log all update together.",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#aaa", "fontSize": "13px", "lineHeight": "1.7", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4", "name": "button_row", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M5", "M6", "M7", "M8"],
+      "css": { "display": "flex", "gap": "8px", "flexWrap": "wrap", "width": "100%", "boxSizing": "border-box" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M5": {
+      "id": "M5", "name": "info_btn", "tag": "button",
+      "text": "Info",
+      "parentId": "M4", "children": [],
+      "css": { "flex": "1", "padding": "10px 8px", "background": "transparent", "color": "#fff", "border": "1px solid #fff", "borderRadius": "6px", "fontSize": "12px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit" },
+      "attrs": {}, "emitOnClick": "infoNotify",
+      "wires": [], "viewBinding": null
+    },
+
+    "M6": {
+      "id": "M6", "name": "success_btn", "tag": "button",
+      "text": "Success",
+      "parentId": "M4", "children": [],
+      "css": { "flex": "1", "padding": "10px 8px", "background": "transparent", "color": "#fff", "border": "1px solid #fff", "borderRadius": "6px", "fontSize": "12px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit" },
+      "attrs": {}, "emitOnClick": "successNotify",
+      "wires": [], "viewBinding": null
+    },
+
+    "M7": {
+      "id": "M7", "name": "error_btn", "tag": "button",
+      "text": "Error",
+      "parentId": "M4", "children": [],
+      "css": { "flex": "1", "padding": "10px 8px", "background": "transparent", "color": "#fff", "border": "1px solid #fff", "borderRadius": "6px", "fontSize": "12px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit" },
+      "attrs": {}, "emitOnClick": "errorNotify",
+      "wires": [], "viewBinding": null
+    },
+
+    "M8": {
+      "id": "M8", "name": "dismiss_btn", "tag": "button",
+      "text": "Dismiss",
+      "parentId": "M4", "children": [],
+      "css": { "flex": "1", "padding": "10px 8px", "background": "#fff", "color": "#000", "border": "1px solid #fff", "borderRadius": "6px", "fontSize": "12px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit" },
+      "attrs": {}, "emitOnClick": "dismissNotify",
+      "wires": [], "viewBinding": null
+    },
+
+    "M9": {
+      "id": "M9", "name": "search_input", "tag": "input",
+      "text": "", "parentId": "M1", "children": [],
+      "css": { "padding": "10px 14px", "background": "#000", "border": "1px solid #fff", "borderRadius": "6px", "color": "#fff", "fontSize": "14px", "outline": "none", "fontFamily": "inherit", "width": "100%", "boxSizing": "border-box" },
+      "attrs": { "type": "text", "placeholder": "Type to emit searchTyped…", "autocomplete": "off" },
+      "emitOnInput": "searchTyped",
+      "wires": [], "viewBinding": null
+    },
+
+    "M10": {
+      "id": "M10", "name": "search_echo", "tag": "div",
+      "text": "searchTyped payload.value will echo here",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#555", "fontSize": "11px", "fontFamily": "monospace" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "searchTyped", "targetId": "", "action": "setText", "actionArgs": "searchTyped → payload.value = \"{{value}}\"" }
+      ],
+      "viewBinding": null
+    },
+
+    "M11": {
+      "id": "M11", "name": "status_dot", "tag": "div",
+      "text": "",
+      "parentId": "M1", "children": [],
+      "css": { "width": "14px", "height": "14px", "borderRadius": "50%", "border": "1px solid #555", "background": "transparent" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M12": {
+      "id": "M12", "name": "toast", "tag": "div",
+      "text": "",
+      "parentId": "M1", "children": [],
+      "css": { "display": "none", "color": "#fff", "fontSize": "14px", "fontWeight": "700", "padding": "14px 18px", "border": "1px solid #fff", "borderRadius": "8px" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "infoNotify",    "targetId": "", "action": "setText", "actionArgs": "ℹ INFO — a new message just arrived" },
+        { "eventName": "infoNotify",    "targetId": "", "action": "show",    "actionArgs": "" },
+        { "eventName": "successNotify", "targetId": "", "action": "setText", "actionArgs": "✓ SUCCESS — your action completed" },
+        { "eventName": "successNotify", "targetId": "", "action": "show",    "actionArgs": "" },
+        { "eventName": "errorNotify",   "targetId": "", "action": "setText", "actionArgs": "✕ ERROR — something went wrong" },
+        { "eventName": "errorNotify",   "targetId": "", "action": "show",    "actionArgs": "" },
+        { "eventName": "dismissNotify", "targetId": "", "action": "hide",    "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M13": {
+      "id": "M13", "name": "event_log", "tag": "div",
+      "text": "event log — click a button above to see it here",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#555", "fontSize": "11px", "fontFamily": "monospace", "paddingTop": "16px", "borderTop": "1px solid #fff" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "infoNotify",    "targetId": "", "action": "setText", "actionArgs": "last event: infoNotify" },
+        { "eventName": "successNotify", "targetId": "", "action": "setText", "actionArgs": "last event: successNotify" },
+        { "eventName": "errorNotify",   "targetId": "", "action": "setText", "actionArgs": "last event: errorNotify" },
+        { "eventName": "dismissNotify", "targetId": "", "action": "setText", "actionArgs": "last event: dismissNotify" }
+      ],
+      "viewBinding": null
+    }
+  }
+}

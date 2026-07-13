@@ -1,0 +1,325 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "MCEngine — Wires: Dashboard Switcher" },
+  "_nextId": 29,
+  "rootOrder": ["M1"],
+  "css": ".glow { box-shadow:0 0 20px #fff; border-color:#fff !important; }",
+
+  "events": {
+    "modeOnline":      { "name": "modeOnline",      "payload": "{} — fires the online tab/status/panel wires" },
+    "modeMaintenance": { "name": "modeMaintenance", "payload": "{} — fires the maintenance tab/status/panel wires" },
+    "modeOffline":     { "name": "modeOffline",     "payload": "{} — fires the offline tab/status/panel wires, cascades into systemAlert" },
+    "systemAlert":     { "name": "systemAlert",     "payload": "{} — emitted by a wire's own emit action when modeOffline fires" },
+    "dismissAlert":    { "name": "dismissAlert",    "payload": "{} — emitted by the Dismiss Alert button" },
+    "fxFadeIn":        { "name": "fxFadeIn",        "payload": "{} — demonstrates the fadeIn wire action" },
+    "fxFadeOut":       { "name": "fxFadeOut",       "payload": "{} — demonstrates the fadeOut wire action" },
+    "fxFadeToBlack":   { "name": "fxFadeToBlack",   "payload": "{} — demonstrates the fadeToBlack wire action" },
+    "fxToggle":        { "name": "fxToggle",        "payload": "{} — demonstrates the toggle wire action" },
+    "fxAddClass":      { "name": "fxAddClass",      "payload": "{} — demonstrates the addClass wire action" },
+    "fxRemoveClass":   { "name": "fxRemoveClass",   "payload": "{} — demonstrates the removeClass wire action" },
+    "fxToggleClass":   { "name": "fxToggleClass",   "payload": "{} — demonstrates the toggleClass wire action" }
+  },
+
+  "pipes": {}, "views": {}, "vars": {}, "logic": {}, "loops": {}, "templates": {}, "dbCollections": [],
+
+  "machines": {
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2", "M3", "M4", "M17"],
+      "css": {
+        "display": "flex", "flexDirection": "column", "gap": "28px",
+        "padding": "40px 24px", "maxWidth": "640px", "width": "100%",
+        "margin": "0 auto", "fontFamily": "system-ui, sans-serif",
+        "background": "#000", "minHeight": "100vh", "boxSizing": "border-box"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeOffline", "targetId": "", "action": "emit", "actionArgs": "systemAlert" }
+      ],
+      "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2", "name": "title", "tag": "h1",
+      "text": "MCEngine — Wires",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#fff", "fontSize": "28px", "fontWeight": "900", "margin": "0", "letterSpacing": "-0.5px", "borderBottom": "1px solid #fff", "paddingBottom": "16px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M3": {
+      "id": "M3", "name": "subtitle", "tag": "p",
+      "text": "A wire is { eventName, targetId, action, actionArgs }. One event can drive any number of wires across any number of machines, and a wire's action can itself emit a second event — the offline button below cascades into an alert via an emit wire.",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#aaa", "fontSize": "13px", "lineHeight": "1.7", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4", "name": "mode_section", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M5", "M6", "M10", "M11", "M12", "M13"],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "12px", "border": "1px solid #fff", "borderRadius": "8px", "padding": "18px", "width": "100%", "boxSizing": "border-box" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M5": {
+      "id": "M5", "name": "mode_label", "tag": "p",
+      "text": "mode switcher — fan-out to tabs, status, panels, and a cascaded alert",
+      "parentId": "M4", "children": [],
+      "css": { "color": "#fff", "fontSize": "11px", "fontWeight": "700", "letterSpacing": "1px", "textTransform": "uppercase", "margin": "0", "paddingBottom": "10px", "borderBottom": "1px solid #fff" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M6": {
+      "id": "M6", "name": "mode_row", "tag": "div",
+      "text": "", "parentId": "M4", "children": ["M7", "M8", "M9"],
+      "css": { "display": "flex", "gap": "8px", "width": "100%", "boxSizing": "border-box" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M7": {
+      "id": "M7", "name": "online_btn", "tag": "button",
+      "text": "Online",
+      "parentId": "M6", "children": [],
+      "css": { "flex": "1", "padding": "10px 8px", "background": "transparent", "color": "#fff", "border": "1px solid #fff", "borderRadius": "6px", "fontSize": "12px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit" },
+      "attrs": { "class": "tab-active" },
+      "emitOnClick": "modeOnline",
+      "wires": [
+        { "eventName": "modeOnline",      "targetId": "", "action": "addClass",    "actionArgs": "tab-active" },
+        { "eventName": "modeMaintenance", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "modeOffline",     "targetId": "", "action": "removeClass", "actionArgs": "tab-active" }
+      ],
+      "viewBinding": null
+    },
+
+    "M8": {
+      "id": "M8", "name": "maint_btn", "tag": "button",
+      "text": "Maintenance",
+      "parentId": "M6", "children": [],
+      "css": { "flex": "1", "padding": "10px 8px", "background": "transparent", "color": "#fff", "border": "1px solid #fff", "borderRadius": "6px", "fontSize": "12px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit" },
+      "attrs": {},
+      "emitOnClick": "modeMaintenance",
+      "wires": [
+        { "eventName": "modeOnline",      "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "modeMaintenance", "targetId": "", "action": "addClass",    "actionArgs": "tab-active" },
+        { "eventName": "modeOffline",     "targetId": "", "action": "removeClass", "actionArgs": "tab-active" }
+      ],
+      "viewBinding": null
+    },
+
+    "M9": {
+      "id": "M9", "name": "offline_btn", "tag": "button",
+      "text": "Offline",
+      "parentId": "M6", "children": [],
+      "css": { "flex": "1", "padding": "10px 8px", "background": "transparent", "color": "#fff", "border": "1px solid #fff", "borderRadius": "6px", "fontSize": "12px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit" },
+      "attrs": {},
+      "emitOnClick": "modeOffline",
+      "wires": [
+        { "eventName": "modeOnline",      "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "modeMaintenance", "targetId": "", "action": "removeClass", "actionArgs": "tab-active" },
+        { "eventName": "modeOffline",     "targetId": "", "action": "addClass",    "actionArgs": "tab-active" }
+      ],
+      "viewBinding": null
+    },
+
+    "M10": {
+      "id": "M10", "name": "status_banner", "tag": "div",
+      "text": "status will appear here",
+      "parentId": "M4", "children": [],
+      "css": { "color": "#fff", "fontSize": "16px", "fontWeight": "700", "padding": "14px 18px", "border": "1px solid #fff", "borderRadius": "8px" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeOnline",      "targetId": "", "action": "setHTML", "actionArgs": "<b style=\"color:#0f0\">● ONLINE</b> — all systems operational" },
+        { "eventName": "modeMaintenance", "targetId": "", "action": "setHTML", "actionArgs": "<b style=\"color:#fa0\">◐ MAINTENANCE</b> — partial availability" },
+        { "eventName": "modeOffline",     "targetId": "", "action": "setHTML", "actionArgs": "<b style=\"color:#f66\">○ OFFLINE</b> — systems down" }
+      ],
+      "viewBinding": null
+    },
+
+    "M11": {
+      "id": "M11", "name": "alert_banner", "tag": "div",
+      "text": "",
+      "parentId": "M4", "children": [],
+      "css": { "display": "none", "color": "#000", "background": "#f66", "fontSize": "13px", "fontWeight": "700", "padding": "12px 16px", "borderRadius": "6px" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "systemAlert",     "targetId": "", "action": "setText", "actionArgs": "⚠ ALERT — offline mode cascaded into this banner via an emit wire action" },
+        { "eventName": "systemAlert",     "targetId": "", "action": "show",     "actionArgs": "" },
+        { "eventName": "modeOnline",      "targetId": "", "action": "hide",    "actionArgs": "" },
+        { "eventName": "modeMaintenance", "targetId": "", "action": "hide",    "actionArgs": "" },
+        { "eventName": "dismissAlert",    "targetId": "", "action": "hide",    "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M12": {
+      "id": "M12", "name": "dismiss_alert_btn", "tag": "button",
+      "text": "Dismiss Alert",
+      "parentId": "M4", "children": [],
+      "css": { "padding": "8px 16px", "background": "transparent", "color": "#f66", "border": "1px solid #f66", "borderRadius": "6px", "fontSize": "12px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit", "alignSelf": "flex-start" },
+      "attrs": {},
+      "emitOnClick": "dismissAlert",
+      "wires": [], "viewBinding": null
+    },
+
+    "M13": {
+      "id": "M13", "name": "panels", "tag": "div",
+      "text": "", "parentId": "M4", "children": ["M14", "M15", "M16"],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "0px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M14": {
+      "id": "M14", "name": "online_panel", "tag": "div",
+      "text": "All systems operational. Traffic flowing normally across every region.",
+      "parentId": "M13", "children": [],
+      "css": { "color": "#aaa", "fontSize": "13px", "lineHeight": "1.6", "padding": "14px", "border": "1px solid #333", "borderRadius": "6px" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeOnline",      "targetId": "", "action": "show", "actionArgs": "" },
+        { "eventName": "modeMaintenance", "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "modeOffline",     "targetId": "", "action": "hide", "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M15": {
+      "id": "M15", "name": "maint_panel", "tag": "div",
+      "text": "Scheduled maintenance in progress. Some endpoints may return degraded responses.",
+      "parentId": "M13", "children": [],
+      "css": { "display": "none", "color": "#aaa", "fontSize": "13px", "lineHeight": "1.6", "padding": "14px", "border": "1px solid #333", "borderRadius": "6px" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeOnline",      "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "modeMaintenance", "targetId": "", "action": "show", "actionArgs": "" },
+        { "eventName": "modeOffline",     "targetId": "", "action": "hide", "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M16": {
+      "id": "M16", "name": "offline_panel", "tag": "div",
+      "text": "All services offline. On-call has been paged automatically.",
+      "parentId": "M13", "children": [],
+      "css": { "display": "none", "color": "#aaa", "fontSize": "13px", "lineHeight": "1.6", "padding": "14px", "border": "1px solid #333", "borderRadius": "6px" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "modeOnline",      "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "modeMaintenance", "targetId": "", "action": "hide", "actionArgs": "" },
+        { "eventName": "modeOffline",     "targetId": "", "action": "show", "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M17": {
+      "id": "M17", "name": "fx_section", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M18", "M19", "M27", "M28"],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "12px", "border": "1px solid #fff", "borderRadius": "8px", "padding": "18px", "width": "100%", "boxSizing": "border-box" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M18": {
+      "id": "M18", "name": "fx_label", "tag": "p",
+      "text": "action playground — one button, one wire action, one box",
+      "parentId": "M17", "children": [],
+      "css": { "color": "#fff", "fontSize": "11px", "fontWeight": "700", "letterSpacing": "1px", "textTransform": "uppercase", "margin": "0", "paddingBottom": "10px", "borderBottom": "1px solid #fff" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M19": {
+      "id": "M19", "name": "fx_row", "tag": "div",
+      "text": "", "parentId": "M17", "children": ["M20", "M21", "M22", "M23", "M24", "M25", "M26"],
+      "css": { "display": "flex", "gap": "6px", "flexWrap": "wrap", "width": "100%", "boxSizing": "border-box" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M20": {
+      "id": "M20", "name": "fadein_btn", "tag": "button",
+      "text": "fadeIn",
+      "parentId": "M19", "children": [],
+      "css": { "padding": "8px 12px", "background": "transparent", "color": "#fff", "border": "1px solid #555", "borderRadius": "6px", "fontSize": "11px", "fontFamily": "monospace", "cursor": "pointer" },
+      "attrs": {}, "emitOnClick": "fxFadeIn",
+      "wires": [], "viewBinding": null
+    },
+
+    "M21": {
+      "id": "M21", "name": "fadeout_btn", "tag": "button",
+      "text": "fadeOut",
+      "parentId": "M19", "children": [],
+      "css": { "padding": "8px 12px", "background": "transparent", "color": "#fff", "border": "1px solid #555", "borderRadius": "6px", "fontSize": "11px", "fontFamily": "monospace", "cursor": "pointer" },
+      "attrs": {}, "emitOnClick": "fxFadeOut",
+      "wires": [], "viewBinding": null
+    },
+
+    "M22": {
+      "id": "M22", "name": "fadetoblack_btn", "tag": "button",
+      "text": "fadeToBlack",
+      "parentId": "M19", "children": [],
+      "css": { "padding": "8px 12px", "background": "transparent", "color": "#fff", "border": "1px solid #555", "borderRadius": "6px", "fontSize": "11px", "fontFamily": "monospace", "cursor": "pointer" },
+      "attrs": {}, "emitOnClick": "fxFadeToBlack",
+      "wires": [], "viewBinding": null
+    },
+
+    "M23": {
+      "id": "M23", "name": "toggle_btn", "tag": "button",
+      "text": "toggle",
+      "parentId": "M19", "children": [],
+      "css": { "padding": "8px 12px", "background": "transparent", "color": "#fff", "border": "1px solid #555", "borderRadius": "6px", "fontSize": "11px", "fontFamily": "monospace", "cursor": "pointer" },
+      "attrs": {}, "emitOnClick": "fxToggle",
+      "wires": [], "viewBinding": null
+    },
+
+    "M24": {
+      "id": "M24", "name": "addclass_btn", "tag": "button",
+      "text": "addClass",
+      "parentId": "M19", "children": [],
+      "css": { "padding": "8px 12px", "background": "transparent", "color": "#fff", "border": "1px solid #555", "borderRadius": "6px", "fontSize": "11px", "fontFamily": "monospace", "cursor": "pointer" },
+      "attrs": {}, "emitOnClick": "fxAddClass",
+      "wires": [], "viewBinding": null
+    },
+
+    "M25": {
+      "id": "M25", "name": "removeclass_btn", "tag": "button",
+      "text": "removeClass",
+      "parentId": "M19", "children": [],
+      "css": { "padding": "8px 12px", "background": "transparent", "color": "#fff", "border": "1px solid #555", "borderRadius": "6px", "fontSize": "11px", "fontFamily": "monospace", "cursor": "pointer" },
+      "attrs": {}, "emitOnClick": "fxRemoveClass",
+      "wires": [], "viewBinding": null
+    },
+
+    "M26": {
+      "id": "M26", "name": "toggleclass_btn", "tag": "button",
+      "text": "toggleClass",
+      "parentId": "M19", "children": [],
+      "css": { "padding": "8px 12px", "background": "transparent", "color": "#fff", "border": "1px solid #555", "borderRadius": "6px", "fontSize": "11px", "fontFamily": "monospace", "cursor": "pointer" },
+      "attrs": {}, "emitOnClick": "fxToggleClass",
+      "wires": [], "viewBinding": null
+    },
+
+    "M27": {
+      "id": "M27", "name": "fx_box", "tag": "div",
+      "text": "This box reacts to every button above — one action each",
+      "parentId": "M17", "children": [],
+      "css": { "color": "#fff", "fontSize": "13px", "padding": "24px", "border": "1px solid #555", "borderRadius": "8px", "textAlign": "center" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "fxFadeIn",      "targetId": "", "action": "fadeIn",      "actionArgs": "" },
+        { "eventName": "fxFadeOut",     "targetId": "", "action": "fadeOut",     "actionArgs": "" },
+        { "eventName": "fxFadeToBlack", "targetId": "", "action": "fadeToBlack", "actionArgs": "" },
+        { "eventName": "fxToggle",      "targetId": "", "action": "toggle",      "actionArgs": "" },
+        { "eventName": "fxAddClass",    "targetId": "", "action": "addClass",    "actionArgs": "glow" },
+        { "eventName": "fxRemoveClass", "targetId": "", "action": "removeClass", "actionArgs": "glow" },
+        { "eventName": "fxToggleClass", "targetId": "", "action": "toggleClass", "actionArgs": "glow" }
+      ],
+      "viewBinding": null
+    },
+
+    "M28": {
+      "id": "M28", "name": "fx_note", "tag": "p",
+      "text": "fadeToBlack transitions the whole page background, not just this box — a reminder that a wire's target is whatever machine declares it, and its blast radius is whatever the action actually touches.",
+      "parentId": "M17", "children": [],
+      "css": { "color": "#555", "fontSize": "11px", "fontFamily": "monospace", "margin": "0", "lineHeight": "1.6" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    }
+  }
+}

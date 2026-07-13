@@ -1,0 +1,164 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "MCEngine — Pipes: Guestbook" },
+  "_nextId": 10,
+  "rootOrder": ["M1"],
+
+  "events": {
+    "msgTyped":  { "name": "msgTyped",  "payload": "{ value } — emitted on every keystroke via emitOnInput" },
+    "msgPosted": { "name": "msgPosted", "payload": "{ value } — emitted by Post button via transferOnClick, carries the input's value" },
+    "fetchRequested": { "name": "fetchRequested", "payload": "{} — emitted by Refresh button via emitOnClick" }
+  },
+
+  "pipes": {
+    "getMessages": {
+      "name": "getMessages",
+      "method": "GET",
+      "collection": "guestbook",
+      "endpoint": "/api/db/guestbook",
+      "delay": 200,
+      "live": false,
+      "description": "Reads every record from the guestbook collection — feeds the messagesList loop"
+    },
+    "postMessage": {
+      "name": "postMessage",
+      "method": "POST",
+      "collection": "guestbook",
+      "endpoint": "/api/db/guestbook",
+      "delay": 200,
+      "live": false,
+      "description": "Inserts a new record into guestbook — body is the msgPosted event payload, i.e. { value }"
+    }
+  },
+
+  "views": {}, "vars": {}, "logic": {}, "templates": {},
+
+  "loops": {
+    "messagesList": {
+      "name": "messagesList",
+      "pipeName": "getMessages",
+      "targetId": "M9",
+      "dataField": "",
+      "clickEvent": "",
+      "clickView": "",
+      "clickValueField": "",
+      "description": "One card per guestbook entry returned by getMessages",
+      "template": "<div style=\"padding:12px 16px;border:1px solid #fff;border-radius:6px;background:#000\"><div style=\"color:#fff;font-size:14px\">{{value}}</div><div style=\"color:#555;font-size:10px;margin-top:6px;font-family:monospace\">{{_createdAt}}</div></div>"
+    }
+  },
+
+  "dbCollections": [
+    {
+      "name": "guestbook",
+      "isArray": true,
+      "seed": [
+        { "value": "First! Great to see MCEngine's pipe system in action." },
+        { "value": "Pipes turn a GET/POST/PATCH into a named, reusable data operation." },
+        { "value": "Try adding your own message below — it POSTs straight into this list." }
+      ]
+    }
+  ],
+
+  "machines": {
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2", "M3", "M4", "M7", "M8", "M9"],
+      "css": {
+        "display": "flex", "flexDirection": "column", "gap": "24px",
+        "padding": "40px 24px", "maxWidth": "640px", "width": "100%",
+        "margin": "0 auto", "fontFamily": "system-ui, sans-serif",
+        "background": "#000", "minHeight": "100vh", "boxSizing": "border-box"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "msgPosted",      "targetId": "", "action": "pipeIn",  "actionArgs": "postMessage" },
+        { "eventName": "fetchRequested", "targetId": "", "action": "pipeOut", "actionArgs": "getMessages" }
+      ],
+      "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2", "name": "title", "tag": "h1",
+      "text": "MCEngine — Pipes",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#fff", "fontSize": "28px", "fontWeight": "900", "margin": "0", "letterSpacing": "-0.5px", "borderBottom": "1px solid #fff", "paddingBottom": "16px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M3": {
+      "id": "M3", "name": "subtitle", "tag": "p",
+      "text": "A pipe is a named METHOD + endpoint bound to a DB collection. getMessages (GET) feeds the loop below; postMessage (POST) writes whatever you type. Wires call them via the pipeOut / pipeIn actions.",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#aaa", "fontSize": "13px", "lineHeight": "1.7", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4", "name": "input_row", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M5", "M6"],
+      "css": { "display": "flex", "gap": "10px", "width": "100%", "boxSizing": "border-box" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M5": {
+      "id": "M5", "name": "msg_input", "tag": "input",
+      "text": "", "parentId": "M4", "children": [],
+      "css": {
+        "flex": "1", "padding": "10px 14px", "background": "#000", "border": "1px solid #fff",
+        "borderRadius": "6px", "color": "#fff", "fontSize": "14px", "outline": "none",
+        "fontFamily": "inherit", "boxSizing": "border-box"
+      },
+      "attrs": { "type": "text", "placeholder": "Sign the guestbook…", "autocomplete": "off" },
+      "emitOnInput": "msgTyped",
+      "wires": [], "viewBinding": null
+    },
+
+    "M6": {
+      "id": "M6", "name": "post_btn", "tag": "button",
+      "text": "Post",
+      "parentId": "M4", "children": [],
+      "css": {
+        "padding": "10px 20px", "background": "#fff", "color": "#000", "border": "1px solid #fff",
+        "borderRadius": "6px", "fontSize": "13px", "fontWeight": "700", "cursor": "pointer",
+        "fontFamily": "inherit", "whiteSpace": "nowrap"
+      },
+      "attrs": {},
+      "transferOnClick": { "fromId": "M5", "eventName": "msgPosted" },
+      "wires": [], "viewBinding": null
+    },
+
+    "M7": {
+      "id": "M7", "name": "refresh_btn", "tag": "button",
+      "text": "Refresh from DB",
+      "parentId": "M1", "children": [],
+      "css": {
+        "padding": "8px 16px", "background": "transparent", "color": "#fff", "border": "1px solid #fff",
+        "borderRadius": "6px", "fontSize": "12px", "fontWeight": "700", "cursor": "pointer",
+        "fontFamily": "inherit", "alignSelf": "flex-start"
+      },
+      "attrs": {},
+      "emitOnClick": "fetchRequested",
+      "wires": [], "viewBinding": null
+    },
+
+    "M8": {
+      "id": "M8", "name": "status", "tag": "div",
+      "text": "pipe log — post a message or refresh to see it here",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#555", "fontSize": "11px", "fontFamily": "monospace" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "msgPosted",      "targetId": "", "action": "setText", "actionArgs": "POST /api/db/guestbook → { value: \"{{value}}\" }" },
+        { "eventName": "fetchRequested", "targetId": "", "action": "setText", "actionArgs": "GET /api/db/guestbook → refreshed messagesList" }
+      ],
+      "viewBinding": null
+    },
+
+    "M9": {
+      "id": "M9", "name": "messages_list", "tag": "div",
+      "text": "", "parentId": "M1", "children": [],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "8px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    }
+  }
+}

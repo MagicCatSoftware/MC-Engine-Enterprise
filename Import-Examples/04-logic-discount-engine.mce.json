@@ -1,0 +1,250 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "MCEngine — Logic: Discount Engine" },
+  "_nextId": 20,
+  "rootOrder": ["M1"],
+
+  "events": {
+    "checkDiscountRequested": { "name": "checkDiscountRequested", "payload": "{ value } — order total, passed as ctx to M8's logic" },
+    "discountResult":         { "name": "discountResult",         "payload": "{ tier, total } — emitted from the if/elseif/else code" },
+    "restockCheckRequested":  { "name": "restockCheckRequested",  "payload": "{} — triggers M13's loop block over the inventory collection" },
+    "stockAlert":             { "name": "stockAlert",             "payload": "{ item, qty, threshold } — emitted once per low-stock record" }
+  },
+
+  "pipes": {}, "views": {}, "vars": {}, "templates": {}, "loops": {},
+
+  "dbCollections": [
+    {
+      "name": "inventory",
+      "isArray": true,
+      "seed": [
+        { "name": "Widget A", "qty": 4,  "threshold": 10 },
+        { "name": "Widget B", "qty": 25, "threshold": 10 },
+        { "name": "Widget C", "qty": 2,  "threshold": 5  },
+        { "name": "Widget D", "qty": 50, "threshold": 20 },
+        { "name": "Widget E", "qty": 7,  "threshold": 10 }
+      ]
+    }
+  ],
+
+  "logic": {
+    "M8": {
+      "blocks": [
+        {
+          "type": "if",
+          "condition": "parseFloat(ctx.value) >= 500",
+          "actions": [ { "targetId": "M8", "action": "setText", "actionArgs": "GOLD tier — 20% off an order of {{value}}" } ],
+          "code": "EventBus.emit('discountResult', { tier: 'GOLD', total: ctx.value });",
+          "children": []
+        },
+        {
+          "type": "elseif",
+          "condition": "parseFloat(ctx.value) >= 200",
+          "actions": [ { "targetId": "M8", "action": "setText", "actionArgs": "SILVER tier — 10% off an order of {{value}}" } ],
+          "code": "EventBus.emit('discountResult', { tier: 'SILVER', total: ctx.value });",
+          "children": []
+        },
+        {
+          "type": "elseif",
+          "condition": "parseFloat(ctx.value) > 0",
+          "actions": [ { "targetId": "M8", "action": "setText", "actionArgs": "STANDARD tier — no discount on {{value}}" } ],
+          "code": "EventBus.emit('discountResult', { tier: 'STANDARD', total: ctx.value });",
+          "children": []
+        },
+        {
+          "type": "else",
+          "condition": "",
+          "actions": [ { "targetId": "M8", "action": "setText", "actionArgs": "Enter an order total above 0" } ],
+          "code": "",
+          "children": []
+        }
+      ]
+    },
+    "M13": {
+      "blocks": [
+        {
+          "type": "loop",
+          "collection": "inventory",
+          "query": "",
+          "itemVar": "item",
+          "actions": [],
+          "code": "if (ctx.item.qty < ctx.item.threshold) EventBus.emit('stockAlert', { item: ctx.item.name, qty: ctx.item.qty, threshold: ctx.item.threshold });",
+          "children": []
+        }
+      ]
+    }
+  },
+
+  "machines": {
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2", "M3", "M4", "M10", "M16"],
+      "css": {
+        "display": "flex", "flexDirection": "column", "gap": "28px",
+        "padding": "40px 24px", "maxWidth": "640px", "width": "100%",
+        "margin": "0 auto", "fontFamily": "system-ui, sans-serif",
+        "background": "#000", "minHeight": "100vh", "boxSizing": "border-box"
+      },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2", "name": "title", "tag": "h1",
+      "text": "MCEngine — Logic",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#fff", "fontSize": "28px", "fontWeight": "900", "margin": "0", "letterSpacing": "-0.5px", "borderBottom": "1px solid #fff", "paddingBottom": "16px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M3": {
+      "id": "M3", "name": "subtitle", "tag": "p",
+      "text": "Logic blocks run JavaScript conditionals (if/elseif/else), iterate DB collections (loop), and execute arbitrary code. They're triggered by the runLogic wire action, with the event payload passed in as ctx.",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#aaa", "fontSize": "13px", "lineHeight": "1.7", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4", "name": "discount_section", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M5", "M6", "M7", "M8", "M9"],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "12px", "border": "1px solid #fff", "borderRadius": "8px", "padding": "18px", "width": "100%", "boxSizing": "border-box" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M5": {
+      "id": "M5", "name": "discount_label", "tag": "p",
+      "text": "if / elseif / else — order discount tiers",
+      "parentId": "M4", "children": [],
+      "css": { "color": "#fff", "fontSize": "11px", "fontWeight": "700", "letterSpacing": "1px", "textTransform": "uppercase", "margin": "0", "paddingBottom": "10px", "borderBottom": "1px solid #fff" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M6": {
+      "id": "M6", "name": "total_input", "tag": "input",
+      "text": "", "parentId": "M4", "children": [],
+      "css": { "padding": "10px 14px", "background": "#000", "border": "1px solid #fff", "borderRadius": "6px", "color": "#fff", "fontSize": "20px", "fontWeight": "700", "outline": "none", "fontFamily": "inherit", "width": "200px", "boxSizing": "border-box" },
+      "attrs": { "type": "number", "placeholder": "order total" },
+      "wires": [], "viewBinding": null
+    },
+
+    "M7": {
+      "id": "M7", "name": "calc_btn", "tag": "button",
+      "text": "Calculate Tier",
+      "parentId": "M4", "children": [],
+      "css": { "padding": "10px 20px", "background": "#fff", "color": "#000", "border": "1px solid #fff", "borderRadius": "6px", "fontSize": "13px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit", "alignSelf": "flex-start" },
+      "attrs": {},
+      "transferOnClick": { "fromId": "M6", "eventName": "checkDiscountRequested" },
+      "wires": [], "viewBinding": null
+    },
+
+    "M8": {
+      "id": "M8", "name": "discount_result", "tag": "div",
+      "text": "Result — enter an order total and click Calculate Tier",
+      "parentId": "M4", "children": [],
+      "css": { "color": "#fff", "fontSize": "16px", "fontWeight": "700", "padding": "12px 16px", "border": "1px solid #333", "borderRadius": "6px", "fontFamily": "monospace" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "checkDiscountRequested", "targetId": "", "action": "runLogic", "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M9": {
+      "id": "M9", "name": "discount_code_output", "tag": "div",
+      "text": "",
+      "parentId": "M4", "children": [],
+      "css": { "color": "#555", "fontSize": "11px", "fontFamily": "monospace" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "discountResult", "targetId": "", "action": "setText", "actionArgs": "code block emitted → tier: {{tier}}  total: {{total}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M10": {
+      "id": "M10", "name": "inventory_section", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M11", "M12", "M13", "M14", "M15"],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "12px", "border": "1px solid #fff", "borderRadius": "8px", "padding": "18px", "width": "100%", "boxSizing": "border-box" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M11": {
+      "id": "M11", "name": "inventory_label", "tag": "p",
+      "text": "loop — flag low-stock inventory",
+      "parentId": "M10", "children": [],
+      "css": { "color": "#fff", "fontSize": "11px", "fontWeight": "700", "letterSpacing": "1px", "textTransform": "uppercase", "margin": "0", "paddingBottom": "10px", "borderBottom": "1px solid #fff" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M12": {
+      "id": "M12", "name": "run_restock_btn", "tag": "button",
+      "text": "Run Restock Check",
+      "parentId": "M10", "children": [],
+      "css": { "padding": "10px 20px", "background": "#fff", "color": "#000", "border": "1px solid #fff", "borderRadius": "6px", "fontSize": "13px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit", "alignSelf": "flex-start" },
+      "attrs": {}, "emitOnClick": "restockCheckRequested",
+      "wires": [], "viewBinding": null
+    },
+
+    "M13": {
+      "id": "M13", "name": "restock_loop_host", "tag": "div",
+      "text": "", "parentId": "M10", "children": [],
+      "css": { "display": "none" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "restockCheckRequested", "targetId": "", "action": "runLogic", "actionArgs": "" }
+      ],
+      "viewBinding": null
+    },
+
+    "M14": {
+      "id": "M14", "name": "stock_log", "tag": "div",
+      "text": "stock log — run the check to see the last low-stock item flagged",
+      "parentId": "M10", "children": [],
+      "css": { "color": "#fff", "fontSize": "13px", "fontFamily": "monospace", "padding": "10px 14px", "border": "1px solid #333", "borderRadius": "6px" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "stockAlert", "targetId": "", "action": "setText", "actionArgs": "LOW STOCK: {{item}} — qty {{qty}} (threshold {{threshold}})" }
+      ],
+      "viewBinding": null
+    },
+
+    "M15": {
+      "id": "M15", "name": "inventory_note", "tag": "p",
+      "text": "Iterates the 5-record inventory seed collection. For each item, code checks qty against threshold and calls EventBus.emit('stockAlert', ...) when a record is under threshold. ctx.item holds the current record.",
+      "parentId": "M10", "children": [],
+      "css": { "color": "#555", "fontSize": "12px", "lineHeight": "1.6", "margin": "0", "fontFamily": "monospace" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M16": {
+      "id": "M16", "name": "code_section", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M17", "M18", "M19"],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "12px", "border": "1px solid #fff", "borderRadius": "8px", "padding": "18px", "width": "100%", "boxSizing": "border-box" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M17": {
+      "id": "M17", "name": "code_label", "tag": "p",
+      "text": "code — what you write inside each block",
+      "parentId": "M16", "children": [],
+      "css": { "color": "#fff", "fontSize": "11px", "fontWeight": "700", "letterSpacing": "1px", "textTransform": "uppercase", "margin": "0", "paddingBottom": "10px", "borderBottom": "1px solid #fff" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M18": {
+      "id": "M18", "name": "code_snippet", "tag": "div",
+      "text": "EventBus.emit('discountResult', { tier: 'GOLD', total: ctx.value });",
+      "parentId": "M16", "children": [],
+      "css": { "color": "#aaa", "fontSize": "12px", "fontFamily": "monospace", "background": "#111", "border": "1px solid #333", "borderRadius": "6px", "padding": "12px 14px", "lineHeight": "1.5" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M19": {
+      "id": "M19", "name": "code_vars_note", "tag": "p",
+      "text": "Available in every condition/code block: ctx · DB · EventBus · PipeSystem · ViewSystem · LoopSystem · view · params · vars · loops",
+      "parentId": "M16", "children": [],
+      "css": { "color": "#555", "fontSize": "11px", "fontFamily": "monospace", "margin": "0", "lineHeight": "1.6" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    }
+  }
+}

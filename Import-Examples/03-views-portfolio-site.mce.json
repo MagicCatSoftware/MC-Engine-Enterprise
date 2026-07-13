@@ -1,0 +1,258 @@
+{
+  "version": "1.0.0",
+  "project": { "name": "MCEngine — Views: Portfolio Site" },
+  "_nextId": 23,
+  "rootOrder": ["M1"],
+
+  "events": {
+    "goHome":     { "name": "goHome",     "payload": "{} — navigate to the home view" },
+    "goProjects": { "name": "goProjects", "payload": "{} — navigate to the projects view, also re-fetches getProjects" },
+    "goContact":  { "name": "goContact",  "payload": "{} — navigate to the contact view" },
+    "view:detail": { "name": "view:detail", "payload": "{ _id } — auto-emitted by ViewSystem.navigate() when a project card is clicked" }
+  },
+
+  "pipes": {
+    "getProjects": {
+      "name": "getProjects",
+      "method": "GET",
+      "collection": "projects",
+      "endpoint": "/api/db/projects",
+      "delay": 150,
+      "live": false,
+      "description": "Feeds the projectsList loop on the Projects view"
+    }
+  },
+
+  "views": {
+    "home":     { "name": "home" },
+    "work":     { "name": "work" },
+    "contact":  { "name": "contact" },
+    "detail":   { "name": "detail" }
+  },
+
+  "vars": {}, "logic": {}, "templates": {},
+
+  "loops": {
+    "projectsList": {
+      "name": "projectsList",
+      "pipeName": "getProjects",
+      "targetId": "M13",
+      "dataField": "",
+      "clickEvent": "",
+      "clickView": "detail",
+      "clickValueField": "title",
+      "description": "One card per project — clicking a card navigates to the detail view with { _id } as params",
+      "template": "<div style=\"cursor:pointer;padding:16px;border:1px solid #fff;border-radius:8px\"><div style=\"color:#fff;font-size:16px;font-weight:700\">{{title}}</div><div style=\"color:#aaa;font-size:13px;margin-top:6px;line-height:1.5\">{{blurb}}</div></div>"
+    }
+  },
+
+  "dbCollections": [
+    {
+      "name": "projects",
+      "isArray": true,
+      "seed": [
+        { "title": "Nebula UI Kit",   "blurb": "A dark, accessible component library shipped as drop-in machines." },
+        { "title": "Orbit CMS",       "blurb": "Headless content editing backed by MCEngine's live pipe system." },
+        { "title": "Pulse Analytics", "blurb": "Realtime dashboards built entirely from views, loops, and pipes." }
+      ]
+    }
+  ],
+
+  "machines": {
+    "M1": {
+      "id": "M1", "name": "app", "tag": "section",
+      "text": "", "parentId": "", "children": ["M2", "M6", "M7", "M11", "M15", "M19"],
+      "css": {
+        "display": "flex", "flexDirection": "column", "gap": "0px",
+        "maxWidth": "640px", "width": "100%", "margin": "0 auto",
+        "fontFamily": "system-ui, sans-serif", "background": "#000",
+        "minHeight": "100vh", "boxSizing": "border-box"
+      },
+      "attrs": {},
+      "wires": [
+        { "eventName": "goHome",     "targetId": "", "action": "navigate", "actionArgs": "home" },
+        { "eventName": "goProjects", "targetId": "", "action": "navigate", "actionArgs": "work" },
+        { "eventName": "goProjects", "targetId": "", "action": "pipeOut",  "actionArgs": "getProjects" },
+        { "eventName": "goContact",  "targetId": "", "action": "navigate", "actionArgs": "contact" }
+      ],
+      "viewBinding": null
+    },
+
+    "M2": {
+      "id": "M2", "name": "nav", "tag": "nav",
+      "text": "", "parentId": "M1", "children": ["M3", "M4", "M5"],
+      "css": { "display": "flex", "alignItems": "center", "gap": "4px", "padding": "16px 24px", "borderBottom": "1px solid #fff", "boxSizing": "border-box", "width": "100%" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M3": {
+      "id": "M3", "name": "nav_home", "tag": "button",
+      "text": "Home",
+      "parentId": "M2", "children": [],
+      "css": { "padding": "7px 16px", "background": "transparent", "color": "#fff", "border": "1px solid #fff", "borderRadius": "5px", "fontSize": "12px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit" },
+      "attrs": {}, "emitOnClick": "goHome",
+      "wires": [], "viewBinding": null
+    },
+
+    "M4": {
+      "id": "M4", "name": "nav_projects", "tag": "button",
+      "text": "Projects",
+      "parentId": "M2", "children": [],
+      "css": { "padding": "7px 16px", "background": "transparent", "color": "#fff", "border": "1px solid #fff", "borderRadius": "5px", "fontSize": "12px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit" },
+      "attrs": {}, "emitOnClick": "goProjects",
+      "wires": [], "viewBinding": null
+    },
+
+    "M5": {
+      "id": "M5", "name": "nav_contact", "tag": "button",
+      "text": "Contact",
+      "parentId": "M2", "children": [],
+      "css": { "padding": "7px 16px", "background": "transparent", "color": "#fff", "border": "1px solid #fff", "borderRadius": "5px", "fontSize": "12px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit" },
+      "attrs": {}, "emitOnClick": "goContact",
+      "wires": [], "viewBinding": null
+    },
+
+    "M6": {
+      "id": "M6", "name": "view_indicator", "tag": "div",
+      "text": "current view: home",
+      "parentId": "M1", "children": [],
+      "css": { "color": "#555", "fontSize": "10px", "fontFamily": "monospace", "padding": "6px 24px", "borderBottom": "1px solid #333", "boxSizing": "border-box", "width": "100%" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "goHome",     "targetId": "", "action": "setText", "actionArgs": "current view: home" },
+        { "eventName": "goProjects", "targetId": "", "action": "setText", "actionArgs": "current view: work" },
+        { "eventName": "goContact",  "targetId": "", "action": "setText", "actionArgs": "current view: contact" }
+      ],
+      "viewBinding": null
+    },
+
+    "M7": {
+      "id": "M7", "name": "home_page", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M8", "M9", "M10"],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "20px", "padding": "48px 24px", "boxSizing": "border-box", "width": "100%" },
+      "attrs": {}, "wires": [], "viewBinding": "home"
+    },
+
+    "M8": {
+      "id": "M8", "name": "home_heading", "tag": "h1",
+      "text": "A portfolio built from five moving parts",
+      "parentId": "M7", "children": [],
+      "css": { "color": "#fff", "fontSize": "28px", "fontWeight": "900", "margin": "0", "letterSpacing": "-0.5px", "lineHeight": "1.2" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M9": {
+      "id": "M9", "name": "home_body", "tag": "p",
+      "text": "Each machine has an optional viewBinding — set it to a view name and the machine is hidden until that view is active. Navigation fires the navigate wire action, which calls ViewSystem.navigate() and updates the URL with ?view=name.",
+      "parentId": "M7", "children": [],
+      "css": { "color": "#aaa", "fontSize": "14px", "lineHeight": "1.75", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M10": {
+      "id": "M10", "name": "home_cta", "tag": "button",
+      "text": "See the Projects →",
+      "parentId": "M7", "children": [],
+      "css": { "padding": "12px 24px", "background": "#fff", "color": "#000", "border": "1px solid #fff", "borderRadius": "6px", "fontSize": "13px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit", "alignSelf": "flex-start" },
+      "attrs": {}, "emitOnClick": "goProjects",
+      "wires": [], "viewBinding": null
+    },
+
+    "M11": {
+      "id": "M11", "name": "work_page", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M12", "M13", "M14"],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "16px", "padding": "48px 24px", "boxSizing": "border-box", "width": "100%" },
+      "attrs": {}, "wires": [], "viewBinding": "work"
+    },
+
+    "M12": {
+      "id": "M12", "name": "work_heading", "tag": "h2",
+      "text": "Projects",
+      "parentId": "M11", "children": [],
+      "css": { "color": "#fff", "fontSize": "28px", "fontWeight": "900", "margin": "0", "letterSpacing": "-0.5px", "borderBottom": "1px solid #fff", "paddingBottom": "16px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M13": {
+      "id": "M13", "name": "projects_list", "tag": "div",
+      "text": "", "parentId": "M11", "children": [],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "10px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M14": {
+      "id": "M14", "name": "work_note", "tag": "p",
+      "text": "Click any card — the loop's clickView navigates to the \"detail\" view and passes { _id } as params. Watch the heading on that page update from the params.",
+      "parentId": "M11", "children": [],
+      "css": { "color": "#555", "fontSize": "12px", "lineHeight": "1.6", "margin": "0", "fontFamily": "monospace" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M15": {
+      "id": "M15", "name": "contact_page", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M16", "M17", "M18"],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "20px", "padding": "48px 24px", "boxSizing": "border-box", "width": "100%" },
+      "attrs": {}, "wires": [], "viewBinding": "contact"
+    },
+
+    "M16": {
+      "id": "M16", "name": "contact_heading", "tag": "h2",
+      "text": "Contact",
+      "parentId": "M15", "children": [],
+      "css": { "color": "#fff", "fontSize": "28px", "fontWeight": "900", "margin": "0", "letterSpacing": "-0.5px", "borderBottom": "1px solid #fff", "paddingBottom": "16px" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M17": {
+      "id": "M17", "name": "contact_email", "tag": "div",
+      "text": "hello@magiccatengine.com",
+      "parentId": "M15", "children": [],
+      "css": { "color": "#fff", "fontSize": "18px", "fontWeight": "700", "padding": "14px 18px", "border": "1px solid #fff", "borderRadius": "8px", "fontFamily": "monospace" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M18": {
+      "id": "M18", "name": "contact_note", "tag": "p",
+      "text": "Four pages, zero hand-written routing code — navigation, view switching, and URL sync (?view=home / ?view=work / ?view=contact / ?view=detail) are all handled by the MCEngine runtime.",
+      "parentId": "M15", "children": [],
+      "css": { "color": "#aaa", "fontSize": "13px", "lineHeight": "1.75", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M19": {
+      "id": "M19", "name": "detail_page", "tag": "div",
+      "text": "", "parentId": "M1", "children": ["M20", "M21", "M22"],
+      "css": { "display": "flex", "flexDirection": "column", "gap": "16px", "padding": "48px 24px", "boxSizing": "border-box", "width": "100%" },
+      "attrs": {}, "wires": [], "viewBinding": "detail"
+    },
+
+    "M20": {
+      "id": "M20", "name": "detail_heading", "tag": "h2",
+      "text": "Project detail — click a card on the Projects page",
+      "parentId": "M19", "children": [],
+      "css": { "color": "#fff", "fontSize": "22px", "fontWeight": "900", "margin": "0", "letterSpacing": "-0.5px" },
+      "attrs": {},
+      "wires": [
+        { "eventName": "view:detail", "targetId": "", "action": "setText", "actionArgs": "Project detail — record _id {{_id}}" }
+      ],
+      "viewBinding": null
+    },
+
+    "M21": {
+      "id": "M21", "name": "detail_body", "tag": "p",
+      "text": "The clickView / clickValueField fields on a loop turn any rendered item into a link into another view — no extra wiring required beyond the loop config itself.",
+      "parentId": "M19", "children": [],
+      "css": { "color": "#aaa", "fontSize": "14px", "lineHeight": "1.75", "margin": "0" },
+      "attrs": {}, "wires": [], "viewBinding": null
+    },
+
+    "M22": {
+      "id": "M22", "name": "back_btn", "tag": "button",
+      "text": "← Back to Projects",
+      "parentId": "M19", "children": [],
+      "css": { "padding": "10px 20px", "background": "transparent", "color": "#fff", "border": "1px solid #fff", "borderRadius": "6px", "fontSize": "13px", "fontWeight": "700", "cursor": "pointer", "fontFamily": "inherit", "alignSelf": "flex-start" },
+      "attrs": {}, "emitOnClick": "goProjects",
+      "wires": [], "viewBinding": null
+    }
+  }
+}
