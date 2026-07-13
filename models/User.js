@@ -6,9 +6,12 @@ const userSchema = new mongoose.Schema({
   name:                 String,
   picture:              String,
   username:             { type: String, unique: true, sparse: true, lowercase: true, trim: true },
-  stripeCustomerId:     String,
-  stripeSubscriptionId: String,
-  subscriptionStatus:   { type: String, default: 'inactive' },
+  stripeCustomerId:         String,
+  stripeSubscriptionId:     String,
+  subscriptionStatus:       { type: String, default: 'inactive' },
+  subscriptionPeriodEnd:    Date,
+  isPermanent:              { type: Boolean, default: false },
+  manualPaid:               { type: Boolean, default: false },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

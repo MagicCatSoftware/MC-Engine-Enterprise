@@ -3,10 +3,17 @@ const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
 const { requireLogin } = require('../middleware/auth');
+const { rateLimit }    = require('../middleware/rateLimit');
 const User    = require('../models/User');
 
 const router     = express.Router();
 const MEDIA_ROOT = path.join(__dirname, '..', 'public', 'media');
+const QUOTA_BYTES = 1 * 1024 * 1024 * 1024; // 1GB per user
+
+const publicListLimit = rateLimit({ windowMs: 60_000, max: 60, message: 'Too many requests — please slow down.' });
+const listLimit        = rateLimit({ windowMs: 60_000, max: 120, keyFn: req => 'u:' + req.user._id });
+const uploadLimit      = rateLimit({ windowMs: 60 * 60_000, max: 30, keyFn: req => 'u:' + req.user._id, message: 'Upload limit reached — try again later.' });
+const deleteLimit      = rateLimit({ windowMs: 60_000, max: 60, keyFn: req => 'u:' + req.user._id });
 
 const ALLOWED_MIME = new Set([
   'image/jpeg','image/png','image/gif','image/webp','image/svg+xml','image/avif',
@@ -26,6 +33,32 @@ function userDir(userId) {
   const dir = path.join(MEDIA_ROOT, String(userId));
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   return dir;
+}
+
+function getUserUsage(userId) {
+  const dir = userDir(userId);
+  try {
+    return fs.readdirSync(dir)
+      .filter(n => !n.startsWith('.'))
+      .reduce((sum, name) => {
+        try { return sum + fs.statSync(path.join(dir, name)).size; } catch { return sum; }
+      }, 0);
+  } catch { return 0; }
+}
+
+// Reject obviously-over-quota uploads before multer writes anything to disk.
+// Content-Length is an upper bound (includes multipart overhead), so this errs conservative.
+function checkQuotaBeforeUpload(req, res, next) {
+  const incoming = Number(req.headers['content-length'] || 0);
+  const usage = getUserUsage(req.user._id);
+  if (usage + incoming > QUOTA_BYTES) {
+    return res.status(413).json({
+      error: 'Storage quota exceeded (1GB per account)',
+      usedBytes: usage,
+      quotaBytes: QUOTA_BYTES,
+    });
+  }
+  next();
 }
 
 const storage = multer.diskStorage({
@@ -69,7 +102,7 @@ function listDir(userId, typeFilter) {
 }
 
 // Public read-only — list image files for a user by username
-router.get('/public/:username', async (req, res) => {
+router.get('/public/:username', publicListLimit, async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username.toLowerCase() }, '_id');
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -77,14 +110,33 @@ router.get('/public/:username', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// List files
-router.get('/', requireLogin, (req, res) => {
+// List files (plain array — engine.html's FilesPanel and media picker expect this shape)
+router.get('/', requireLogin, listLimit, (req, res) => {
   res.json(listDir(req.user._id, req.query.type || null));
 });
 
+// Storage usage for the current user
+router.get('/usage', requireLogin, listLimit, (req, res) => {
+  const usedBytes = getUserUsage(req.user._id);
+  res.json({ usedBytes, quotaBytes: QUOTA_BYTES, remainingBytes: Math.max(0, QUOTA_BYTES - usedBytes) });
+});
+
 // Upload (up to 20 files per request)
-router.post('/upload', requireLogin, upload.array('files', 20), (req, res) => {
+router.post('/upload', requireLogin, uploadLimit, checkQuotaBeforeUpload, upload.array('files', 20), (req, res) => {
   if (!req.files || !req.files.length) return res.status(400).json({ error: 'No files uploaded' });
+
+  // Re-check after writing to disk — Content-Length is only an estimate, and concurrent
+  // uploads from the same account could both pass the pre-check.
+  const usage = getUserUsage(req.user._id);
+  if (usage > QUOTA_BYTES) {
+    req.files.forEach(f => { try { fs.unlinkSync(f.path); } catch {} });
+    return res.status(413).json({
+      error: 'Storage quota exceeded (1GB per account)',
+      usedBytes: usage - req.files.reduce((s, f) => s + f.size, 0),
+      quotaBytes: QUOTA_BYTES,
+    });
+  }
+
   res.json({
     uploaded: req.files.map(f => ({
       name: f.filename,
@@ -92,16 +144,18 @@ router.post('/upload', requireLogin, upload.array('files', 20), (req, res) => {
       url:  `/media/${req.user._id}/${encodeURIComponent(f.filename)}`,
       type: typeFromExt(path.extname(f.filename)),
     })),
+    usedBytes: usage,
+    quotaBytes: QUOTA_BYTES,
   });
 });
 
 // Delete a file
-router.delete('/:filename', requireLogin, (req, res) => {
+router.delete('/:filename', requireLogin, deleteLimit, (req, res) => {
   const name = path.basename(decodeURIComponent(req.params.filename));
   const fp   = path.join(userDir(req.user._id), name);
   if (!fs.existsSync(fp)) return res.status(404).json({ error: 'Not found' });
   fs.unlinkSync(fp);
-  res.json({ ok: true });
+  res.json({ ok: true, usedBytes: getUserUsage(req.user._id), quotaBytes: QUOTA_BYTES });
 });
 
 module.exports = router;

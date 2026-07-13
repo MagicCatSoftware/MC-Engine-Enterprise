@@ -92,12 +92,16 @@ app.use('/api/profile',  require('./routes/profile'));
 app.use('/api/db',       require('./routes/db'));
 app.use('/api/vars',     require('./routes/vars'));
 app.use('/api/files',    require('./routes/files'));
+app.use('/api/admin',    require('./routes/admin'));
+app.use('/api/contact',    require('./routes/contact'));
+app.use('/api/components', require('./routes/components'));
+app.use('/api/ai',         require('./routes/ai'));
 app.use('/stripe',       require('./routes/stripe').router);
 
 app.get('/api/me', (req, res) => {
   if (!req.user) return res.json({ user: null });
   const u = req.user;
-  const { isAdmin } = require('./middleware/auth');
+  const { isAdmin, hasPaidAccess } = require('./middleware/auth');
   res.json({
     user: {
       id:                 u._id,
@@ -107,6 +111,7 @@ app.get('/api/me', (req, res) => {
       username:           u.username,
       subscriptionStatus: u.subscriptionStatus,
       isAdmin:            isAdmin(u),
+      hasPaidAccess:      hasPaidAccess(u) || isAdmin(u),
     },
   });
 });
@@ -203,6 +208,8 @@ function libraryPanelHTML() {
   <div class="mcl-header">&#9707; Component Library</div>
   <div class="mcl-search"><input id="mcl-q" type="text" placeholder="Filter..."></div>
   <div class="mcl-list" id="mcl-list"><div class="mcl-empty">Loading...</div></div>
+  <div class="mcl-header" style="cursor:pointer;border-top:1px solid #2e2e3e;border-bottom:none;margin-top:4px" onclick="document.getElementById('mcl-my-list').style.display=document.getElementById('mcl-my-list').style.display==='none'?'block':'none'">&#128190; My Components</div>
+  <div id="mcl-my-list" style="display:none"><div class="mcl-empty" id="mcl-my-empty">Loading…</div></div>
 </div>
 <script>
 (function() {
@@ -317,6 +324,29 @@ function libraryPanelHTML() {
       .then(function(r) { return r.json(); })
       .then(function(data) { _tpls = data; renderList(''); })
       .catch(function() { document.getElementById('mcl-list').innerHTML = '<div class="mcl-empty">Failed to load.</div>'; });
+    // Load user components
+    fetch('/api/components', { credentials: 'include' })
+      .then(function(r) { return r.ok ? r.json() : []; })
+      .then(function(comps) {
+        var container = document.getElementById('mcl-my-list');
+        var empty = document.getElementById('mcl-my-empty');
+        if (!comps.length) { if (empty) empty.textContent = 'No saved components yet. Use "Save as Component" in the Props tab.'; return; }
+        if (empty) empty.style.display = 'none';
+        comps.forEach(function(c) {
+          var div = document.createElement('div');
+          div.className = 'mcl-item';
+          div.style.cssText = 'display:flex;gap:6px;align-items:center;padding:6px 8px;cursor:pointer;border-radius:3px';
+          div.title = c.description || c.name;
+          div.innerHTML = '<span style="flex:1;font-size:11px;color:#e2e8f0">' + c.name + '</span>' +
+            '<button style="padding:2px 6px;font-size:9px;border:1px solid #3a3a4e;background:#1a1a2a;color:#ccc;border-radius:3px;cursor:pointer" onclick="event.stopPropagation();if(confirm(\'Delete \\"' + c.name + '\\"?\'))fetch(\'/api/components/' + c.id + '\',{method:\'DELETE\',credentials:\'include\'}).then(function(){location.reload()})">✕</button>';
+          div.onclick = function() {
+            if (typeof UI !== 'undefined' && UI.insertComponent) UI.insertComponent(c.data);
+            else console.warn('insertComponent not available');
+          };
+          container.appendChild(div);
+        });
+      })
+      .catch(function() {});
   });
 })();
 <\/script>`;
@@ -397,6 +427,11 @@ function cloudPanelHTML() {
     <div id="mcec-profile-bar" style="display:none;padding:6px 12px;background:#0d1a0d;border-bottom:1px solid #1a2e1a;font-size:10px;color:#4ade80">
       Your profile: <a id="mcec-profile-url" class="mcec-profile-link" href="#" target="_blank"></a>
       &nbsp;·&nbsp;
+      <label style="cursor:pointer;color:#888" title="Show your profile in the community gallery">
+        <input type="checkbox" id="mcec-public-toggle" style="vertical-align:middle;accent-color:#a78bfa" onchange="MCE_CLOUD.setPublic(this.checked)">
+        Public gallery
+      </label>
+      &nbsp;·&nbsp;
       <span style="color:#888;cursor:pointer" onclick="MCE_CLOUD.manageSubscription()">Manage subscription</span>
     </div>
     <div class="mcec-actions">
@@ -447,7 +482,7 @@ function cloudPanelHTML() {
     document.getElementById('mcec-avatar').src   = user.picture || '';
     document.getElementById('mcec-user-name').textContent = user.name || user.email;
     var badge = document.getElementById('mcec-sub-badge');
-    badge.style.display = user.subscriptionStatus === 'active' ? '' : 'none';
+    badge.style.display = user.hasPaidAccess ? '' : 'none';
   }
 
   function renderProfileBar(user) {
@@ -472,7 +507,7 @@ function cloudPanelHTML() {
     renderUserBar(_user);
 
     if (!_user) { showPanel('mcec-gate-login'); return; }
-    if (!_user.isAdmin && _user.subscriptionStatus !== 'active') { showPanel('mcec-gate-subscribe'); return; }
+    if (!_user.isAdmin && !_user.hasPaidAccess) { showPanel('mcec-gate-subscribe'); return; }
     if (!_user.username) { showPanel('mcec-gate-claim'); return; }
 
     renderProfileBar(_user);
@@ -493,6 +528,9 @@ function cloudPanelHTML() {
       loops:         Object.assign({}, MCE.loops),
       vars:          Object.assign({}, MCE.vars),
       logic:         Object.assign({}, MCE.logic),
+      templates:     Object.assign({}, MCE.templates),
+      css:           typeof MCE.css === 'string' ? MCE.css : '',
+      runtimeStyle:  MCE.runtimeStyle || 'clean',
       dbCollections: (function() {
         if (typeof DB === 'undefined' || !DB._store) return (MCE.dbCollections || []).slice();
         var stripMeta = function(d) { var r = Object.assign({}, d); delete r._id; delete r._created; delete r._updated; return r; };
@@ -533,6 +571,14 @@ function cloudPanelHTML() {
         if (j.url) window.location.href = j.url;
         else status('Error: ' + (j.error || 'unknown'), false);
       } catch(e) { status('Error: ' + e.message, false); }
+    },
+
+    async setPublic(isPublic) {
+      if (!_id) return status('Save a profile first', false);
+      try {
+        await apiFetch('/api/projects/' + _id, { method: 'PUT', body: JSON.stringify({ public: isPublic }) });
+        status(isPublic ? 'Profile added to community gallery ✓' : 'Profile removed from gallery ✓', true);
+      } catch(e) { status('Could not update', false); }
     },
 
     async manageSubscription() {
@@ -684,6 +730,10 @@ function cloudPanelHTML() {
           _listEl.innerHTML = '<div class="mcec-empty">No saved projects.<br>Click Save to create one.</div>';
           return;
         }
+        // Sync the public toggle for the current profile project
+        var profileProj = list.find(function(p) { return p.isProfile; });
+        var tog = document.getElementById('mcec-public-toggle');
+        if (tog && profileProj) tog.checked = !!profileProj.public;
         _listEl.innerHTML = list.map(function(p) {
           var d = p.updated_at ? new Date(p.updated_at).toLocaleDateString() : '';
           var safeName = String(p.name).replace(/\\\\/g,'\\\\\\\\').replace(/'/g,"\\\\'");
@@ -721,19 +771,10 @@ function cloudPanelHTML() {
 
   setTimeout(function() { syncName(); }, 800);
 
-  // Save on page close/refresh (keepalive survives unload)
-  window.addEventListener('beforeunload', function() {
-    if (!_id || typeof MCE === 'undefined') return;
-    var data = mceData();
-    if (!data) return;
-    fetch('/api/projects/' + _id, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      keepalive: true,
-      body: JSON.stringify({ name: (MCE.project && MCE.project.name) || 'Untitled', data: data })
-    });
-  });
+  // Note: there is intentionally no silent autosave-on-unload here anymore.
+  // It used to PUT whatever was in memory the instant a tab closed/refreshed,
+  // which repeatedly clobbered published profiles with stale/partial in-memory
+  // state from old tabs. Saving is explicit now — the Save button only.
 
   // Auto-restore last saved project on page load
   if (window.MCE_PROFILE && window.MCE_PROFILE.isOwner && window.MCE_PROFILE.data && window.MCE_PROFILE.projectId) {
@@ -806,6 +847,31 @@ hero p{font-size:19px;color:#444;max-width:500px;margin:0 auto 36px;line-height:
 .card-icon{font-size:24px;margin-bottom:14px}
 .card h3{font-size:15px;font-weight:800;margin-bottom:7px;color:#000;text-transform:uppercase;letter-spacing:.05em}
 .card p{font-size:13px;color:#555;line-height:1.6}
+.discover{max-width:900px;margin:0 auto;padding:56px 24px;border-bottom:2px solid #000}
+.discover h2{font-size:30px;font-weight:900;letter-spacing:-1px;margin-bottom:8px;color:#000;text-align:center}
+.discover>.sub{color:#555;font-size:15px;text-align:center;margin-bottom:28px}
+.search-box{max-width:480px;margin:0 auto 20px}
+.search-box input{width:100%;padding:12px 16px;border:2px solid #000;font-size:15px;outline:none;font-family:inherit}
+.search-box input:focus{background:#f9f9f9}
+.search-results{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:8px;min-height:0}
+.search-result{display:flex;align-items:center;gap:12px;padding:10px 14px;border:2px solid #000;text-decoration:none;color:#000}
+.search-result:hover{background:#000;color:#fff}
+.search-result img{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #ccc}
+.search-result .sr-name{font-size:14px;font-weight:700}
+.search-result .sr-handle{font-size:12px;color:#777;display:block}
+.search-result:hover .sr-handle{color:#ccc}
+.search-empty{text-align:center;color:#888;font-size:13px;padding:12px}
+.discover-cta{text-align:center;margin-top:20px}
+.story-section{max-width:760px;margin:0 auto;padding:70px 24px;border-bottom:2px solid #000}
+.story-section h2{font-size:30px;font-weight:900;letter-spacing:-1px;margin-bottom:20px;color:#000}
+.story-section p{font-size:16px;color:#333;line-height:1.75}
+.howitworks{max-width:760px;margin:0 auto;padding:70px 24px 60px;border-bottom:2px solid #000}
+.howitworks h2{font-size:30px;font-weight:900;letter-spacing:-1px;margin-bottom:10px;color:#000}
+.howitworks>.intro{font-size:16px;color:#333;line-height:1.75;margin-bottom:36px}
+.concept{margin-bottom:28px}
+.concept h3{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;color:#000;border-left:3px solid #000;padding-left:10px}
+.concept p{font-size:15px;color:#333;line-height:1.75;padding-left:13px}
+.philosophy{font-size:17px;font-style:italic;color:#000;line-height:1.7;margin-top:36px;padding-top:28px;border-top:2px solid #000;font-weight:600}
 .pricing{text-align:center;padding:60px 24px 100px}
 .pricing h2{font-size:34px;font-weight:900;margin-bottom:10px;letter-spacing:-1px;color:#000}
 .pricing>.sub{color:#555;margin-bottom:40px;font-size:15px}
@@ -835,10 +901,12 @@ footer{border-top:2px solid #000;padding:20px 48px;text-align:center;color:#888;
   .card{border-right:none;border-bottom:2px solid #000}
   .card:last-child{border-bottom:none}
   .price-box{padding:30px 28px;min-width:0;width:100%;max-width:380px}
+  .story-section,.howitworks{padding:48px 20px}
 }
 </style>
 </head>
 <body>
+<div style="background:#000;color:#fff;text-align:center;padding:8px 16px;font-size:13px;font-weight:700;letter-spacing:.02em">Be Advised: Site In Alpha</div>
 <nav>
   <img src="https://magiccatsoftware.ca/MCENGINELOGO.png" alt="Magic Cat Engine" class="nav-logo">
   <div class="nav-right" id="nav-right">
@@ -855,10 +923,11 @@ footer{border-top:2px solid #000;padding:20px 48px;text-align:center;color:#888;
 <hero>
   <img src="https://magiccatsoftware.ca/MCENGINELOGO.png" alt="Magic Cat Engine" class="hero-logo">
   <h1>Build your profile<br>with a visual engine</h1>
-  <p>Magic Cat Engine is a no-code IDE for crafting interactive, database-driven profile pages.</p>
   <div class="url-demo"><span>magiccatengine.com/</span>yourname</div><br>
   <div id="hero-cta">
     <a href="/auth/google" class="btn btn-primary">Sign in with Google — free to start</a>
+    <a href="/demo" class="btn btn-outline" style="margin-left:10px">Try the demo →</a>
+    <a href="/gallery" class="btn btn-outline" style="margin-left:10px">Community →</a>
   </div>
 </hero>
 
@@ -880,6 +949,68 @@ footer{border-top:2px solid #000;padding:20px 48px;text-align:center;color:#888;
   </div>
 </div>
 
+<div class="discover" id="discover">
+  <h2>Find people</h2>
+  <p class="sub">Search public profiles built with Magic Cat Engine.</p>
+  <div class="search-box">
+    <input id="user-search-input" type="text" placeholder="Search by name or username…" autocomplete="off" oninput="MCELanding.search(this.value)">
+  </div>
+  <div class="search-results" id="search-results"></div>
+  <div class="discover-cta"><a href="/gallery" class="btn btn-outline btn-sm">Browse all public profiles →</a></div>
+</div>
+
+<div class="story-section" id="story">
+  <h2>The Story</h2>
+  <p>The story of Magic Cat Engine can't be told without telling a little bit about myself. The short story is I got very sick, psychologically, but found a way of building applications that was one hundred percent no code. I ended up in hospital, but the technology stayed with me, and with AI I tried to tackle it, but it wasn't until Claude Code produced a working demo that I finally realized I had a real find in the middle of misery and madness.</p>
+</div>
+
+<div class="howitworks" id="how-it-works">
+  <h2>How It Works</h2>
+  <p class="intro">Magic Cat Engine feels like a lot to take in, you're working with all these different languages at once. The idea is simple, keep it as close to no code as possible, but I did place a zone where people can put all the code they want in.</p>
+
+  <div class="concept">
+    <h3>Events</h3>
+    <p>First you have events, events you create to be fired at different instances, any of the machines in the system can listen in for events and do something when that event is fired.</p>
+  </div>
+
+  <div class="concept">
+    <h3>Database &amp; Pipes</h3>
+    <p>Next you have the database and Pipes, pipes simply connect you right to the database. You create a pipe and that does a POST or a GET.</p>
+  </div>
+
+  <div class="concept">
+    <h3>Machines</h3>
+    <p>Then there are Machines. Every visual element you see on the page is a Machine — a button, a text input, an image, a list. Machines are the building blocks of everything. Each one can listen for events, respond to data coming through a pipe, or send out events of its own. They talk to each other through Wires.</p>
+  </div>
+
+  <div class="concept">
+    <h3>Wires</h3>
+    <p>Wires are how Machines share information. You connect one Machine to another and the data flows between them automatically. Change a value in one place and everything wired to it updates. No code required, no refresh needed. The idea was always that a person should be able to look at the screen and see the shape of how the application works, the way you might look at plumbing and understand where the water goes.</p>
+  </div>
+
+  <div class="concept">
+    <h3>Loops</h3>
+    <p>Loops came out of a simple problem — what do you do when you have a list of things? A list of products, a list of messages, a list of anything. A Loop takes a pipe, takes that data coming back, and automatically stamps out a Machine for each item. You design one, and the Loop handles the rest. It was one of those moments in development where something clicked into place so cleanly it almost felt like cheating.</p>
+  </div>
+
+  <div class="concept">
+    <h3>Views</h3>
+    <p>Views handle pages. When your application needs to show different screens depending on where the user is — a home page, a profile page, a settings page — Views manage that routing. The URL changes, the right content appears, and the whole thing stays inside that single file.</p>
+  </div>
+
+  <div class="concept">
+    <h3>One File</h3>
+    <p>And that single file is the point. Everything Magic Cat Engine produces is one standalone HTML file. No server required to run it, no framework to install, no dependencies to manage. You can put it on a USB stick. You can email it. You can open it ten years from now and it will still work. That felt important to me, especially building this the way I did — in hospital, on borrowed time, with no guarantee of infrastructure or stability. The output had to be something that could survive on its own.</p>
+  </div>
+
+  <div class="concept">
+    <h3>Logic Panel</h3>
+    <p>Finally there's the Logic Panel. This is where the no-code meets the can-code. The Logic Panel is a visual if-else system — you set up conditions, you define what happens when they're true, what happens when they're not. For most things that's enough. But if you need to go further, if you need to write actual JavaScript, there's a zone for that too. I didn't want to make a system that imprisoned people. I just wanted the door to be optional.</p>
+  </div>
+
+  <p class="philosophy">The whole thing is held together by one philosophy: the application should be readable by looking at it. Not at the source code, not at a terminal, not at a spreadsheet of configuration. At the screen itself. That was the dream I carried through some very dark places. I'm glad it made it out the other side.</p>
+</div>
+
 <div class="pricing" id="pricing">
   <h2>Simple pricing</h2>
   <p class="sub">One plan. Everything included.</p>
@@ -888,7 +1019,6 @@ footer{border-top:2px solid #000;padding:20px 48px;text-align:center;color:#888;
     <div class="price-per">per month</div>
     <ul class="price-list">
       <li>Your own profile URL</li>
-      <li>Unlimited cloud projects</li>
       <li>Full visual IDE access</li>
       <li>Instant publishing</li>
     </ul>
@@ -916,6 +1046,11 @@ footer{border-top:2px solid #000;padding:20px 48px;text-align:center;color:#888;
 (function() {
   var USER = ${JSON.stringify(userData)};
   var _checkTimer = null;
+  var _searchTimer = null;
+
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
 
   function apiFetch(url, opts) {
     opts = Object.assign({ credentials: 'include' }, opts || {});
@@ -952,9 +1087,11 @@ footer{border-top:2px solid #000;padding:20px 48px;text-align:center;color:#888;
     if (!USER) return;
     if (USER.username) {
       cta.innerHTML = '<a href="/develop/' + encodeURIComponent(USER.username) + '" class="btn btn-primary">Open your editor →</a>' +
+        '<a href="/demo" class="btn btn-outline" style="margin-left:10px">Try the demo →</a>' +
         '<br><br><a href="/' + encodeURIComponent(USER.username) + '" class="btn btn-outline" style="margin-top:8px">View public profile →</a>';
     } else {
-      cta.innerHTML = '<button class="btn btn-primary" onclick="MCELanding.showClaim()">Claim your username →</button>';
+      cta.innerHTML = '<button class="btn btn-primary" onclick="MCELanding.showClaim()">Claim your username →</button>' +
+        '<a href="/demo" class="btn btn-outline" style="margin-left:10px">Try the demo →</a>';
     }
   }
 
@@ -1027,6 +1164,29 @@ footer{border-top:2px solid #000;padding:20px 48px;text-align:center;color:#888;
         if (!res.ok) { alert(j.error || 'Failed'); return; }
         location.href = '/develop/' + encodeURIComponent(j.username);
       } catch(e) { alert('Error: ' + e.message); }
+    },
+
+    search: function(val) {
+      var box = document.getElementById('search-results');
+      clearTimeout(_searchTimer);
+      var q = val.trim();
+      if (!q) { box.innerHTML = ''; return; }
+      _searchTimer = setTimeout(async function() {
+        try {
+          var res = await apiFetch('/api/profile/search?q=' + encodeURIComponent(q));
+          var j = await res.json();
+          var results = j.results || [];
+          if (!results.length) { box.innerHTML = '<div class="search-empty">No public profiles found</div>'; return; }
+          box.innerHTML = results.map(function(u) {
+            var pic = u.picture
+              ? '<img src="' + esc(u.picture) + '" onerror="this.style.display=\\'none\\'">'
+              : '<div style="width:32px;height:32px;border-radius:50%;background:#eee;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🐱</div>';
+            return '<a class="search-result" href="/' + encodeURIComponent(u.username) + '">' + pic +
+              '<span><span class="sr-name">' + esc(u.name || u.username) + '</span>' +
+              '<span class="sr-handle">magiccatengine.com/' + esc(u.username) + '</span></span></a>';
+          }).join('');
+        } catch(e) {}
+      }, 300);
     }
   };
 
@@ -1054,6 +1214,62 @@ footer{border-top:2px solid #000;padding:20px 48px;text-align:center;color:#888;
 app.get('/', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(landingPageHTML(req.user || null));
+});
+
+// ── Community gallery ─────────────────────────────────────────────────────────
+app.get('/gallery', async (req, res) => {
+  const { isAdmin } = require('./middleware/auth');
+  try {
+    const projects = await Project.find({ public: true, isProfile: true })
+      .populate('userId', 'username name picture')
+      .sort('-updatedAt')
+      .limit(48);
+    const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const cards = projects.filter(p => p.userId && p.userId.username).map(p => {
+      const u = p.userId;
+      const pic = u.picture ? `<img src="${esc(u.picture)}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #222;flex-shrink:0" onerror="this.style.display='none'">` : `<div style="width:40px;height:40px;border-radius:50%;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:16px;color:#666;flex-shrink:0">🐱</div>`;
+      return `<a href="/${esc(u.username)}" style="display:flex;flex-direction:column;background:#0d0d1a;border:1px solid #1e1e2e;border-radius:8px;padding:20px;text-decoration:none;color:inherit;transition:border-color .2s" onmouseover="this.style.borderColor='#a78bfa'" onmouseout="this.style.borderColor='#1e1e2e'">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">${pic}<div><div style="font-size:14px;font-weight:700;color:#e2e8f0">${esc(u.name || u.username)}</div><div style="font-size:11px;color:#666">magiccatengine.com/${esc(u.username)}</div></div></div>
+        <div style="font-size:12px;color:#888;line-height:1.5;flex:1">${esc(p.name)}</div>
+        <div style="font-size:10px;color:#444;margin-top:10px;text-transform:uppercase;letter-spacing:1px">View profile →</div>
+      </a>`;
+    }).join('');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Community — Magic Cat Engine</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{background:#06060f;color:#e2e8f0;font-family:system-ui,-apple-system,sans-serif;padding:40px 24px 80px}
+h1{font-size:28px;font-weight:900;margin-bottom:6px}p.sub{color:#888;font-size:13px;margin-bottom:32px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;max-width:1100px;margin:0 auto}
+nav{display:flex;align-items:center;gap:16px;max-width:1100px;margin:0 auto 40px;font-size:13px}
+nav a{color:#888;text-decoration:none}nav a:hover{color:#fff}
+</style></head><body>
+<nav><a href="/" style="font-weight:900;font-size:16px;color:#a78bfa">Magic Cat Engine</a><a href="/">Home</a><a href="/demo">Demo</a></nav>
+<div style="max-width:1100px;margin:0 auto"><h1>Community</h1><p class="sub">Public profiles built with Magic Cat Engine — click any card to see the live app.</p></div>
+<div class="grid">${cards || '<p style="color:#666;text-align:center;grid-column:1/-1;padding:40px 0">No public profiles yet — be the first!</p>'}</div>
+</body></html>`);
+  } catch(e) { res.status(500).send('Error: ' + e.message); }
+});
+
+// ── Public sandbox demo (no auth, no cloud panel, no live DB) ─────────────────
+// Serves the bare engine with the built-in starter project (loadStarterProject()
+// only runs when window.MCE_PROFILE is unset, which is the case here). All pipes
+// in that starter project default to live:false, so everything stays client-side
+// mock data — nothing is saved, nothing hits the real API.
+app.get('/demo', (req, res) => {
+  const engine = db.getEngine();
+  if (!engine) return res.status(503).send('Engine not seeded');
+
+  const banner = `<script>window.MCE_DEMO_MODE = true;</script>
+<div style="background:#a78bfa;color:#000;text-align:center;padding:8px 16px;font-size:13px;font-weight:700;letter-spacing:.02em;position:relative;z-index:100001">
+  You're playing with a live demo — nothing here is saved.
+  <a href="/" style="color:#000;text-decoration:underline;margin-left:8px">Sign up to keep your work &rarr;</a>
+</div>`;
+
+  const withBanner = engine.html.replace('<body>', '<body>' + banner);
+  const html = injectBeforeBodyEnd(withBanner, libraryPanelHTML());
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store');
+  res.send(html);
 });
 
 // ── Editor route (/develop/:username) ────────────────────────────────────────
@@ -1098,8 +1314,260 @@ window.MCE_PROFILE = {
     const withHead = engine.html.replace('</head>', inject + '\n</head>');
     const html = injectBeforeBodyEnd(withHead, libraryPanelHTML() + cloudPanelHTML());
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
     res.send(html);
   } catch (e) { next(e); }
+});
+
+// ── Admin page ────────────────────────────────────────────────────────────────
+function adminPageHTML() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin — Magic Cat Engine</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif}
+body{background:#06060f;color:#e2e8f0;padding:24px}
+h1{font-size:20px;margin-bottom:16px}
+.toolbar{display:flex;gap:8px;margin-bottom:16px}
+input[type=text]{flex:1;max-width:320px;padding:8px 10px;background:#11111e;border:1px solid #2e2e3e;border-radius:5px;color:#e2e8f0;font-size:13px;outline:none}
+input[type=text]:focus{border-color:#a78bfa}
+button{padding:7px 14px;border-radius:5px;border:1px solid #3a3a4e;background:#1a1a2a;color:#ccc;font-size:12px;cursor:pointer}
+button:hover{background:#252535;border-color:#a78bfa;color:#fff}
+button.danger{border-color:#ef444466;color:#ef4444}
+button.danger:hover{background:#2a1010;border-color:#ef4444}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:8px 10px;border-bottom:1px solid #1e1e2e;text-align:left;white-space:nowrap}
+th{color:#888;text-transform:uppercase;font-size:10px;letter-spacing:.04em}
+tr:hover td{background:#0d0d1a}
+.badge{padding:2px 7px;border-radius:3px;font-size:10px;border:1px solid}
+.badge.active{color:#4ade80;border-color:#16a34a55;background:#16a34a22}
+.badge.inactive{color:#888;border-color:#444;background:#1a1a1a}
+.badge.on{color:#a78bfa;border-color:#a78bfa55;background:#a78bfa22}
+.row-actions{display:flex;gap:5px}
+.row-actions button{padding:4px 9px;font-size:11px}
+.section{margin-top:36px}
+.reserve-form{display:flex;gap:8px;margin-bottom:12px}
+.reserve-form input{padding:7px 10px;background:#11111e;border:1px solid #2e2e3e;border-radius:5px;color:#e2e8f0;font-size:12px;outline:none}
+.muted{color:#666;font-size:11px}
+.status{margin-left:8px;font-size:12px}
+.status.ok{color:#22c55e}
+.status.err{color:#ef4444}
+.pager{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:12px;color:#888}
+</style>
+</head>
+<body>
+<h1>Magic Cat Engine — Admin</h1>
+
+<div class="toolbar">
+  <input type="text" id="q" placeholder="Search by email, username, or name...">
+  <button onclick="Admin.search()">Search</button>
+  <span class="status" id="status"></span>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Email</th><th>Name</th><th>Username</th><th>Status</th><th>Period ends</th><th>Permanent</th><th>Paid</th><th>Joined</th><th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="rows"><tr><td colspan="9" class="muted">Loading…</td></tr></tbody>
+</table>
+<div class="pager">
+  <button onclick="Admin.prevPage()">&larr; Prev</button>
+  <span id="page-info"></span>
+  <button onclick="Admin.nextPage()">Next &rarr;</button>
+</div>
+
+<div class="section">
+  <h1 style="font-size:16px">Reserved usernames</h1>
+  <p class="muted" style="margin-bottom:10px">Block a username from public claim without assigning it to a user.</p>
+  <div class="reserve-form">
+    <input type="text" id="reserve-username" placeholder="username">
+    <input type="text" id="reserve-reason" placeholder="reason (optional)">
+    <button onclick="Admin.reserve()">Reserve</button>
+  </div>
+  <table>
+    <thead><tr><th>Username</th><th>Reason</th><th>Reserved by</th><th>Date</th><th></th></tr></thead>
+    <tbody id="reserved-rows"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+  </table>
+</div>
+
+<script>
+(function() {
+  var state = { q: '', page: 1, limit: 50 };
+
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString() : '—'; }
+  function status(msg, ok) {
+    var el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status' + (ok === true ? ' ok' : ok === false ? ' err' : '');
+    if (ok !== undefined) setTimeout(function(){ el.textContent=''; }, 2500);
+  }
+  function api(url, opts) {
+    opts = Object.assign({ credentials: 'include' }, opts || {});
+    if (opts.body && typeof opts.body === 'object') {
+      opts.body = JSON.stringify(opts.body);
+      opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+    }
+    return fetch(url, opts).then(function(r) {
+      if (!r.ok) return r.json().then(function(j) { throw new Error(j.error || r.statusText); });
+      return r.json();
+    });
+  }
+
+  function userRow(u) {
+    var tr = document.createElement('tr');
+
+    function td(text) { var c = document.createElement('td'); c.textContent = text; return c; }
+    tr.appendChild(td(u.email));
+    tr.appendChild(td(u.name || '—'));
+    tr.appendChild(td(u.username || '—'));
+
+    var statusTd = document.createElement('td');
+    var badge = document.createElement('span');
+    badge.className = 'badge ' + (u.subscriptionStatus === 'active' ? 'active' : 'inactive');
+    badge.textContent = u.subscriptionStatus;
+    statusTd.appendChild(badge);
+    tr.appendChild(statusTd);
+
+    tr.appendChild(td(fmtDate(u.subscriptionPeriodEnd)));
+
+    var permTd = document.createElement('td');
+    var permBtn = document.createElement('button');
+    permBtn.textContent = u.isPermanent ? 'Yes ✕' : 'No';
+    if (u.isPermanent) permBtn.classList.add('danger');
+    permBtn.onclick = function() { Admin.togglePermanent(u.id, !u.isPermanent); };
+    permTd.appendChild(permBtn);
+    tr.appendChild(permTd);
+
+    var paidTd = document.createElement('td');
+    var paidBtn = document.createElement('button');
+    paidBtn.textContent = u.manualPaid ? 'Yes ✕' : 'No';
+    if (u.manualPaid) paidBtn.classList.add('danger');
+    paidBtn.onclick = function() { Admin.togglePaid(u.id, !u.manualPaid); };
+    paidTd.appendChild(paidBtn);
+    tr.appendChild(paidTd);
+
+    tr.appendChild(td(fmtDate(u.createdAt)));
+
+    var actionsTd = document.createElement('td');
+    var actions = document.createElement('div');
+    actions.className = 'row-actions';
+    var setBtn = document.createElement('button');
+    setBtn.textContent = 'Set username';
+    setBtn.onclick = function() { Admin.setUsername(u.id, u.username); };
+    actions.appendChild(setBtn);
+    actionsTd.appendChild(actions);
+    tr.appendChild(actionsTd);
+
+    return tr;
+  }
+
+  window.Admin = {
+    async load() {
+      status('Loading…');
+      try {
+        var qs = new URLSearchParams({ q: state.q, page: state.page, limit: state.limit });
+        var j = await api('/api/admin/users?' + qs.toString());
+        var tbody = document.getElementById('rows');
+        tbody.innerHTML = '';
+        if (!j.users.length) {
+          var tr = document.createElement('tr');
+          var c = document.createElement('td'); c.colSpan = 9; c.className = 'muted'; c.textContent = 'No users found.';
+          tr.appendChild(c); tbody.appendChild(tr);
+        } else {
+          j.users.forEach(function(u) { tbody.appendChild(userRow(u)); });
+        }
+        document.getElementById('page-info').textContent = 'Page ' + j.page + ' · ' + j.total + ' total';
+        status('', undefined);
+      } catch (e) { status('Error: ' + e.message, false); }
+    },
+
+    search() { state.q = document.getElementById('q').value.trim(); state.page = 1; Admin.load(); },
+    nextPage() { state.page++; Admin.load(); },
+    prevPage() { if (state.page > 1) { state.page--; Admin.load(); } },
+
+    async togglePermanent(id, value) {
+      try { await api('/api/admin/users/' + id + '/permanent', { method: 'POST', body: { value: value } }); Admin.load(); }
+      catch (e) { status('Error: ' + e.message, false); }
+    },
+
+    async togglePaid(id, value) {
+      try { await api('/api/admin/users/' + id + '/paid', { method: 'POST', body: { value: value } }); Admin.load(); }
+      catch (e) { status('Error: ' + e.message, false); }
+    },
+
+    async setUsername(id, current) {
+      var val = prompt('Set username (blank to clear):', current || '');
+      if (val === null) return;
+      try {
+        await api('/api/admin/users/' + id + '/username', { method: 'POST', body: { username: val.trim() } });
+        Admin.load();
+      } catch (e) { status('Error: ' + e.message, false); }
+    },
+
+    async loadReserved() {
+      try {
+        var list = await api('/api/admin/reserved');
+        var tbody = document.getElementById('reserved-rows');
+        tbody.innerHTML = '';
+        if (!list.length) {
+          var tr = document.createElement('tr');
+          var c = document.createElement('td'); c.colSpan = 5; c.className = 'muted'; c.textContent = 'No reserved usernames.';
+          tr.appendChild(c); tbody.appendChild(tr);
+          return;
+        }
+        list.forEach(function(r) {
+          var tr = document.createElement('tr');
+          [r.username, r.reason || '—', r.reservedBy || '—', fmtDate(r.createdAt)].forEach(function(text) {
+            var td = document.createElement('td'); td.textContent = text; tr.appendChild(td);
+          });
+          var actionsTd = document.createElement('td');
+          var btn = document.createElement('button');
+          btn.className = 'danger'; btn.textContent = 'Release';
+          btn.onclick = function() { Admin.releaseReserved(r.username); };
+          actionsTd.appendChild(btn);
+          tr.appendChild(actionsTd);
+          tbody.appendChild(tr);
+        });
+      } catch (e) { status('Error: ' + e.message, false); }
+    },
+
+    async reserve() {
+      var username = document.getElementById('reserve-username').value.trim();
+      var reason   = document.getElementById('reserve-reason').value.trim();
+      if (!username) return;
+      try {
+        await api('/api/admin/reserved', { method: 'POST', body: { username: username, reason: reason } });
+        document.getElementById('reserve-username').value = '';
+        document.getElementById('reserve-reason').value = '';
+        Admin.loadReserved();
+      } catch (e) { status('Error: ' + e.message, false); }
+    },
+
+    async releaseReserved(username) {
+      try { await api('/api/admin/reserved/' + encodeURIComponent(username), { method: 'DELETE' }); Admin.loadReserved(); }
+      catch (e) { status('Error: ' + e.message, false); }
+    }
+  };
+
+  document.getElementById('q').addEventListener('keydown', function(e) { if (e.key === 'Enter') Admin.search(); });
+  Admin.load();
+  Admin.loadReserved();
+})();
+</script>
+</body>
+</html>`;
+}
+
+app.get('/admin', (req, res) => {
+  const { isAdmin } = require('./middleware/auth');
+  if (!req.user) return res.redirect('/auth/google?return=' + encodeURIComponent('/admin'));
+  if (!isAdmin(req.user)) return res.status(403).send('Admin access required');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(adminPageHTML());
 });
 
 // ── Public profile pages /:username ──────────────────────────────────────────
@@ -1202,6 +1670,7 @@ window.MCE_PUBLIC_USERNAME = ${isOwner ? 'null' : JSON.stringify(owner.username)
     const withHead = engine.html.replace('</head>', inject + '\n</head>');
     const html = injectBeforeBodyEnd(withHead, autoRunJS);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
     res.send(html);
   } catch (e) { next(e); }
 });

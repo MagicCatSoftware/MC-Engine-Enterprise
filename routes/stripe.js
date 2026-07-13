@@ -68,9 +68,14 @@ async function handleWebhook(req, res) {
 
   try {
     if (event.type === 'checkout.session.completed' && obj.mode === 'subscription') {
+      const sub = await stripe.subscriptions.retrieve(obj.subscription);
       await User.findOneAndUpdate(
         { stripeCustomerId: obj.customer },
-        { subscriptionStatus: 'active', stripeSubscriptionId: obj.subscription }
+        {
+          subscriptionStatus:    'active',
+          stripeSubscriptionId:  obj.subscription,
+          subscriptionPeriodEnd: new Date(sub.current_period_end * 1000),
+        }
       );
       console.log('[stripe] subscription activated for customer', obj.customer);
     }
@@ -79,7 +84,11 @@ async function handleWebhook(req, res) {
       const status = (obj.status === 'active' || obj.status === 'trialing') ? 'active' : obj.status;
       await User.findOneAndUpdate(
         { stripeCustomerId: obj.customer },
-        { subscriptionStatus: status, stripeSubscriptionId: obj.id }
+        {
+          subscriptionStatus:    status,
+          stripeSubscriptionId:  obj.id,
+          subscriptionPeriodEnd: new Date(obj.current_period_end * 1000),
+        }
       );
     }
 

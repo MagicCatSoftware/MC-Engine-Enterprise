@@ -11,13 +11,17 @@ function requireLogin(req, res, next) {
   next();
 }
 
+function hasPaidAccess(user) {
+  return !!(user && (user.isPermanent || user.manualPaid || user.subscriptionStatus === 'active'));
+}
+
 function requireSubscription(req, res, next) {
   if (!req.user) return res.status(401).json({ error: 'Login required' });
   if (isAdmin(req.user)) return next();
-  if (req.user.subscriptionStatus !== 'active') {
+  if (!hasPaidAccess(req.user)) {
     return res.status(403).json({ error: 'Active subscription required', code: 'NO_SUBSCRIPTION' });
   }
   next();
 }
 
-module.exports = { requireLogin, requireSubscription, isAdmin };
+module.exports = { requireLogin, requireSubscription, isAdmin, hasPaidAccess };
