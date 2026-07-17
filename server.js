@@ -1253,19 +1253,57 @@ nav a{color:#888;text-decoration:none}nav a:hover{color:#fff}
 });
 
 // ── Examples showcase ──────────────────────────────────────────────────────────
+// Serves the engine's own runtime (machines/pipes/events/wires/views/logic/loops
+// interpreter) as a standalone script, stripped of the editor-UI bootstrap, so the
+// /examples page can embed real interactive Magic Cat Engine widgets in iframes —
+// the same buildHTML/buildExportCSS/buildExportScript path the editor's own "Live"
+// tab and Export button already use, just driven by data instead of the UI.
+app.get('/mce-runtime.js', (req, res) => {
+  const engine = db.getEngine();
+  if (!engine) return res.status(503).send('// engine not seeded');
+  const html = engine.html;
+  const scriptStart = html.indexOf('<script>') + '<script>'.length;
+  const scriptEnd = html.lastIndexOf('</script>');
+  let js = html.slice(scriptStart, scriptEnd);
+  const initMarker = "document.addEventListener('DOMContentLoaded'";
+  const initIdx = js.lastIndexOf(initMarker);
+  if (initIdx !== -1) js = js.slice(0, initIdx);
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.send(js);
+});
+
 function examplesPageHTML() {
   const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const total = EXAMPLES.reduce((n, g) => n + g.items.length, 0);
-  const sections = EXAMPLES.map(group => `
+  const live  = EXAMPLES.reduce((n, g) => n + g.items.filter(it => it.widget).length, 0);
+
+  const WIDGETS = {};
+  const sections = EXAMPLES.map((group, gi) => `
     <section class="ex-group">
       <h2>${esc(group.category)}</h2>
       <div class="ex-grid">
-        ${group.items.map(it => `
+        ${group.items.map((it, ii) => {
+          if (!it.widget) return `
           <div class="ex-card">
             <div class="ex-icon">${it.icon}</div>
             <div class="ex-title">${esc(it.title)}</div>
             <div class="ex-desc">${esc(it.desc)}</div>
-          </div>`).join('')}
+          </div>`;
+          const key = `g${gi}i${ii}`;
+          WIDGETS[key] = it.widget;
+          return `
+          <div class="ex-card ex-card-live">
+            <div class="ex-card-head">
+              <div class="ex-icon">${it.icon}</div>
+              <div>
+                <div class="ex-title">${esc(it.title)} <span class="ex-live-badge">live</span></div>
+                <div class="ex-desc">${esc(it.desc)}</div>
+              </div>
+            </div>
+            <div class="ex-widget-host" data-widget-key="${key}"><div class="ex-widget-loading">loading widget…</div></div>
+          </div>`;
+        }).join('')}
       </div>
     </section>`).join('');
 
@@ -1286,17 +1324,81 @@ header .count{color:#a78bfa;font-weight:700}
 .ex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
 .ex-card{background:#0d0d1a;border:1px solid #1e1e2e;border-radius:8px;padding:18px;transition:border-color .2s}
 .ex-card:hover{border-color:#a78bfa}
-.ex-icon{font-size:22px;margin-bottom:10px}
+.ex-card-live{grid-column:span 2;min-width:0}
+.ex-card-head{display:flex;gap:12px;margin-bottom:14px}
+.ex-icon{font-size:22px;margin-bottom:10px;flex-shrink:0}
 .ex-title{font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:6px;line-height:1.4}
+.ex-live-badge{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#000;background:#a78bfa;border-radius:4px;padding:2px 6px;vertical-align:middle;margin-left:4px}
 .ex-desc{font-size:12px;color:#888;line-height:1.5}
-@media(max-width:600px){header h1{font-size:26px}}
+.ex-widget-host{border:1px solid #1e1e2e;border-radius:6px;overflow:hidden;min-height:160px;background:#06060f}
+.ex-widget-host iframe{width:100%;border:0;display:block}
+.ex-widget-loading{padding:16px;font-size:11px;color:#555;font-family:monospace}
+@media(max-width:600px){header h1{font-size:26px}.ex-card-live{grid-column:span 1}}
 </style></head><body>
 <nav><a href="/" class="brand">Magic Cat Engine</a><a href="/">Home</a><a href="/demo">Demo</a><a href="/gallery">Community</a><a href="/examples">Examples</a></nav>
 <header>
   <h1>100 things you can build</h1>
-  <p>A running catalog of what Magic Cat Engine's machines, pipes, events, wires, views, and logic blocks can put together. <span class="count">${total} of 100</span> so far — more added regularly.</p>
+  <p>A running catalog of what Magic Cat Engine's machines, pipes, events, wires, views, and logic blocks can put together. <span class="count">${total} of 100</span> so far, <span class="count">${live} live</span> as working interactive widgets built with the engine itself — more converted regularly.</p>
 </header>
 ${sections}
+<script src="/mce-runtime.js"></script>
+<script>
+(function(){
+  var WIDGETS = ${JSON.stringify(WIDGETS)};
+
+  function renderWidget(host, example) {
+    MCE.project   = { name: 'Example' };
+    MCE.machines  = example.machines  || {};
+    MCE.rootOrder = example.rootOrder || [];
+    MCE.events    = example.events    || {};
+    MCE.pipes     = example.pipes     || {};
+    MCE.views     = example.views     || {};
+    MCE.logic     = example.logic     || {};
+    MCE.loops     = example.loops     || {};
+    MCE.templates = example.templates || {};
+    MCE.vars      = example.vars      || {};
+    MCE.css       = example.css       || '';
+    MCE._nextId   = example._nextId   || 1;
+
+    DB._store = {};
+    MockAPI._endpoints = {};
+    (example.dbCollections || []).forEach(function(c) {
+      DB.createCollection(c.name, c.isArray !== false);
+      (c.seed || []).forEach(function(doc) { DB.insert(c.name, doc); });
+    });
+    Object.values(MCE.pipes).forEach(function(p) { MockAPI.registerPipeEndpoints(p); });
+
+    var roots = MCE.rootOrder.filter(function(id) { return MCE.machines[id] && !MCE.machines[id].parentId; });
+    var bodyHTML = roots.map(function(id) { return MachineSystem.buildHTML(id, true); }).join('\\n');
+    var css = UI.buildExportCSS();
+    var script = UI.buildExportScript();
+    var srcdoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' + css + '*{box-sizing:border-box}body{margin:0}</style></head><body>' + bodyHTML + '<script>' + script + '<\\/script></body></html>';
+
+    host.innerHTML = '';
+    var iframe = document.createElement('iframe');
+    iframe.style.height = '220px';
+    iframe.setAttribute('scrolling', 'no');
+    host.appendChild(iframe);
+    iframe.srcdoc = srcdoc;
+  }
+
+  var hosts = document.querySelectorAll('.ex-widget-host');
+  if (!('IntersectionObserver' in window)) {
+    hosts.forEach(function(h) { var ex = WIDGETS[h.dataset.widgetKey]; if (ex) renderWidget(h, ex); });
+    return;
+  }
+  var io = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (!entry.isIntersecting) return;
+      var h = entry.target;
+      var ex = WIDGETS[h.dataset.widgetKey];
+      if (ex) renderWidget(h, ex);
+      io.unobserve(h);
+    });
+  }, { rootMargin: '200px' });
+  hosts.forEach(function(h) { io.observe(h); });
+})();
+</script>
 </body></html>`;
 }
 
