@@ -1330,7 +1330,7 @@ header .count{color:#a78bfa;font-weight:700}
 .ex-title{font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:6px;line-height:1.4}
 .ex-live-badge{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#000;background:#a78bfa;border-radius:4px;padding:2px 6px;vertical-align:middle;margin-left:4px}
 .ex-desc{font-size:12px;color:#888;line-height:1.5}
-.ex-widget-host{border:1px solid #1e1e2e;border-radius:6px;overflow:hidden;min-height:160px;background:#06060f}
+.ex-widget-host{border:1px solid #1e1e2e;border-radius:6px;overflow:hidden;min-height:250px;background:#06060f}
 .ex-widget-host iframe{width:100%;border:0;display:block}
 .ex-widget-loading{padding:16px;font-size:11px;color:#555;font-family:monospace}
 @media(max-width:600px){header h1{font-size:26px}.ex-card-live{grid-column:span 1}}
@@ -1376,7 +1376,7 @@ ${sections}
 
     host.innerHTML = '';
     var iframe = document.createElement('iframe');
-    iframe.style.height = '220px';
+    iframe.style.height = '250px';
     iframe.setAttribute('scrolling', 'no');
     host.appendChild(iframe);
     iframe.srcdoc = srcdoc;
