@@ -1,6 +1,7 @@
 node_modules/
 data/**
 !data/engine.html
+!data/examples.js
 logs/
 .env
 *.db

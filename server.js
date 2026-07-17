@@ -15,6 +15,7 @@ const User            = require('./models/User');
 const Project         = require('./models/Project');
 const VarStore        = require('./models/VarStore');
 const { handleWebhook } = require('./routes/stripe');
+const EXAMPLES        = require('./data/examples');
 
 const app    = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -928,6 +929,7 @@ footer{border-top:2px solid #000;padding:20px 48px;text-align:center;color:#888;
     <a href="/auth/google" class="btn btn-primary">Sign in with Google — free to start</a>
     <a href="/demo" class="btn btn-outline" style="margin-left:10px">Try the demo →</a>
     <a href="/gallery" class="btn btn-outline" style="margin-left:10px">Community →</a>
+    <a href="/examples" class="btn btn-outline" style="margin-left:10px">100 Examples →</a>
   </div>
 </hero>
 
@@ -1243,11 +1245,64 @@ h1{font-size:28px;font-weight:900;margin-bottom:6px}p.sub{color:#888;font-size:1
 nav{display:flex;align-items:center;gap:16px;max-width:1100px;margin:0 auto 40px;font-size:13px}
 nav a{color:#888;text-decoration:none}nav a:hover{color:#fff}
 </style></head><body>
-<nav><a href="/" style="font-weight:900;font-size:16px;color:#a78bfa">Magic Cat Engine</a><a href="/">Home</a><a href="/demo">Demo</a></nav>
+<nav><a href="/" style="font-weight:900;font-size:16px;color:#a78bfa">Magic Cat Engine</a><a href="/">Home</a><a href="/demo">Demo</a><a href="/examples">Examples</a></nav>
 <div style="max-width:1100px;margin:0 auto"><h1>Community</h1><p class="sub">Public profiles built with Magic Cat Engine — click any card to see the live app.</p></div>
 <div class="grid">${cards || '<p style="color:#666;text-align:center;grid-column:1/-1;padding:40px 0">No public profiles yet — be the first!</p>'}</div>
 </body></html>`);
   } catch(e) { res.status(500).send('Error: ' + e.message); }
+});
+
+// ── Examples showcase ──────────────────────────────────────────────────────────
+function examplesPageHTML() {
+  const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const total = EXAMPLES.reduce((n, g) => n + g.items.length, 0);
+  const sections = EXAMPLES.map(group => `
+    <section class="ex-group">
+      <h2>${esc(group.category)}</h2>
+      <div class="ex-grid">
+        ${group.items.map(it => `
+          <div class="ex-card">
+            <div class="ex-icon">${it.icon}</div>
+            <div class="ex-title">${esc(it.title)}</div>
+            <div class="ex-desc">${esc(it.desc)}</div>
+          </div>`).join('')}
+      </div>
+    </section>`).join('');
+
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>100 Examples — Magic Cat Engine</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#06060f;color:#e2e8f0;font-family:system-ui,-apple-system,sans-serif;padding:0 0 80px}
+nav{display:flex;align-items:center;gap:16px;max-width:1100px;margin:0 auto;padding:24px;font-size:13px}
+nav a{color:#888;text-decoration:none}
+nav a:hover{color:#fff}
+nav a.brand{font-weight:900;font-size:16px;color:#a78bfa}
+header{max-width:1100px;margin:0 auto;padding:8px 24px 40px}
+header h1{font-size:32px;font-weight:900;margin-bottom:8px}
+header p{color:#888;font-size:14px;max-width:640px;line-height:1.6}
+header .count{color:#a78bfa;font-weight:700}
+.ex-group{max-width:1100px;margin:0 auto;padding:32px 24px 8px}
+.ex-group h2{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#a78bfa;margin-bottom:18px;border-bottom:1px solid #1e1e2e;padding-bottom:12px}
+.ex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.ex-card{background:#0d0d1a;border:1px solid #1e1e2e;border-radius:8px;padding:18px;transition:border-color .2s}
+.ex-card:hover{border-color:#a78bfa}
+.ex-icon{font-size:22px;margin-bottom:10px}
+.ex-title{font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:6px;line-height:1.4}
+.ex-desc{font-size:12px;color:#888;line-height:1.5}
+@media(max-width:600px){header h1{font-size:26px}}
+</style></head><body>
+<nav><a href="/" class="brand">Magic Cat Engine</a><a href="/">Home</a><a href="/demo">Demo</a><a href="/gallery">Community</a><a href="/examples">Examples</a></nav>
+<header>
+  <h1>100 things you can build</h1>
+  <p>A running catalog of what Magic Cat Engine's machines, pipes, events, wires, views, and logic blocks can put together. <span class="count">${total} of 100</span> so far — more added regularly.</p>
+</header>
+${sections}
+</body></html>`;
+}
+
+app.get('/examples', (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(examplesPageHTML());
 });
 
 // ── Public sandbox demo (no auth, no cloud panel, no live DB) ─────────────────
