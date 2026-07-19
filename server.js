@@ -16,6 +16,7 @@ const Project         = require('./models/Project');
 const VarStore        = require('./models/VarStore');
 const { handleWebhook } = require('./routes/stripe');
 const EXAMPLES        = require('./data/examples');
+const BOARD_PROJECT   = require('./data/board-project');
 
 const app    = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -97,6 +98,7 @@ app.use('/api/admin',    require('./routes/admin'));
 app.use('/api/contact',    require('./routes/contact'));
 app.use('/api/components', require('./routes/components'));
 app.use('/api/ai',         require('./routes/ai'));
+app.use('/api/board',      require('./routes/board'));
 app.use('/stripe',       require('./routes/stripe').router);
 
 app.get('/api/me', (req, res) => {
@@ -1405,6 +1407,61 @@ ${sections}
 app.get('/examples', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(examplesPageHTML());
+});
+
+// ── Message board — a real MCEngine app, not a demo ────────────────────────────
+// Same runtime as /examples (buildHTML + buildExportCSS + buildExportScript via
+// /mce-runtime.js), with live:true pipes hitting the real /api/board/* routes.
+// Rendered into a full-viewport iframe rather than directly on the page — the
+// exported runtime relies on running inside a frame (window.parent references,
+// _pubUser/_inEditorFrame detection) and silently no-ops when it IS the
+// top-level document; this is the same srcdoc mechanism already proven by every
+// /examples widget, just sized to fill the page instead of a small card.
+// Public and unauthenticated by design — anyone can start a topic or reply;
+// routes/board.js rate-limits writes and HTML-escapes everything before it
+// reaches a loop template.
+function boardPageHTML() {
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Message Board — Magic Cat Engine</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#06060f}
+iframe{display:block;width:100%;height:100%;border:0}
+</style></head><body>
+<script src="/mce-runtime.js"></script>
+<script>
+(function(){
+  var PROJECT = ${JSON.stringify(BOARD_PROJECT)};
+  MCE.project   = { name: 'Message Board' };
+  MCE.machines  = PROJECT.machines;
+  MCE.rootOrder = PROJECT.rootOrder;
+  MCE.events    = PROJECT.events;
+  MCE.pipes     = PROJECT.pipes;
+  MCE.views     = PROJECT.views;
+  MCE.logic     = PROJECT.logic;
+  MCE.loops     = PROJECT.loops;
+  MCE.templates = PROJECT.templates || {};
+  MCE.vars      = PROJECT.vars || {};
+  MCE.css       = PROJECT.css || '';
+  MCE._nextId   = PROJECT._nextId || 1;
+
+  var roots = MCE.rootOrder.filter(function(id) { return MCE.machines[id] && !MCE.machines[id].parentId; });
+  var bodyHTML = roots.map(function(id) { return MachineSystem.buildHTML(id, true); }).join('\\n');
+  var css = UI.buildExportCSS();
+  var script = UI.buildExportScript();
+  var srcdoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>' + css + '*{box-sizing:border-box}html{margin:0;overflow-x:hidden}body{margin:0;overflow-x:hidden}</style></head><body>' + bodyHTML + '<script>' + script + '<\\/script></body></html>';
+
+  var iframe = document.createElement('iframe');
+  iframe.setAttribute('scrolling', 'yes');
+  document.body.appendChild(iframe);
+  iframe.srcdoc = srcdoc;
+})();
+</script>
+</body></html>`;
+}
+
+app.get('/board', (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(boardPageHTML());
 });
 
 // ── Public sandbox demo (no auth, no cloud panel, no live DB) ─────────────────

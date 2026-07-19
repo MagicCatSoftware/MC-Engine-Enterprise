@@ -2,6 +2,7 @@ node_modules/
 data/**
 !data/engine.html
 !data/examples.js
+!data/board-project.js
 logs/
 .env
 *.db
